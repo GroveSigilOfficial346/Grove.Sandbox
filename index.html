@@ -12,7 +12,6 @@
       color-scheme: dark;
       --bg: #080817;
       --panel: #111225;
-      --panel-hover: #191a32;
       --text: #f8f7ff;
       --muted: #a6a7c1;
       --purple: #a855f7;
@@ -21,9 +20,7 @@
       --border: rgba(177, 169, 255, .17);
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     html {
       scroll-behavior: smooth;
@@ -38,18 +35,13 @@
         radial-gradient(ellipse at 50% 0%, rgba(99, 51, 180, .18), transparent 48%),
         var(--bg);
       color: var(--text);
-      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont,
-        "Segoe UI", sans-serif;
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       line-height: 1.6;
     }
 
-    a {
-      color: inherit;
-      text-decoration: none;
-    }
+    a { color: inherit; text-decoration: none; }
 
-    a:focus-visible,
-    button:focus-visible {
+    a:focus-visible, button:focus-visible, input:focus-visible {
       outline: 2px solid var(--cyan);
       outline-offset: 4px;
     }
@@ -102,12 +94,9 @@
     nav a {
       color: var(--muted);
       font-size: .9rem;
-      transition: color .2s;
     }
 
-    nav a:hover {
-      color: white;
-    }
+    nav a:hover { color: white; }
 
     .nav-join {
       padding: 9px 17px;
@@ -190,9 +179,7 @@
       transition: transform .2s, box-shadow .2s, background .2s;
     }
 
-    .button:hover {
-      transform: translateY(-2px);
-    }
+    .button:hover { transform: translateY(-2px); }
 
     .primary {
       background: linear-gradient(110deg, #8d43e9, #5865ff);
@@ -200,18 +187,12 @@
       box-shadow: 0 8px 30px rgba(92, 76, 255, .22);
     }
 
-    .primary:hover {
-      box-shadow: 0 10px 34px rgba(92, 76, 255, .38);
-    }
-
     .secondary {
       border-color: var(--border);
       background: rgba(255, 255, 255, .025);
     }
 
-    .secondary:hover {
-      background: rgba(255, 255, 255, .07);
-    }
+    .secondary:hover { background: rgba(255, 255, 255, .07); }
 
     .hero-note {
       margin-top: 20px;
@@ -247,10 +228,7 @@
       filter: drop-shadow(0 0 28px rgba(112, 86, 255, .16));
     }
 
-    .section {
-      padding-top: 70px;
-      padding-bottom: 70px;
-    }
+    .section { padding-top: 70px; padding-bottom: 70px; }
 
     .section-heading {
       max-width: 640px;
@@ -301,16 +279,8 @@
       font-size: 1.25rem;
     }
 
-    .feature h3 {
-      margin: 0 0 8px;
-      font-size: 1.12rem;
-    }
-
-    .feature p {
-      margin: 0;
-      color: var(--muted);
-      font-size: .93rem;
-    }
+    .feature h3 { margin: 0 0 8px; font-size: 1.12rem; }
+    .feature p { margin: 0; color: var(--muted); font-size: .93rem; }
 
     .community-panel {
       display: flex;
@@ -338,10 +308,88 @@
       color: var(--muted);
     }
 
-    footer {
-      margin-top: 40px;
-      border-top: 1px solid var(--border);
+    /* Account interface */
+    .auth-card {
+      max-width: 560px;
+      margin: 0 auto;
+      padding: 28px;
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      background:
+        radial-gradient(ellipse at 100% 0%, rgba(91, 78, 255, .12), transparent 55%),
+        var(--panel);
+      box-shadow: 0 18px 70px rgba(0, 0, 0, .18);
     }
+
+    .auth-tabs { display: flex; gap: 10px; margin-bottom: 22px; }
+
+    .auth-tabs button {
+      flex: 1;
+      padding: 11px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: transparent;
+      color: var(--muted);
+      font: inherit;
+      cursor: pointer;
+    }
+
+    .auth-tabs button[aria-pressed="true"] {
+      color: white;
+      background: rgba(168, 85, 247, .18);
+      border-color: var(--purple);
+    }
+
+    .auth-card label {
+      display: block;
+      margin: 14px 0 6px;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    .auth-card input {
+      display: block;
+      width: 100%;
+      min-height: 47px;
+      padding: 12px 13px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg);
+      color: var(--text);
+      font: inherit;
+    }
+
+    .auth-card .button {
+      width: 100%;
+      margin-top: 18px;
+      cursor: pointer;
+    }
+
+    .auth-card .button:disabled {
+      opacity: .65;
+      cursor: wait;
+      transform: none;
+    }
+
+    .auth-message {
+      min-height: 24px;
+      margin: 14px 0 0;
+      color: #cbb5ff;
+      overflow-wrap: anywhere;
+      font-size: .9rem;
+    }
+
+    .auth-note {
+      color: var(--muted);
+      font-size: .82rem;
+      margin-bottom: 0;
+    }
+
+    .auth-session { display: none; }
+    .auth-session.is-visible { display: block; }
+    .auth-session strong { overflow-wrap: anywhere; }
+
+    footer { margin-top: 40px; border-top: 1px solid var(--border); }
 
     .footer-inner {
       min-height: 85px;
@@ -367,42 +415,17 @@
         padding-bottom: 65px;
       }
 
-      .hero-content {
-        text-align: center;
-      }
-
-      .hero-copy {
-        margin-inline: auto;
-      }
-
-      .actions {
-        justify-content: center;
-      }
-
-      .logo-stage {
-        grid-row: 1;
-        min-height: 200px;
-      }
-
-      .logo {
-        max-width: 380px;
-        max-height: 280px;
-      }
-
-      .feature-grid {
-        grid-template-columns: 1fr;
-      }
-
-      .community-panel {
-        align-items: flex-start;
-        flex-direction: column;
-      }
+      .hero-content { text-align: center; }
+      .hero-copy { margin-inline: auto; }
+      .actions { justify-content: center; }
+      .logo-stage { grid-row: 1; min-height: 200px; }
+      .logo { max-width: 380px; max-height: 280px; }
+      .feature-grid { grid-template-columns: 1fr; }
+      .community-panel { align-items: flex-start; flex-direction: column; }
     }
 
     @media (max-width: 520px) {
-      .container {
-        width: calc(100% - 32px);
-      }
+      .container { width: calc(100% - 32px); }
 
       .topbar {
         align-items: flex-start;
@@ -413,44 +436,16 @@
         padding-bottom: 16px;
       }
 
-      nav {
-        width: 100%;
-        justify-content: space-between;
-        gap: 10px;
-      }
-
-      nav a {
-        font-size: .82rem;
-      }
-
-      .nav-join {
-        padding: 7px 11px;
-      }
-
-      .hero {
-        padding-top: 40px;
-      }
-
-      .logo-stage {
-        min-height: 170px;
-      }
-
-      .logo {
-        max-width: 300px;
-      }
-
-      .actions {
-        flex-direction: column;
-      }
-
-      .button {
-        width: 100%;
-      }
-
-      .section {
-        padding-top: 48px;
-        padding-bottom: 48px;
-      }
+      nav { width: 100%; justify-content: space-between; gap: 10px; }
+      nav a { font-size: .82rem; }
+      .nav-join { padding: 7px 11px; }
+      .hero { padding-top: 40px; }
+      .logo-stage { min-height: 170px; }
+      .logo { max-width: 300px; }
+      .actions { flex-direction: column; }
+      .button { width: 100%; }
+      .section { padding-top: 48px; padding-bottom: 48px; }
+      .auth-card { padding: 20px; }
 
       .footer-inner {
         align-items: flex-start;
@@ -482,7 +477,7 @@
         <a href="#home">Home</a>
         <a href="#features">Features</a>
         <a href="#community">Community</a>
-        <a class="nav-join" href="#join">Join Grove ↗</a>
+        <a class="nav-join" href="#account">Join Grove ↗</a>
       </nav>
     </div>
   </header>
@@ -503,9 +498,9 @@
           Welcome to Grove.
         </p>
 
-        <div class="actions" id="join">
-          <a class="button primary" href="#features">
-            Discover Grove <span aria-hidden="true">→</span>
+        <div class="actions">
+          <a class="button primary" href="#account">
+            Create your account <span aria-hidden="true">→</span>
           </a>
           <a class="button secondary" href="#community">
             Explore the community
@@ -527,6 +522,61 @@
       </div>
     </section>
 
+    <section class="container section" id="account">
+      <div class="section-heading">
+        <p class="eyebrow">Your Grove account</p>
+        <h2>Step into the community.</h2>
+        <p>Create an account or sign in to Grove.</p>
+      </div>
+
+      <div class="auth-card">
+        <div class="auth-tabs" aria-label="Account actions">
+          <button type="button" id="signupTab" aria-pressed="true">Create account</button>
+          <button type="button" id="signinTab" aria-pressed="false">Sign in</button>
+        </div>
+
+        <form id="authForm">
+          <label for="authEmail">Email address</label>
+          <input
+            id="authEmail"
+            name="email"
+            type="email"
+            autocomplete="email"
+            maxlength="254"
+            required
+            placeholder="you@example.com"
+          >
+
+          <label for="authPassword">Password</label>
+          <input
+            id="authPassword"
+            name="password"
+            type="password"
+            autocomplete="new-password"
+            minlength="8"
+            required
+            placeholder="At least 8 characters"
+          >
+
+          <button class="button primary" id="authSubmit" type="submit">
+            Create account
+          </button>
+
+          <p class="auth-message" id="authMessage" role="status" aria-live="polite"></p>
+        </form>
+
+        <div class="auth-session" id="authSession">
+          <p>Signed in as <strong id="signedInEmail"></strong></p>
+          <button class="button secondary" id="signoutButton" type="button">Sign out</button>
+        </div>
+
+        <p class="auth-note">
+          Use an email address you can access. If email confirmation is enabled,
+          check your inbox to finish creating your account.
+        </p>
+      </div>
+    </section>
+
     <section class="container section" id="features">
       <div class="section-heading">
         <p class="eyebrow">Made for connection</p>
@@ -541,28 +591,19 @@
         <article class="feature">
           <div class="feature-icon" aria-hidden="true">◎</div>
           <h3>Your profile</h3>
-          <p>
-            Create your identity, introduce yourself, and let people
-            get to know you.
-          </p>
+          <p>Create your identity, introduce yourself, and let people get to know you.</p>
         </article>
 
         <article class="feature">
           <div class="feature-icon" aria-hidden="true">✧</div>
           <h3>Share and connect</h3>
-          <p>
-            Publish updates, share photos, join conversations,
-            and interact with other members.
-          </p>
+          <p>Publish updates, share photos, join conversations, and interact with other members.</p>
         </article>
 
         <article class="feature">
           <div class="feature-icon" aria-hidden="true">⌕</div>
           <h3>Discover more</h3>
-          <p>
-            Find interesting people, new perspectives, and communities
-            beyond your usual circle.
-          </p>
+          <p>Find interesting people, new perspectives, and communities beyond your usual circle.</p>
         </article>
       </div>
     </section>
@@ -573,15 +614,13 @@
           <p class="eyebrow">The next chapter</p>
           <h2>Social connection,<br>with room to grow.</h2>
           <p>
-            Grove's foundation starts here. Member accounts, profiles,
-            the social feed, and real interactions are the next stages
-            of development.
+            Grove's foundation starts here. Member accounts are the first step;
+            profiles, a social feed, image sharing, and real interactions are
+            the next stages of development.
           </p>
         </div>
 
-        <a class="button primary" href="#home">
-          Back to Grove ↑
-        </a>
+        <a class="button primary" href="#account">Join Grove ↑</a>
       </div>
     </section>
   </main>
@@ -594,9 +633,145 @@
     </div>
   </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    document.getElementById("year").textContent =
-      new Date().getFullYear();
+    document.getElementById("year").textContent = new Date().getFullYear();
+
+    // Public publishable key: intended for browser use.
+    // Never put a Supabase secret or service_role key in this file.
+    const SUPABASE_URL = "https://fpkrvgcpbnrusbfmhinj.supabase.co";
+    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
+
+    const supabaseClient = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_PUBLISHABLE_KEY
+    );
+
+    let authMode = "signup";
+
+    const authForm = document.getElementById("authForm");
+    const emailInput = document.getElementById("authEmail");
+    const passwordInput = document.getElementById("authPassword");
+    const submitButton = document.getElementById("authSubmit");
+    const authMessage = document.getElementById("authMessage");
+    const signupTab = document.getElementById("signupTab");
+    const signinTab = document.getElementById("signinTab");
+    const authTabs = document.querySelector(".auth-tabs");
+    const authSession = document.getElementById("authSession");
+    const signedInEmail = document.getElementById("signedInEmail");
+    const signoutButton = document.getElementById("signoutButton");
+
+    function setAuthMode(nextMode) {
+      authMode = nextMode;
+      const isSignup = authMode === "signup";
+
+      signupTab.setAttribute("aria-pressed", String(isSignup));
+      signinTab.setAttribute("aria-pressed", String(!isSignup));
+      submitButton.textContent = isSignup ? "Create account" : "Sign in";
+      passwordInput.autocomplete = isSignup ? "new-password" : "current-password";
+      passwordInput.minLength = isSignup ? 8 : 1;
+      authMessage.textContent = "";
+    }
+
+    function showSignedInState(email) {
+      authForm.hidden = true;
+      authTabs.hidden = true;
+      authSession.classList.add("is-visible");
+      signedInEmail.textContent = email || "your account";
+      authMessage.textContent = "You're signed in successfully. Welcome to Grove!";
+    }
+
+    function showSignedOutState() {
+      authForm.hidden = false;
+      authTabs.hidden = false;
+      authSession.classList.remove("is-visible");
+      signedInEmail.textContent = "";
+    }
+
+    signupTab.addEventListener("click", () => setAuthMode("signup"));
+    signinTab.addEventListener("click", () => setAuthMode("signin"));
+
+    authForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const email = emailInput.value.trim();
+      const password = passwordInput.value;
+
+      submitButton.disabled = true;
+      authMessage.textContent = authMode === "signup"
+        ? "Creating your account…"
+        : "Signing in…";
+
+      try {
+        if (authMode === "signup") {
+          const { data, error } = await supabaseClient.auth.signUp({
+            email,
+            password,
+            options: {
+              emailRedirectTo: window.location.origin
+            }
+          });
+
+          if (error) throw error;
+
+          if (data.session) {
+            showSignedInState(data.user?.email || email);
+          } else {
+            authMessage.textContent =
+              "Account submitted. Check your email for a confirmation link, then return here to sign in.";
+          }
+        } else {
+          const { data, error } = await supabaseClient.auth.signInWithPassword({
+            email,
+            password
+          });
+
+          if (error) throw error;
+          showSignedInState(data.user?.email || email);
+        }
+      } catch (error) {
+        authMessage.textContent = error?.message ||
+          "Something went wrong. Please try again.";
+      } finally {
+        submitButton.disabled = false;
+      }
+    });
+
+    signoutButton.addEventListener("click", async () => {
+      signoutButton.disabled = true;
+      authMessage.textContent = "Signing out…";
+
+      try {
+        const { error } = await supabaseClient.auth.signOut();
+        if (error) throw error;
+        showSignedOutState();
+        setAuthMode("signin");
+        authMessage.textContent = "You've signed out.";
+      } catch (error) {
+        authMessage.textContent = error?.message || "Could not sign out. Try again.";
+      } finally {
+        signoutButton.disabled = false;
+      }
+    });
+
+    supabaseClient.auth.getSession().then(({ data, error }) => {
+      if (error) {
+        authMessage.textContent = "Could not check your session. Please refresh.";
+        return;
+      }
+
+      if (data.session) {
+        showSignedInState(data.session.user?.email);
+      }
+    });
+
+    supabaseClient.auth.onAuthStateChange((event, session) => {
+      if (event === "SIGNED_IN" && session) {
+        showSignedInState(session.user?.email);
+      } else if (event === "SIGNED_OUT") {
+        showSignedOutState();
+      }
+    });
   </script>
 </body>
 </html>
