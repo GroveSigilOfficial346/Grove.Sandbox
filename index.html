@@ -1,53 +1,602 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#050019">
-  <meta name="description" content="Grove — a universe of imagination, creativity, and discovery.">
-  <title>Grove</title>
+  <meta name="theme-color" content="#080817">
+  <meta name="description" content="Grove is a social platform to connect, share, discover, and build communities.">
+  <title>Grove — Connect Your World</title>
 
   <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080817;
+      --panel: #111225;
+      --panel-hover: #191a32;
+      --text: #f8f7ff;
+      --muted: #a6a7c1;
+      --purple: #a855f7;
+      --blue: #5965ff;
+      --cyan: #45e5ff;
+      --border: rgba(177, 169, 255, .17);
+    }
+
     * {
       box-sizing: border-box;
     }
 
-    html, body {
-      margin: 0;
-      min-height: 100%;
+    html {
+      scroll-behavior: smooth;
+      scroll-padding-top: 90px;
     }
 
     body {
+      margin: 0;
       min-height: 100vh;
-      min-height: 100dvh;
-      display: grid;
-      place-items: center;
-      background: #050019;
-      padding: 24px;
+      overflow-x: hidden;
+      background:
+        radial-gradient(ellipse at 50% 0%, rgba(99, 51, 180, .18), transparent 48%),
+        var(--bg);
+      color: var(--text);
+      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont,
+        "Segoe UI", sans-serif;
+      line-height: 1.6;
     }
 
-    main {
-      width: 100%;
-      display: grid;
-      place-items: center;
+    a {
+      color: inherit;
+      text-decoration: none;
     }
 
-    img {
+    a:focus-visible,
+    button:focus-visible {
+      outline: 2px solid var(--cyan);
+      outline-offset: 4px;
+    }
+
+    .container {
+      width: min(1120px, calc(100% - 40px));
+      margin-inline: auto;
+    }
+
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      border-bottom: 1px solid var(--border);
+      background: rgba(8, 8, 23, .88);
+      backdrop-filter: blur(18px);
+    }
+
+    .topbar {
+      min-height: 76px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.05rem;
+      font-weight: 800;
+      letter-spacing: .17em;
+    }
+
+    .brand-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 15px rgba(69, 229, 255, .8);
+    }
+
+    nav {
+      display: flex;
+      align-items: center;
+      gap: clamp(14px, 3vw, 30px);
+    }
+
+    nav a {
+      color: var(--muted);
+      font-size: .9rem;
+      transition: color .2s;
+    }
+
+    nav a:hover {
+      color: white;
+    }
+
+    .nav-join {
+      padding: 9px 17px;
+      border: 1px solid rgba(168, 85, 247, .55);
+      border-radius: 999px;
+      background: rgba(168, 85, 247, .12);
+      color: white;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1.05fr .95fr;
+      align-items: center;
+      gap: 42px;
+      padding-top: 88px;
+      padding-bottom: 94px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      margin: 0 0 18px;
+      color: #cbb5ff;
+      font-size: .76rem;
+      font-weight: 750;
+      letter-spacing: .16em;
+      text-transform: uppercase;
+    }
+
+    .eyebrow span {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 10px var(--cyan);
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.7rem, 6vw, 5.2rem);
+      font-weight: 750;
+      letter-spacing: -.065em;
+      line-height: 1.02;
+    }
+
+    .gradient {
+      color: transparent;
+      background: linear-gradient(100deg, #d4a2ff, #8d85ff 48%, #63e8ff);
+      -webkit-background-clip: text;
+      background-clip: text;
+    }
+
+    .hero-copy {
+      max-width: 520px;
+      margin: 24px 0 0;
+      color: var(--muted);
+      font-size: 1.08rem;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 13px;
+      margin-top: 30px;
+    }
+
+    .button {
+      min-height: 48px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 9px;
+      padding: 12px 21px;
+      border: 1px solid transparent;
+      border-radius: 12px;
+      font: inherit;
+      font-size: .93rem;
+      font-weight: 750;
+      transition: transform .2s, box-shadow .2s, background .2s;
+    }
+
+    .button:hover {
+      transform: translateY(-2px);
+    }
+
+    .primary {
+      background: linear-gradient(110deg, #8d43e9, #5865ff);
+      color: white;
+      box-shadow: 0 8px 30px rgba(92, 76, 255, .22);
+    }
+
+    .primary:hover {
+      box-shadow: 0 10px 34px rgba(92, 76, 255, .38);
+    }
+
+    .secondary {
+      border-color: var(--border);
+      background: rgba(255, 255, 255, .025);
+    }
+
+    .secondary:hover {
+      background: rgba(255, 255, 255, .07);
+    }
+
+    .hero-note {
+      margin-top: 20px;
+      color: #8586a5;
+      font-size: .8rem;
+    }
+
+    .logo-stage {
+      position: relative;
+      display: grid;
+      place-items: center;
+      min-height: 320px;
+      isolation: isolate;
+    }
+
+    .logo-stage::before {
+      position: absolute;
+      z-index: -1;
+      content: "";
+      width: 85%;
+      aspect-ratio: 1;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(104, 72, 255, .22), transparent 68%);
+      filter: blur(15px);
+    }
+
+    .logo {
       display: block;
-      width: min(100%, 850px);
-      max-height: 85vh;
+      width: 100%;
+      max-width: 520px;
+      max-height: 400px;
       object-fit: contain;
+      filter: drop-shadow(0 0 28px rgba(112, 86, 255, .16));
+    }
+
+    .section {
+      padding-top: 70px;
+      padding-bottom: 70px;
+    }
+
+    .section-heading {
+      max-width: 640px;
+      margin-bottom: 30px;
+    }
+
+    .section-heading h2 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3rem);
+      letter-spacing: -.045em;
+      line-height: 1.15;
+    }
+
+    .section-heading p {
+      margin: 13px 0 0;
+      color: var(--muted);
+    }
+
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 17px;
+    }
+
+    .feature {
+      padding: 25px;
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      background: linear-gradient(145deg, #15162c, #0d0e20);
+      transition: transform .2s, border-color .2s;
+    }
+
+    .feature:hover {
+      transform: translateY(-3px);
+      border-color: rgba(112, 124, 255, .5);
+    }
+
+    .feature-icon {
+      display: grid;
+      place-items: center;
+      width: 44px;
+      height: 44px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(168, 85, 247, .3);
+      border-radius: 13px;
+      background: rgba(168, 85, 247, .12);
+      color: #d5bdff;
+      font-size: 1.25rem;
+    }
+
+    .feature h3 {
+      margin: 0 0 8px;
+      font-size: 1.12rem;
+    }
+
+    .feature p {
+      margin: 0;
+      color: var(--muted);
+      font-size: .93rem;
+    }
+
+    .community-panel {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 30px;
+      padding: clamp(25px, 5vw, 45px);
+      border: 1px solid var(--border);
+      border-radius: 22px;
+      background:
+        radial-gradient(ellipse at 100% 0%, rgba(91, 78, 255, .17), transparent 50%),
+        var(--panel);
+    }
+
+    .community-panel h2 {
+      margin: 0;
+      font-size: clamp(1.7rem, 4vw, 2.5rem);
+      letter-spacing: -.04em;
+      line-height: 1.2;
+    }
+
+    .community-panel p {
+      max-width: 570px;
+      margin: 12px 0 0;
+      color: var(--muted);
+    }
+
+    footer {
+      margin-top: 40px;
+      border-top: 1px solid var(--border);
+    }
+
+    .footer-inner {
+      min-height: 85px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      color: #898aa7;
+      font-size: .83rem;
+    }
+
+    .footer-brand {
+      color: #ddd8ff;
+      font-weight: 800;
+      letter-spacing: .15em;
+    }
+
+    @media (max-width: 800px) {
+      .hero {
+        grid-template-columns: 1fr;
+        gap: 15px;
+        padding-top: 65px;
+        padding-bottom: 65px;
+      }
+
+      .hero-content {
+        text-align: center;
+      }
+
+      .hero-copy {
+        margin-inline: auto;
+      }
+
+      .actions {
+        justify-content: center;
+      }
+
+      .logo-stage {
+        grid-row: 1;
+        min-height: 200px;
+      }
+
+      .logo {
+        max-width: 380px;
+        max-height: 280px;
+      }
+
+      .feature-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .community-panel {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+    }
+
+    @media (max-width: 520px) {
+      .container {
+        width: calc(100% - 32px);
+      }
+
+      .topbar {
+        align-items: flex-start;
+        flex-direction: column;
+        justify-content: center;
+        gap: 12px;
+        padding-top: 16px;
+        padding-bottom: 16px;
+      }
+
+      nav {
+        width: 100%;
+        justify-content: space-between;
+        gap: 10px;
+      }
+
+      nav a {
+        font-size: .82rem;
+      }
+
+      .nav-join {
+        padding: 7px 11px;
+      }
+
+      .hero {
+        padding-top: 40px;
+      }
+
+      .logo-stage {
+        min-height: 170px;
+      }
+
+      .logo {
+        max-width: 300px;
+      }
+
+      .actions {
+        flex-direction: column;
+      }
+
+      .button {
+        width: 100%;
+      }
+
+      .section {
+        padding-top: 48px;
+        padding-bottom: 48px;
+      }
+
+      .footer-inner {
+        align-items: flex-start;
+        flex-direction: column;
+        justify-content: center;
+        padding-top: 20px;
+        padding-bottom: 20px;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        scroll-behavior: auto !important;
+        transition-duration: .01ms !important;
+      }
     }
   </style>
 </head>
 
 <body>
-  <main>
-    <img
-      src="file_0000000051a881f69529cfe7da76c32c.png"
-      alt="Official Grove logo"
-    >
+  <header>
+    <div class="container topbar">
+      <a class="brand" href="#home" aria-label="Grove home">
+        <span class="brand-dot" aria-hidden="true"></span>
+        <span>GROVE</span>
+      </a>
+
+      <nav aria-label="Main navigation">
+        <a href="#home">Home</a>
+        <a href="#features">Features</a>
+        <a href="#community">Community</a>
+        <a class="nav-join" href="#join">Join Grove ↗</a>
+      </nav>
+    </div>
+  </header>
+
+  <main id="home">
+    <section class="container hero">
+      <div class="hero-content">
+        <p class="eyebrow"><span aria-hidden="true"></span> Your world. Your people.</p>
+
+        <h1>
+          Connect beyond<br>
+          <span class="gradient">the ordinary.</span>
+        </h1>
+
+        <p class="hero-copy">
+          Meet people, share what matters, discover new perspectives,
+          and find your place in a growing social world.
+          Welcome to Grove.
+        </p>
+
+        <div class="actions" id="join">
+          <a class="button primary" href="#features">
+            Discover Grove <span aria-hidden="true">→</span>
+          </a>
+          <a class="button secondary" href="#community">
+            Explore the community
+          </a>
+        </div>
+
+        <p class="hero-note">
+          A new social experience starts with a connection.
+        </p>
+      </div>
+
+      <div class="logo-stage">
+        <img
+          class="logo"
+          src="file_0000000051a881f69529cfe7da76c32c.png"
+          alt="Official Grove logo"
+          fetchpriority="high"
+        >
+      </div>
+    </section>
+
+    <section class="container section" id="features">
+      <div class="section-heading">
+        <p class="eyebrow">Made for connection</p>
+        <h2>A place to be part of something.</h2>
+        <p>
+          Grove is being built around the ways people connect,
+          express themselves, and discover the world through others.
+        </p>
+      </div>
+
+      <div class="feature-grid">
+        <article class="feature">
+          <div class="feature-icon" aria-hidden="true">◎</div>
+          <h3>Your profile</h3>
+          <p>
+            Create your identity, introduce yourself, and let people
+            get to know you.
+          </p>
+        </article>
+
+        <article class="feature">
+          <div class="feature-icon" aria-hidden="true">✧</div>
+          <h3>Share and connect</h3>
+          <p>
+            Publish updates, share photos, join conversations,
+            and interact with other members.
+          </p>
+        </article>
+
+        <article class="feature">
+          <div class="feature-icon" aria-hidden="true">⌕</div>
+          <h3>Discover more</h3>
+          <p>
+            Find interesting people, new perspectives, and communities
+            beyond your usual circle.
+          </p>
+        </article>
+      </div>
+    </section>
+
+    <section class="container section" id="community">
+      <div class="community-panel">
+        <div>
+          <p class="eyebrow">The next chapter</p>
+          <h2>Social connection,<br>with room to grow.</h2>
+          <p>
+            Grove's foundation starts here. Member accounts, profiles,
+            the social feed, and real interactions are the next stages
+            of development.
+          </p>
+        </div>
+
+        <a class="button primary" href="#home">
+          Back to Grove ↑
+        </a>
+      </div>
+    </section>
   </main>
+
+  <footer>
+    <div class="container footer-inner">
+      <a class="footer-brand" href="#home">GROVE</a>
+      <span>Connect. Share. Discover.</span>
+      <span>© <span id="year"></span> Grove</span>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById("year").textContent =
+      new Date().getFullYear();
+  </script>
 </body>
 </html>
