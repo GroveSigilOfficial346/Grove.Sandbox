@@ -41,7 +41,8 @@
 
     a { color: inherit; text-decoration: none; }
 
-    a:focus-visible, button:focus-visible, input:focus-visible {
+    a:focus-visible, button:focus-visible, input:focus-visible,
+    textarea:focus-visible {
       outline: 2px solid var(--cyan);
       outline-offset: 4px;
     }
@@ -347,7 +348,8 @@
       font-size: .9rem;
     }
 
-    .auth-card input {
+    .auth-card input,
+    .auth-card textarea {
       display: block;
       width: 100%;
       min-height: 47px;
@@ -357,6 +359,11 @@
       background: var(--bg);
       color: var(--text);
       font: inherit;
+    }
+
+    .auth-card textarea {
+      min-height: 100px;
+      resize: vertical;
     }
 
     .auth-card .button {
@@ -388,6 +395,29 @@
     .auth-session { display: none; }
     .auth-session.is-visible { display: block; }
     .auth-session strong { overflow-wrap: anywhere; }
+
+    /* Profile editor */
+    .profile-editor {
+      display: none;
+      margin-top: 24px;
+      padding-top: 22px;
+      border-top: 1px solid var(--border);
+    }
+
+    .profile-editor.is-visible { display: block; }
+
+    .profile-editor h3 {
+      margin: 0 0 5px;
+      font-size: 1.25rem;
+    }
+
+    .profile-editor > p {
+      margin: 0 0 14px;
+      color: var(--muted);
+      font-size: .9rem;
+    }
+
+    .profile-editor .button { margin-top: 16px; }
 
     footer { margin-top: 40px; border-top: 1px solid var(--border); }
 
@@ -570,6 +600,57 @@
           <button class="button secondary" id="signoutButton" type="button">Sign out</button>
         </div>
 
+        <section class="profile-editor" id="profileEditor" aria-labelledby="profileHeading">
+          <h3 id="profileHeading">Your profile</h3>
+          <p>Introduce yourself to the Grove community. These profile details are public.</p>
+
+          <form id="profileForm">
+            <label for="profileUsername">Username</label>
+            <input
+              id="profileUsername"
+              name="username"
+              type="text"
+              minlength="3"
+              maxlength="24"
+              pattern="[A-Za-z0-9_]{3,24}"
+              autocomplete="username"
+              placeholder="e.g. grove_creator"
+            >
+
+            <label for="profileDisplayName">Display name</label>
+            <input
+              id="profileDisplayName"
+              name="display_name"
+              type="text"
+              maxlength="60"
+              placeholder="How people will see you"
+            >
+
+            <label for="profileBio">Bio</label>
+            <textarea
+              id="profileBio"
+              name="bio"
+              maxlength="280"
+              placeholder="A little about yourself (280 characters max)"
+            ></textarea>
+
+            <label for="profileAvatar">Avatar image URL (optional)</label>
+            <input
+              id="profileAvatar"
+              name="avatar_url"
+              type="url"
+              maxlength="1000"
+              placeholder="https://example.com/your-image.jpg"
+            >
+
+            <button class="button primary" id="saveProfileButton" type="submit">
+              Save profile
+            </button>
+
+            <p class="auth-message" id="profileMessage" role="status" aria-live="polite"></p>
+          </form>
+        </section>
+
         <p class="auth-note">
           Use an email address you can access. If email confirmation is enabled,
           check your inbox to finish creating your account.
@@ -661,6 +742,111 @@
     const signedInEmail = document.getElementById("signedInEmail");
     const signoutButton = document.getElementById("signoutButton");
 
+    const profileEditor = document.getElementById("profileEditor");
+    const profileForm = document.getElementById("profileForm");
+    const profileUsername = document.getElementById("profileUsername");
+    const profileDisplayName = document.getElementById("profileDisplayName");
+    const profileBio = document.getElementById("profileBio");
+    const profileAvatar = document.getElementById("profileAvatar");
+    const saveProfileButton = document.getElementById("saveProfileButton");
+    const profileMessage = document.getElementById("profileMessage");
+
+    let activeUserId = null;
+
+    async function loadProfile(user) {
+      if (!user) return;
+
+      activeUserId = user.id;
+      profileEditor.classList.add("is-visible");
+      profileMessage.textContent = "Loading your profile…";
+
+      try {
+        const { data: profile, error } = await supabaseClient
+          .from("profiles")
+          .select("username, display_name, bio, avatar_url")
+          .eq("id", user.id)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (profile) {
+          profileUsername.value = profile.username || "";
+          profileDisplayName.value = profile.display_name || "";
+          profileBio.value = profile.bio || "";
+          profileAvatar.value = profile.avatar_url || "";
+        } else {
+          // Existing accounts may predate the profile-creation trigger.
+          profileUsername.value = "";
+          profileDisplayName.value = user.user_metadata?.display_name || "";
+          profileBio.value = "";
+          profileAvatar.value = "";
+        }
+
+        profileMessage.textContent = "";
+      } catch (error) {
+        profileMessage.textContent = error?.message ||
+          "Could not load your profile. Please refresh and try again.";
+      }
+    }
+
+    profileForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      if (!activeUserId) {
+        profileMessage.textContent = "Please sign in to edit your profile.";
+        return;
+      }
+
+      const username = profileUsername.value.trim() || null;
+      const avatarUrl = profileAvatar.value.trim() || null;
+
+      if (username && !/^[A-Za-z0-9_]{3,24}$/.test(username)) {
+        profileMessage.textContent =
+          "Username must be 3–24 characters using letters, numbers, or underscores.";
+        return;
+      }
+
+      if (avatarUrl) {
+        try {
+          const parsed = new URL(avatarUrl);
+
+          if (parsed.protocol !== "https:" && parsed.protocol !== "http:") {
+            throw new Error("Invalid URL");
+          }
+        } catch {
+          profileMessage.textContent =
+            "Enter a valid http or https image URL, or leave it blank.";
+          return;
+        }
+      }
+
+      saveProfileButton.disabled = true;
+      profileMessage.textContent = "Saving your profile…";
+
+      try {
+        const { error } = await supabaseClient
+          .from("profiles")
+          .upsert({
+            id: activeUserId,
+            username,
+            display_name: profileDisplayName.value.trim(),
+            bio: profileBio.value.trim(),
+            avatar_url: avatarUrl,
+            updated_at: new Date().toISOString()
+          }, { onConflict: "id" });
+
+        if (error) throw error;
+
+        profileMessage.textContent = "Profile saved successfully!";
+      } catch (error) {
+        profileMessage.textContent = error?.code === "23505"
+          ? "That username is already taken. Please choose another."
+          : (error?.message || "Could not save your profile. Please try again.");
+      } finally {
+        saveProfileButton.disabled = false;
+      }
+    });
+
     function setAuthMode(nextMode) {
       authMode = nextMode;
       const isSignup = authMode === "signup";
@@ -685,6 +871,10 @@
       authForm.hidden = false;
       authTabs.hidden = false;
       authSession.classList.remove("is-visible");
+      profileEditor.classList.remove("is-visible");
+      profileForm.reset();
+      profileMessage.textContent = "";
+      activeUserId = null;
       signedInEmail.textContent = "";
     }
 
@@ -716,6 +906,7 @@
 
           if (data.session) {
             showSignedInState(data.user?.email || email);
+            await loadProfile(data.user);
           } else {
             authMessage.textContent =
               "Account submitted. Check your email for a confirmation link, then return here to sign in.";
@@ -727,7 +918,9 @@
           });
 
           if (error) throw error;
+
           showSignedInState(data.user?.email || email);
+          await loadProfile(data.user);
         }
       } catch (error) {
         authMessage.textContent = error?.message ||
@@ -743,12 +936,15 @@
 
       try {
         const { error } = await supabaseClient.auth.signOut();
+
         if (error) throw error;
+
         showSignedOutState();
         setAuthMode("signin");
         authMessage.textContent = "You've signed out.";
       } catch (error) {
-        authMessage.textContent = error?.message || "Could not sign out. Try again.";
+        authMessage.textContent = error?.message ||
+          "Could not sign out. Try again.";
       } finally {
         signoutButton.disabled = false;
       }
@@ -762,12 +958,14 @@
 
       if (data.session) {
         showSignedInState(data.session.user?.email);
+        loadProfile(data.session.user);
       }
     });
 
     supabaseClient.auth.onAuthStateChange((event, session) => {
       if (event === "SIGNED_IN" && session) {
         showSignedInState(session.user?.email);
+        loadProfile(session.user);
       } else if (event === "SIGNED_OUT") {
         showSignedOutState();
       }
