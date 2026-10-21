@@ -99,6 +99,18 @@
     .auth-card .full-button { width:100%; margin-top:16px; }
     .auth-message { min-height:22px; margin:12px 0 0; color:#cbb5ff; overflow-wrap:anywhere; font-size:.88rem; }
     .auth-note,.muted { color:var(--muted); font-size:.83rem; }
+    .auth-links { display:flex; justify-content:flex-end; margin-top:8px; }
+    .auth-links button { border:0; padding:3px 0; background:none; color:#cbb5ff; font-size:.86rem; text-decoration:underline; }
+    .recovery-panel { display:none; margin-top:18px; padding-top:18px; border-top:1px solid var(--border); }
+    .recovery-panel.is-visible { display:block; }
+    .pulse-grid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; margin-top:22px; }
+    .pulse-stat { padding:18px; border:1px solid var(--border); border-radius:14px; background:rgba(255,255,255,.025); }
+    .pulse-stat strong { display:block; font-size:clamp(1.8rem,4vw,2.5rem); line-height:1.15; }
+    .pulse-stat span { color:var(--muted); font-size:.85rem; }
+    .daily-prompt { margin-top:18px; padding:18px; border:1px solid rgba(69,229,255,.22); border-radius:14px; background:rgba(69,229,255,.045); }
+    .daily-prompt h3 { margin:0 0 7px; }
+    .daily-prompt p { margin:0; color:var(--text); }
+    .daily-prompt small { display:block; margin-top:8px; color:var(--muted); }
     .auth-session { display:none; }
     .auth-session.is-visible { display:block; }
     .auth-session strong { overflow-wrap:anywhere; }
@@ -249,7 +261,17 @@
           <label for="authPassword">Password</label>
           <input id="authPassword" name="password" type="password" autocomplete="new-password" minlength="8" required placeholder="At least 8 characters">
           <button class="button primary full-button" id="authSubmit" type="submit">Create account</button>
+          <div class="auth-links" id="forgotPasswordLink" hidden><button type="button" id="forgotPasswordButton">Forgot password?</button></div>
           <p class="auth-message" id="authMessage" role="status" aria-live="polite"></p>
+        </form>
+        <form class="recovery-panel" id="recoveryForm">
+          <h3 id="recoveryHeading">Reset your password</h3>
+          <p class="muted" id="recoveryDescription">Enter your email and we'll send you a secure reset link.</p>
+          <div id="recoveryEmailWrap"><label for="recoveryEmail">Email address</label><input id="recoveryEmail" type="email" autocomplete="email" maxlength="254" placeholder="you@example.com" required></div>
+          <div id="newPasswordWrap" hidden><label for="newPassword">New password</label><input id="newPassword" type="password" autocomplete="new-password" minlength="8" placeholder="At least 8 characters"></div>
+          <button class="button primary full-button" id="recoverySubmit" type="submit">Send reset link</button>
+          <div class="auth-links"><button type="button" id="backToSignIn">Back to sign in</button></div>
+          <p class="auth-message" id="recoveryMessage" role="status" aria-live="polite"></p>
         </form>
 
         <div class="auth-session" id="authSession">
@@ -413,6 +435,11 @@
         <div><p class="eyebrow">The next chapter</p><h2>Social connection,<br>with room to grow.</h2><p>Grove is a general-purpose social platform. Build your profile, share your ideas, and find your people.</p></div>
         <a class="button primary" href="#account">Join Grove ↑</a>
       </div>
+      <div class="pulse-grid" aria-label="Grove Pulse community statistics">
+        <div class="pulse-stat"><strong id="totalMembers">—</strong><span>Grove members</span></div>
+        <div class="pulse-stat"><strong id="activeMembers">—</strong><span>Active in the last 5 minutes</span></div>
+      </div>
+      <div class="daily-prompt"><p class="eyebrow">Today's community prompt</p><h3 id="dailyPromptTitle">A little inspiration</h3><p id="dailyPromptText"></p><small>Have a thought? Share it with the community.</small><div class="actions"><a class="button secondary" href="#account" id="promptShareLink">Join the conversation ↗</a></div></div>
     </section>
   </main>
 
@@ -497,10 +524,13 @@
       authSubmit.textContent = signup ? "Create account" : "Sign in";
       $("authPassword").autocomplete = signup ? "new-password" : "current-password";
       $("authPassword").minLength = signup ? 8 : 1;
+      $("forgotPasswordLink").hidden = signup;
+      $("authPassword").required = true;
       showMessage(authMessage, "");
     }
     signupTab.addEventListener("click", () => setAuthMode("signup"));
     signinTab.addEventListener("click", () => setAuthMode("signin"));
+    $("forgotPasswordLink").hidden = true;
 
     function showSignedOut() {
       currentUser = null;
@@ -509,6 +539,11 @@
       savedIds = new Set();
       authForm.hidden = false;
       authTabs.hidden = false;
+      $("recoveryForm").classList.remove("is-visible");
+      $("authPassword").required = true;
+      $("authPassword").disabled = false;
+      $("authSubmit").disabled = false;
+      $("forgotPasswordLink").hidden = signupTab.getAttribute("aria-pressed") === "true";
       authSession.classList.remove("is-visible");
       profileEditor.classList.remove("is-visible");
       $("socialApp").classList.remove("is-visible");
@@ -527,6 +562,7 @@
       profileEditor.classList.add("is-visible");
       $("sidebarIdentity").textContent = user.email || "Signed in";
       await loadProfile(user);
+      startHeartbeat();
       await loadFollowedIds();
       await loadSavedIds();
       await refreshCurrentView();
@@ -565,693 +601,20 @@
       }
     });
 
-    $("signoutButton").addEventListener("click", async () => {
-      $("signoutButton").disabled = true;
-      showMessage(authMessage, "Signing out…");
-      try {
-        const {error} = await db.auth.signOut();
-        if (error) throw error;
-        showSignedOut();
-        setAuthMode("signin");
-        showMessage(authMessage, "You've signed out.");
-        location.hash = "#account";
-      } catch (error) {
-        showMessage(authMessage, error?.message || "Could not sign out.");
-      } finally {
-        $("signoutButton").disabled = false;
-      }
+    let recoveryMode = false;
+    $("forgotPasswordButton").addEventListener("click", () => {
+      $("recoveryForm").classList.add("is-visible");
+      $("recoveryHeading").textContent = "Reset your password";
+      $("recoveryDescription").textContent = "Enter your email and we'll send you a secure reset link.";
+      $("recoveryEmailWrap").hidden = false;
+      $("newPasswordWrap").hidden = true;
+      $("newPassword").required = false;
+      $("recoverySubmit").textContent = "Send reset link";
+      $("recoveryMessage").textContent = "";
     });
-
-    async function loadProfile(user) {
-      if (!user) return;
-      showMessage(profileMessage, "Loading your profile…");
-      try {
-        const {data,error} = await db.from("profiles")
-          .select("id,username,display_name,bio,avatar_url,cover_url,pronouns,location,website,created_at")
-          .eq("id",user.id).maybeSingle();
-        if (error) throw error;
-        currentProfile = data || {
-          id:user.id, username:"", display_name:user.user_metadata?.display_name || "",
-          bio:"", avatar_url:"", cover_url:"", pronouns:"", location:"", website:""
-        };
-        $("profileUsername").value = currentProfile.username || "";
-        $("profileDisplayName").value = currentProfile.display_name || "";
-        $("profileBio").value = currentProfile.bio || "";
-        $("profileAvatar").value = currentProfile.avatar_url || "";
-        $("profileCover").value = currentProfile.cover_url || "";
-        $("profilePronouns").value = currentProfile.pronouns || "";
-        $("profileLocation").value = currentProfile.location || "";
-        $("profileWebsite").value = currentProfile.website || "";
-        showMessage(profileMessage, "");
-      } catch (error) {
-        showMessage(profileMessage, error?.message || "Could not load your profile.");
-      }
-    }
-
-    profileForm.addEventListener("submit", async event => {
-      event.preventDefault();
-      if (!currentUser) return showMessage(profileMessage, "Please sign in first.");
-      const username = $("profileUsername").value.trim() || null;
-      const avatar = $("profileAvatar").value.trim();
-      const cover = $("profileCover").value.trim();
-      const website = $("profileWebsite").value.trim();
-      if (username && !/^[A-Za-z0-9_]{3,24}$/.test(username)) {
-        return showMessage(profileMessage, "Username must be 3–24 characters using letters, numbers, or underscores.");
-      }
-      for (const [label,value] of [["Avatar",avatar],["Cover image",cover],["Website",website]]) {
-        if (value && !safeUrl(value)) return showMessage(profileMessage, label + " must be a valid http or https URL.");
-      }
-      const button = $("saveProfileButton");
-      button.disabled = true;
-      showMessage(profileMessage, "Saving your profile…");
-      try {
-        const payload = {
-          id:currentUser.id, username,
-          display_name:$("profileDisplayName").value.trim(),
-          bio:$("profileBio").value.trim(),
-          avatar_url:avatar || null,
-          cover_url:cover || null,
-          pronouns:$("profilePronouns").value.trim(),
-          location:$("profileLocation").value.trim(),
-          website:website || null,
-          updated_at:new Date().toISOString()
-        };
-        const {error} = await db.from("profiles").upsert(payload,{onConflict:"id"});
-        if (error) throw error;
-        currentProfile = {...currentProfile,...payload};
-        showMessage(profileMessage, "Profile saved successfully.");
-        await renderMyProfile();
-      } catch (error) {
-        showMessage(profileMessage, error?.code === "23505"
-          ? "That username is already taken. Choose another."
-          : (error?.message || "Could not save your profile."));
-      } finally {
-        button.disabled = false;
-      }
+    $("backToSignIn").addEventListener("click", () => {
+      recoveryMode = false;
+      $("recoveryForm").classList.remove("is-visible");
+      setAuthMode("signin");
     });
-
-    async function loadFollowedIds() {
-      if (!currentUser) return;
-      try {
-        const {data,error} = await db.from("follows").select("following_id").eq("follower_id",currentUser.id);
-        if (error) throw error;
-        followedIds = new Set((data || []).map(row => row.following_id));
-      } catch (error) {
-        console.warn("Could not load follows:",error.message);
-      }
-    }
-    async function loadSavedIds() {
-      if (!currentUser) return;
-      try {
-        const {data,error} = await db.from("bookmarks").select("post_id").eq("user_id",currentUser.id);
-        if (error) throw error;
-        savedIds = new Set((data || []).map(row => row.post_id));
-      } catch (error) {
-        console.warn("Could not load bookmarks:",error.message);
-      }
-    }
-
-    function switchView(view) {
-      currentView = view;
-      document.querySelectorAll("[data-view]").forEach(button => {
-        button.setAttribute("aria-pressed",String(button.dataset.view === view));
-      });
-      document.querySelectorAll(".app-view").forEach(el => el.classList.remove("is-visible"));
-      const target = $("view-" + view);
-      if (target) target.classList.add("is-visible");
-      refreshCurrentView();
-    }
-    document.querySelectorAll("[data-view]").forEach(button => {
-      button.addEventListener("click", () => switchView(button.dataset.view));
-    });
-    $("editProfileJump").addEventListener("click", () => {
-      $("profileEditor").classList.add("is-visible");
-      $("account").scrollIntoView({behavior:"smooth"});
-    });
-    async function refreshCurrentView() {
-      if (!currentUser) return;
-      if (currentView === "feed") await loadFeed("feedPosts");
-      if (currentView === "saved") await loadSavedPosts();
-      if (currentView === "activity") await loadActivity();
-      if (currentView === "myprofile") {
-        await renderMyProfile();
-        await loadFeed("myPosts",{authorId:currentUser.id,includePrivate:true});
-      }
-      if (currentView === "discover") await browseProfiles();
-      if (currentView === "person" && selectedPersonId) await openPerson(selectedPersonId);
-    }
-
-    $("postForm").addEventListener("submit", async event => {
-      event.preventDefault();
-      if (!currentUser) return showMessage($("postMessage"),"Please sign in first.");
-      const body = $("postBody").value.trim();
-      const media = $("postMedia").value.trim();
-      const visibility = $("postVisibility").value;
-      if (!body && !media) return showMessage($("postMessage"),"Write something or add an image URL.");
-      if (body.length > 5000) return showMessage($("postMessage"),"Posts must be 5,000 characters or fewer.");
-      if (media && !safeUrl(media)) return showMessage($("postMessage"),"Enter a valid http or https image URL.");
-      const button = $("publishButton");
-      button.disabled = true;
-      showMessage($("postMessage"),"Publishing your post…");
-      try {
-        const {error} = await db.from("posts").insert({
-          author_id:currentUser.id, body,
-          media_urls:media ? [media] : [],
-          visibility
-        });
-        if (error) throw error;
-        $("postForm").reset();
-        showMessage($("postMessage"),"Your post has been published.");
-        await loadFeed("feedPosts");
-      } catch (error) {
-        showMessage($("postMessage"),error?.message || "Could not publish your post. Check the database policies.");
-      } finally {
-        button.disabled = false;
-      }
-    });
-
-    async function getProfiles(ids) {
-      const unique = [...new Set((ids || []).filter(Boolean))];
-      if (!unique.length) return {};
-      const {data,error} = await db.from("profiles")
-        .select("id,username,display_name,bio,avatar_url,cover_url,pronouns,location,website,created_at")
-        .in("id",unique);
-      if (error) throw error;
-      return Object.fromEntries((data || []).map(p => [p.id,p]));
-    }
-
-    async function fetchPosts({authorId=null,postIds=null,includePrivate=false}={}) {
-      let query = db.from("posts")
-        .select("id,author_id,body,media_urls,visibility,created_at,updated_at")
-        .order("created_at",{ascending:false}).limit(50);
-      if (authorId) query = query.eq("author_id",authorId);
-      if (postIds) {
-        if (!postIds.length) return [];
-        query = query.in("id",postIds);
-      } else if (!includePrivate && !authorId) {
-        query = query.eq("visibility","public");
-      }
-      const {data,error} = await query;
-      if (error) throw error;
-      return data || [];
-    }
-
-    async function loadFeed(containerId,options={}) {
-      const container = $(containerId);
-      clear(container);
-      container.append(node("div","empty-state","Loading posts…"));
-      try {
-        let posts;
-        if (options.authorId) {
-          posts = await fetchPosts({authorId:options.authorId,includePrivate:!!options.includePrivate});
-        } else {
-          const publicPosts = await fetchPosts();
-          let followedPosts = [];
-          if (followedIds.size) {
-            const {data,error} = await db.from("posts")
-              .select("id,author_id,body,media_urls,visibility,created_at,updated_at")
-              .in("author_id",[...followedIds])
-              .eq("visibility","followers")
-              .order("created_at",{ascending:false}).limit(50);
-            if (error) throw error;
-            followedPosts = data || [];
-          }
-          const ownPosts = currentUser
-            ? await fetchPosts({authorId:currentUser.id,includePrivate:true})
-            : [];
-          const unique = new Map([...publicPosts,...followedPosts,...ownPosts].map(p => [p.id,p]));
-          posts = [...unique.values()].sort((a,b)=>new Date(b.created_at)-new Date(a.created_at)).slice(0,50);
-        }
-        await renderPosts(container,posts);
-      } catch (error) {
-        clear(container);
-        container.append(node("div","empty-state","Could not load posts: " + (error?.message || "unknown error")));
-      }
-    }
-
-    async function renderPosts(container,posts) {
-      clear(container);
-      if (!posts.length) {
-        container.append(node("div","empty-state","Nothing here yet. Be the first to share something with Grove."));
-        return;
-      }
-      const ids = posts.map(p=>p.author_id);
-      const postIds = posts.map(p=>p.id);
-      const profiles = await getProfiles(ids);
-      const [likesResult,commentsResult,pinsResult] = await Promise.all([
-        db.from("post_likes").select("post_id,user_id").in("post_id",postIds),
-        db.from("comments").select("id,post_id,author_id,body,created_at").in("post_id",postIds).order("created_at",{ascending:true}).limit(200),
-        db.from("pinned_posts").select("post_id,profile_id,position").in("post_id",postIds)
-      ]);
-      if (likesResult.error) throw likesResult.error;
-      if (commentsResult.error) throw commentsResult.error;
-      if (pinsResult.error) throw pinsResult.error;
-      const comments = commentsResult.data || [];
-      const commentProfiles = await getProfiles(comments.map(c=>c.author_id));
-      const likes = likesResult.data || [];
-      const pins = pinsResult.data || [];
-      for (const post of posts) {
-        container.append(makePostCard(post,profiles[post.author_id] || {id:post.author_id},{
-          likes:likes.filter(l=>l.post_id===post.id),
-          comments:comments.filter(c=>c.post_id===post.id),
-          commentProfiles,
-          pinned:pins.some(p=>p.post_id===post.id && p.profile_id===currentUser?.id)
-        }));
-      }
-    }
-
-    function makePostCard(post,profile,meta) {
-      const card = node("article","post-card");
-      const head = node("div","post-head");
-      head.append(makeAvatar(profile));
-      const author = node("div","post-author");
-      const authorLink = node("a","",displayName(profile));
-      authorLink.href = profileHref(profile.id);
-      authorLink.addEventListener("click",event => {event.preventDefault();openPerson(profile.id);});
-      author.append(authorLink);
-      author.append(node("small", "", (profile.username ? "@"+profile.username+" · " : "") + shortDate(post.created_at)));
-      head.append(author);
-      const visibility = node("span","badge",post.visibility==="private"?"Private":post.visibility==="followers"?"Followers":"Public");
-      head.append(visibility);
-      card.append(head);
-
-      if (post.body) card.append(node("p","post-body",post.body));
-      const mediaUrls = Array.isArray(post.media_urls) ? post.media_urls : [];
-      if (mediaUrls.length) {
-        const media = node("div","post-media");
-        mediaUrls.slice(0,10).forEach(raw => {
-          const url = safeUrl(raw);
-          if (!url) return;
-          const img = document.createElement("img");
-          img.src = url; img.alt = "Post image"; img.loading = "lazy"; img.referrerPolicy = "no-referrer";
-          img.onerror = () => img.remove();
-          media.append(img);
-        });
-        if (media.childNodes.length) card.append(media);
-      }
-
-      const actionBar = node("div","post-actions");
-      const liked = meta.likes.some(l=>l.user_id===currentUser?.id);
-      const likeButton = node("button","small-button"+(liked?" active":""),"♥ "+meta.likes.length);
-      likeButton.type = "button";
-      likeButton.setAttribute("aria-label",liked?"Unlike post":"Like post");
-      likeButton.addEventListener("click",()=>toggleLike(post,liked,likeButton));
-      actionBar.append(likeButton);
-
-      const commentButton = node("button","small-button","Comments "+meta.comments.length);
-      commentButton.type="button";
-      actionBar.append(commentButton);
-
-      const isSaved = savedIds.has(post.id);
-      const saveButton = node("button","small-button"+(isSaved?" active":""),isSaved?"Saved":"Save");
-      saveButton.type="button";
-      saveButton.addEventListener("click",()=>toggleBookmark(post.id,isSaved,saveButton));
-      actionBar.append(saveButton);
-
-      if (post.author_id === currentUser?.id) {
-        const pinButton = node("button","small-button"+(meta.pinned?" active":""),meta.pinned?"Unpin":"Pin");
-        pinButton.type="button";
-        pinButton.addEventListener("click",()=>togglePin(post,meta.pinned,pinButton));
-        actionBar.append(pinButton);
-
-        const deleteButton = node("button","small-button","Delete");
-        deleteButton.type="button";
-        deleteButton.addEventListener("click",()=>deletePost(post.id,card));
-        actionBar.append(deleteButton);
-      }
-      card.append(actionBar);
-
-      const details = node("div","post-details");
-      details.hidden = true;
-      const commentList = node("div","comment-list");
-      meta.comments.forEach(comment=>{
-        const row = node("div","comment");
-        const commentAuthor = meta.commentProfiles[comment.author_id] || {};
-        row.append(node("strong","",displayName(commentAuthor)+": "));
-        row.append(document.createTextNode(comment.body));
-        row.append(node("div","muted",shortDate(comment.created_at)));
-        commentList.append(row);
-      });
-      if (!meta.comments.length) commentList.append(node("p","muted","No comments yet."));
-      details.append(commentList);
-      if (currentUser) {
-        const form = node("form","comment-form");
-        const input = document.createElement("input");
-        input.maxLength=2000; input.required=true; input.placeholder="Write a comment…"; input.setAttribute("aria-label","Write a comment");
-        const submit = node("button","button primary","Send");
-        submit.type="submit";
-        form.append(input,submit);
-        form.addEventListener("submit",async event=>{
-          event.preventDefault();
-          const body=input.value.trim();
-          if (!body) return;
-          submit.disabled=true;
-          try {
-            const {error}=await db.from("comments").insert({post_id:post.id,author_id:currentUser.id,body});
-            if (error) throw error;
-            await loadFeed(container.id || "feedPosts");
-          } catch(error) { alert("Could not add comment: "+(error.message||"unknown error")); }
-          finally { submit.disabled=false; }
-        });
-        details.append(form);
-      } else {
-        details.append(node("p","muted","Sign in to comment."));
-      }
-      commentButton.addEventListener("click",()=>{details.hidden=!details.hidden;});
-      card.append(details);
-      return card;
-    }
-
-    async function toggleLike(post,liked,button) {
-      if (!currentUser) return alert("Please sign in to like posts.");
-      button.disabled=true;
-      try {
-        const result = liked
-          ? await db.from("post_likes").delete().eq("post_id",post.id).eq("user_id",currentUser.id)
-          : await db.from("post_likes").insert({post_id:post.id,user_id:currentUser.id});
-        if (result.error) throw result.error;
-        await refreshCurrentView();
-      } catch(error) { alert("Could not update like: "+(error.message||"unknown error")); }
-      finally { button.disabled=false; }
-    }
-
-    async function toggleBookmark(postId,isSaved,button) {
-      if (!currentUser) return alert("Please sign in to save posts.");
-      button.disabled=true;
-      try {
-        const result = isSaved
-          ? await db.from("bookmarks").delete().eq("post_id",postId).eq("user_id",currentUser.id)
-          : await db.from("bookmarks").insert({post_id:postId,user_id:currentUser.id});
-        if (result.error) throw result.error;
-        await loadSavedIds();
-        await refreshCurrentView();
-      } catch(error) { alert("Could not update saved posts: "+(error.message||"unknown error")); }
-      finally { button.disabled=false; }
-    }
-
-    async function togglePin(post,pinned,button) {
-      if (!currentUser) return;
-      button.disabled=true;
-      try {
-        if (pinned) {
-          const {error}=await db.from("pinned_posts").delete().eq("profile_id",currentUser.id).eq("post_id",post.id);
-          if (error) throw error;
-        } else {
-          const {count,error:countError}=await db.from("pinned_posts").select("post_id",{count:"exact",head:true}).eq("profile_id",currentUser.id);
-          if (countError) throw countError;
-          if ((count||0)>=3) throw new Error("You can pin up to three posts. Unpin one first.");
-          const {error}=await db.from("pinned_posts").insert({profile_id:currentUser.id,post_id:post.id,position:(count||0)+1});
-          if (error) throw error;
-        }
-        await refreshCurrentView();
-      } catch(error) { alert("Could not update pinned posts: "+(error.message||"unknown error")); }
-      finally { button.disabled=false; }
-    }
-
-    async function deletePost(postId,card) {
-      if (!currentUser || !confirm("Delete this post? This cannot be undone.")) return;
-      try {
-        const {error}=await db.from("posts").delete().eq("id",postId).eq("author_id",currentUser.id);
-        if (error) throw error;
-        card.remove();
-        await refreshCurrentView();
-      } catch(error) { alert("Could not delete post: "+(error.message||"unknown error")); }
-    }
-
-    async function loadSavedPosts() {
-      const container=$("savedPosts");
-      clear(container); container.append(node("div","empty-state","Loading saved posts…"));
-      try {
-        const {data,error}=await db.from("bookmarks").select("post_id,created_at").eq("user_id",currentUser.id).order("created_at",{ascending:false});
-        if (error) throw error;
-        const posts=await fetchPosts({postIds:(data||[]).map(r=>r.post_id)});
-        await renderPosts(container,posts);
-      } catch(error) {
-        clear(container); container.append(node("div","empty-state","Could not load saved posts: "+(error.message||"unknown error")));
-      }
-    }
-
-    async function renderMyProfile() {
-      const container=$("myProfileCard");
-      clear(container);
-      if (!currentProfile) return container.append(node("div","empty-state","Your profile hasn't loaded yet."));
-      renderProfileCard(container,currentProfile,true,{followers:0,following:followedIds.size});
-      try {
-        const {count,error}=await db.from("follows").select("follower_id",{count:"exact",head:true}).eq("following_id",currentUser.id);
-        if (!error) {
-          const stat=container.querySelector("[data-followers]");
-          if (stat) stat.textContent=String(count||0);
-        }
-      } catch {}
-    }
-
-    function renderProfileCard(container,profile,isOwn=false,stats={followers:0,following:0}) {
-      clear(container);
-      const banner=node("div","profile-banner");
-      const cover=safeUrl(profile.cover_url);
-      if (cover) {
-        const img=document.createElement("img"); img.src=cover; img.alt=""; img.loading="lazy"; img.referrerPolicy="no-referrer";
-        img.onerror=()=>img.remove(); banner.append(img);
-      }
-      container.append(banner);
-      const top=node("div","profile-top");
-      top.append(makeAvatar(profile));
-      const nameBlock=node("div");
-      nameBlock.append(node("h3","",displayName(profile)));
-      nameBlock.append(node("div","muted",profile.username?"@"+profile.username:"Username not set"));
-      top.append(nameBlock); container.append(top);
-      if (profile.pronouns) container.append(node("p","muted",profile.pronouns));
-      if (profile.bio) container.append(node("p","profile-bio",profile.bio));
-      const details=[];
-      if (profile.location) details.push("⌖ "+profile.location);
-      const website=safeUrl(profile.website);
-      if (website) details.push("↗ "+website);
-      if (details.length) {
-        const row=node("p","muted",details.join(" · "));
-        if (website) {
-          clear(row);
-          if (profile.location) row.append(document.createTextNode("⌖ "+profile.location+" · "));
-          const link=node("a","text-link",website); link.href=website; link.target="_blank"; link.rel="noopener noreferrer";
-          row.append(link);
-        }
-        container.append(row);
-      }
-      const statRow=node("div","profile-stats");
-      const followerStat=node("span");
-      followerStat.append(document.createTextNode("Followers "));
-      const followerNumber=node("strong","",String(stats.followers||0));
-      if (isOwn) followerNumber.dataset.followers="true";
-      followerStat.append(followerNumber);
-      statRow.append(followerStat);
-      const followingStat=node("span");
-      followingStat.append(document.createTextNode("Following "));
-      followingStat.append(node("strong","",String(stats.following||0)));
-      statRow.append(followingStat);
-      container.append(statRow);
-
-      if (!isOwn && currentUser && currentUser.id!==profile.id) {
-        const row=node("div","form-actions");
-        const following=followedIds.has(profile.id);
-        const followButton=node("button","button "+(following?"secondary":"primary"),following?"Following":"Follow");
-        followButton.type="button";
-        followButton.addEventListener("click",()=>toggleFollow(profile.id,followButton));
-        row.append(followButton);
-        const nudgeButton=node("button","button secondary","Send a nudge");
-        nudgeButton.type="button";
-        nudgeButton.addEventListener("click",()=>sendNudge(profile.id));
-        row.append(nudgeButton);
-        container.append(row);
-      }
-    }
-
-    async function toggleFollow(personId,button) {
-      if (!currentUser) return;
-      button.disabled=true;
-      const already=followedIds.has(personId);
-      try {
-        const result=already
-          ? await db.from("follows").delete().eq("follower_id",currentUser.id).eq("following_id",personId)
-          : await db.from("follows").insert({follower_id:currentUser.id,following_id:personId});
-        if (result.error) throw result.error;
-        if (already) followedIds.delete(personId); else followedIds.add(personId);
-        await openPerson(personId);
-      } catch(error) { alert("Could not update follow: "+(error.message||"unknown error")); }
-      finally { button.disabled=false; }
-    }
-
-    async function sendNudge(personId) {
-      const message=prompt("Send a friendly Grove nudge (optional, up to 160 characters):","Thinking of you — hello from Grove!");
-      if (message===null) return;
-      if (message.length>160) return alert("Nudges must be 160 characters or fewer.");
-      try {
-        const {error}=await db.from("nudges").insert({
-          sender_id:currentUser.id,recipient_id:personId,style:"hello",message:message.trim()
-        });
-        if (error) throw error;
-        alert("Your nudge was sent.");
-      } catch(error) {
-        alert("Could not send a nudge. "+(error.message||"Check your database policies."));
-      }
-    }
-
-    async function browseProfiles() {
-      const container=$("discoverResults");
-      clear(container); container.append(node("div","empty-state","Loading public profiles…"));
-      try {
-        const {data,error}=await db.from("profiles")
-          .select("id,username,display_name,bio,avatar_url,cover_url,pronouns,location,website,created_at")
-          .order("created_at",{ascending:false}).limit(30);
-        if (error) throw error;
-        renderDiscoverProfiles(container,data||[]);
-      } catch(error) {
-        clear(container); container.append(node("div","empty-state","Could not load profiles: "+(error.message||"unknown error")));
-      }
-    }
-    function renderDiscoverProfiles(container,profiles) {
-      clear(container);
-      const filtered=profiles.filter(p=>p.id!==currentUser?.id);
-      if (!filtered.length) return container.append(node("div","empty-state","No other profiles found yet."));
-      filtered.forEach(profile=>{
-        const card=node("div","profile-card");
-        card.append(makeAvatar(profile));
-        const info=node("div","profile-card-info");
-        info.append(node("strong","",displayName(profile)));
-        info.append(node("small","",profile.username?"@"+profile.username:"Grove member"));
-        if (profile.bio) info.append(node("p","",profile.bio));
-        card.append(info);
-        const view=node("button","small-button","View");
-        view.type="button";
-        view.addEventListener("click",()=>openPerson(profile.id));
-        card.append(view);
-        if (currentUser && profile.id!==currentUser.id) {
-          const follow=node("button","small-button",followedIds.has(profile.id)?"Following":"Follow");
-          follow.type="button";
-          follow.addEventListener("click",()=>toggleFollow(profile.id,follow));
-          card.append(follow);
-        }
-        container.append(card);
-      });
-    }
-
-    $("discoverForm").addEventListener("submit",async event=>{
-      event.preventDefault();
-      const term=$("discoverQuery").value.trim();
-      const container=$("discoverResults");
-      clear(container); container.append(node("div","empty-state","Searching…"));
-      if (!term) return browseProfiles();
-      try {
-        const escaped=term.replace(/[,%()]/g," ").trim();
-        const {data,error}=await db.from("profiles")
-          .select("id,username,display_name,bio,avatar_url,cover_url,pronouns,location,website,created_at")
-          .or("username.ilike.%"+escaped+"%,display_name.ilike.%"+escaped+"%")
-          .limit(30);
-        if (error) throw error;
-        renderDiscoverProfiles(container,data||[]);
-      } catch(error) {
-        clear(container); container.append(node("div","empty-state","Search failed: "+(error.message||"unknown error")));
-      }
-    });
-    $("browsePeople").addEventListener("click",browseProfiles);
-
-    async function openPerson(personId) {
-      if (!personId) return;
-      selectedPersonId=personId;
-      currentView="person";
-      document.querySelectorAll("[data-view]").forEach(button=>button.setAttribute("aria-pressed","false"));
-      document.querySelectorAll(".app-view").forEach(el=>el.classList.remove("is-visible"));
-      $("view-person").classList.add("is-visible");
-      $("personProfile").replaceChildren(node("div","empty-state","Loading profile…"));
-      $("personPosts").replaceChildren();
-      try {
-        const {data:profile,error}=await db.from("profiles")
-          .select("id,username,display_name,bio,avatar_url,cover_url,pronouns,location,website,created_at")
-          .eq("id",personId).maybeSingle();
-        if (error) throw error;
-        if (!profile) throw new Error("Profile not found.");
-        const [followerResult,followingResult]=await Promise.all([
-          db.from("follows").select("follower_id",{count:"exact",head:true}).eq("following_id",personId),
-          db.from("follows").select("following_id",{count:"exact",head:true}).eq("follower_id",personId)
-        ]);
-        renderProfileCard($("personProfile"),profile,false,{
-          followers:followerResult.count||0,following:followingResult.count||0
-        });
-        const posts=await fetchPosts({authorId:personId,includePrivate:personId===currentUser?.id});
-        await renderPosts($("personPosts"),posts);
-        location.hash="socialApp";
-        $("view-person").scrollIntoView({behavior:"smooth",block:"start"});
-      } catch(error) {
-        $("personProfile").replaceChildren(node("div","empty-state",error.message||"Could not load profile."));
-      }
-    }
-    window.addEventListener("hashchange",()=>{
-      const match=location.hash.match(/^#person-(.+)$/);
-      if (match) {
-        try { openPerson(decodeURIComponent(match[1])); } catch {}
-      }
-    });
-
-    async function loadActivity() {
-      const container=$("activityList");
-      clear(container); container.append(node("div","empty-state","Loading activity…"));
-      try {
-        const {data,error}=await db.from("notifications")
-          .select("id,recipient_id,actor_id,kind,post_id,message,created_at,read_at")
-          .eq("recipient_id",currentUser.id).order("created_at",{ascending:false}).limit(50);
-        if (error) throw error;
-        clear(container);
-        if (!data?.length) return container.append(node("div","empty-state","No activity yet. When notifications are available for your account, they'll appear here."));
-        const actors=await getProfiles(data.map(n=>n.actor_id));
-        data.forEach(notification=>{
-          const item=node("div","activity-item");
-          const actor=actors[notification.actor_id];
-          const title=notification.message || ({
-            like:"Someone liked your post.",
-            comment:"Someone commented on your post.",
-            follow:"Someone followed you.",
-            nudge:"You received a Grove nudge.",
-            mention:"You were mentioned.",
-            system:"Grove update."
-          }[notification.kind] || "New activity.");
-          item.append(node("p","",actor ? displayName(actor)+": "+title : title));
-          item.append(node("small","",shortDate(notification.created_at)+(notification.read_at?" · Read":" · Unread")));
-          if (!notification.read_at) {
-            const mark=node("button","small-button","Mark read");
-            mark.type="button";
-            mark.addEventListener("click",async()=>{
-              try {
-                const {error}=await db.from("notifications").update({read_at:new Date().toISOString()})
-                  .eq("id",notification.id).eq("recipient_id",currentUser.id);
-                if (error) throw error;
-                await loadActivity();
-              } catch(error) { alert("Could not mark as read: "+(error.message||"unknown error")); }
-            });
-            item.append(mark);
-          }
-          container.append(item);
-        });
-      } catch(error) {
-        clear(container);
-        container.append(node("div","empty-state","Could not load activity: "+(error.message||"unknown error")));
-      }
-    }
-    $("refreshActivity").addEventListener("click",loadActivity);
-
-    db.auth.getSession().then(async({data,error})=>{
-      if (error) {
-        showMessage(authMessage,"Could not check your session. Refresh and try again.");
-        return;
-      }
-      if (data.session?.user) await showSignedIn(data.session.user);
-    });
-
-    db.auth.onAuthStateChange((event,session)=>{
-      if (event==="SIGNED_OUT") {
-        showSignedOut();
-      } else if (event==="SIGNED_IN" && session?.user) {
-        // Avoid doing async Supabase work inside the auth callback itself.
-        setTimeout(()=>showSignedIn(session.user),0);
-      }
-    });
-  </script>
-</body>
-</html>
+    $("recoveryForm").addEventListener("submit
