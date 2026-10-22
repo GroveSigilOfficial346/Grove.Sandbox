@@ -4,16 +4,85 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#050019">
+  <meta name="description" content="Find your Grove. Connect with people, share what matters, and discover new interests.">
   <title>Grove — Find Your Grove</title>
   <link rel="stylesheet" href="/css/styles.css">
 </head>
 <body>
   <main class="grove-page">
-    <img
-      class="grove-design"
-      src="/grove-preview.png"
-      alt="Grove — Find your Grove. Connect, share, discover."
-    >
+    <header class="topbar">
+      <a class="nav-brand" href="/" aria-label="Grove home">grove<span>.</span></a>
+      <span class="nav-label">SOCIAL PLATFORM</span>
+    </header>
+
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="brand-lockup" aria-label="Grove">
+        <svg class="grove-symbol" viewBox="0 0 360 340" role="img" aria-label="Grove gradient symbol">
+          <defs>
+            <linearGradient id="grove-gradient" x1="10%" y1="0%" x2="85%" y2="100%">
+              <stop offset="0%" stop-color="#EB36ED"/>
+              <stop offset="30%" stop-color="#851EFF"/>
+              <stop offset="58%" stop-color="#353BFF"/>
+              <stop offset="82%" stop-color="#087DFF"/>
+              <stop offset="100%" stop-color="#05C9F4"/>
+            </linearGradient>
+            <radialGradient id="symbol-glow">
+              <stop offset="0%" stop-color="#851EFF" stop-opacity=".28"/>
+              <stop offset="100%" stop-color="#851EFF" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <ellipse cx="180" cy="165" rx="158" ry="158" fill="url(#symbol-glow)"/>
+          <path fill="url(#grove-gradient)" d="
+            M180 14
+            C164 14 149 22 132 32
+            L78 65
+            C54 80 40 102 40 130
+            L40 200
+            C40 239 70 272 119 292
+            C160 309 202 308 238 287
+            L269 269
+            C279 263 280 257 269 251
+            L205 212
+            C192 204 185 191 185 176
+            L185 112
+            C185 98 192 87 204 80
+            L224 67
+            C238 59 250 60 263 68
+            L286 83
+            C304 95 314 112 314 133
+            L314 207
+            C314 226 323 240 340 250
+            L347 254
+            C354 258 360 253 360 244
+            L360 126
+            C360 96 344 72 318 56
+            L232 20
+            C215 12 197 10 180 14
+            Z"/>
+        </svg>
+        <div class="wordmark">grove</div>
+      </div>
+
+      <div class="brand-rule" aria-hidden="true"></div>
+
+      <div class="hero-copy">
+        <h1 id="hero-title">Find your <span>Grove.</span></h1>
+        <p>
+          Connect with people, share what matters to you,<br class="desktop-break">
+          and discover new worlds of interest.
+        </p>
+      </div>
+
+      <p class="development-note">GROVE IS IN DEVELOPMENT</p>
+    </section>
+
+    <footer class="footer">
+      <span>CONNECT</span>
+      <i aria-hidden="true"></i>
+      <span>SHARE</span>
+      <i aria-hidden="true"></i>
+      <span>DISCOVER</span>
+    </footer>
   </main>
 </body>
 </html>
