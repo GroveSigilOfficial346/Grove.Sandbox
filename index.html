@@ -15,381 +15,67 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 
-  <link rel="stylesheet" href="/src/styles/main.css" />
-  <link rel="icon" type="image/png" href="/favicon.png" />
+  <link
+    rel="icon"
+    type="image/png"
+    href="/file_0000000051a881f69529cfe7da76c32c.png"
+  />
 
-  <style>
-    :root {
-      color-scheme: dark;
-      --grove-violet: #851eff;
-      --grove-blue: #353bff;
-      --grove-cyan: #05c9f4;
-      --grove-white: #f7f5ff;
-    }
-
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      background: #050019;
-    }
-
-    .loading-screen {
-      position: relative;
-      isolation: isolate;
-      min-height: 100vh;
-      display: grid;
-      place-items: center;
-      overflow: hidden;
-      padding: 32px 20px;
-      background:
-        radial-gradient(
-          ellipse at 50% 34%,
-          rgba(82, 28, 190, 0.18),
-          transparent 38%
-        ),
-        radial-gradient(
-          ellipse at 50% 65%,
-          rgba(53, 59, 255, 0.08),
-          transparent 55%
-        ),
-        #050019;
-      color: var(--grove-white);
-      font-family: Inter, ui-sans-serif, system-ui, -apple-system, sans-serif;
-      text-align: center;
-    }
-
-    .ambient-light {
-      position: absolute;
-      z-index: -1;
-      width: min(80vw, 600px);
-      height: 300px;
-      top: 12%;
-      left: 50%;
-      transform: translateX(-50%);
-      border-radius: 50%;
-      background: rgba(133, 30, 255, 0.12);
-      filter: blur(100px);
-      pointer-events: none;
-    }
-
-    .loading-content {
-      width: 100%;
-      max-width: 500px;
-      animation: reveal 1s ease-out both;
-    }
-
-    .brand-mark {
-      position: relative;
-      display: inline-block;
-      margin-bottom: 8px;
-    }
-
-    .brand-mark::before {
-      content: "";
-      position: absolute;
-      z-index: -1;
-      top: 50%;
-      left: 50%;
-      width: 115%;
-      height: 130%;
-      transform: translate(-50%, -50%);
-      border-radius: 50%;
-      background: linear-gradient(
-        90deg,
-        rgba(133, 30, 255, 0.27),
-        rgba(53, 59, 255, 0.2),
-        rgba(5, 201, 244, 0.2)
-      );
-      filter: blur(34px);
-      animation: brand-pulse 4s ease-in-out infinite;
-    }
-
-    .brand-title {
-      margin: 0;
-      padding-left: 0.2em;
-      font-size: clamp(3.2rem, 12vw, 5.8rem);
-      font-weight: 850;
-      line-height: 1.12;
-      letter-spacing: 0.2em;
-      background: linear-gradient(
-        105deg,
-        #f7f5ff 5%,
-        #d8b5ff 25%,
-        #a45aff 48%,
-        #777aff 69%,
-        #79efff 95%
-      );
-      background-clip: text;
-      -webkit-background-clip: text;
-      color: transparent;
-      -webkit-text-fill-color: transparent;
-      filter: drop-shadow(0 0 5px rgba(190, 112, 255, 0.65))
-              drop-shadow(0 0 18px rgba(133, 30, 255, 0.5))
-              drop-shadow(0 0 38px rgba(53, 59, 255, 0.25));
-    }
-
-    .brand-rule {
-      width: 100px;
-      height: 2px;
-      margin: 20px auto 0;
-      border-radius: 999px;
-      background: linear-gradient(
-        90deg,
-        transparent,
-        var(--grove-violet),
-        var(--grove-cyan),
-        transparent
-      );
-      box-shadow:
-        0 0 8px rgba(133, 30, 255, 0.8),
-        0 0 18px rgba(5, 201, 244, 0.35);
-    }
-
-    .loading-message {
-      margin: 18px 0 0;
-      color: #b8b2d0;
-      font-size: 0.9rem;
-      letter-spacing: 0.03em;
-    }
-
-    .development-card {
-      position: relative;
-      margin-top: 44px;
-      padding: 24px;
-      overflow: hidden;
-      border: 1px solid rgba(167, 91, 255, 0.7);
-      border-radius: 18px;
-      background:
-        radial-gradient(
-          ellipse at 0% 0%,
-          rgba(133, 30, 255, 0.2),
-          transparent 62%
-        ),
-        radial-gradient(
-          ellipse at 100% 100%,
-          rgba(53, 59, 255, 0.14),
-          transparent 60%
-        ),
-        rgba(12, 5, 39, 0.96);
-      box-shadow:
-        0 0 5px rgba(133, 30, 255, 0.65),
-        0 0 16px rgba(133, 30, 255, 0.4),
-        0 0 38px rgba(133, 30, 255, 0.22),
-        0 0 75px rgba(53, 59, 255, 0.12),
-        inset 0 0 25px rgba(133, 30, 255, 0.09);
-      text-align: left;
-      animation: card-pulse 4s ease-in-out infinite;
-    }
-
-    .development-card::before {
-      content: "";
-      position: absolute;
-      top: 0;
-      left: 12%;
-      right: 12%;
-      height: 1px;
-      background: linear-gradient(
-        90deg,
-        transparent,
-        #c69aff,
-        #05c9f4,
-        transparent
-      );
-      box-shadow: 0 0 12px rgba(133, 30, 255, 0.9);
-    }
-
-    .status-label {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin: 0 0 12px;
-      color: #d7b5ff;
-      font-size: 0.72rem;
-      font-weight: 750;
-      letter-spacing: 0.16em;
-      text-transform: uppercase;
-    }
-
-    .status-dot {
-      position: relative;
-      flex: 0 0 8px;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: var(--grove-cyan);
-      box-shadow:
-        0 0 7px var(--grove-cyan),
-        0 0 15px rgba(5, 201, 244, 0.85),
-        0 0 25px rgba(5, 201, 244, 0.4);
-    }
-
-    .status-dot::after {
-      content: "";
-      position: absolute;
-      inset: -5px;
-      border: 1px solid rgba(5, 201, 244, 0.55);
-      border-radius: 50%;
-      animation: dot-pulse 2s ease-out infinite;
-    }
-
-    .status-heading {
-      margin: 0 0 9px;
-      color: #fff;
-      font-size: 1.05rem;
-      font-weight: 700;
-      line-height: 1.5;
-      text-shadow:
-        0 0 12px rgba(183, 120, 255, 0.28),
-        0 0 25px rgba(133, 30, 255, 0.15);
-    }
-
-    .status-description {
-      margin: 0;
-      color: #c2badb;
-      font-size: 0.9rem;
-      line-height: 1.8;
-    }
-
-    .brand-tagline {
-      margin: 30px 0 0;
-      color: #8980a8;
-      font-size: 0.7rem;
-      font-weight: 600;
-      letter-spacing: 0.24em;
-    }
-
-    @keyframes reveal {
-      from {
-        opacity: 0;
-        transform: translateY(12px);
-      }
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes brand-pulse {
-      0%, 100% {
-        opacity: 0.65;
-        filter: blur(34px);
-      }
-      50% {
-        opacity: 1;
-        filter: blur(42px);
-      }
-    }
-
-    @keyframes card-pulse {
-      0%, 100% {
-        box-shadow:
-          0 0 5px rgba(133, 30, 255, 0.55),
-          0 0 16px rgba(133, 30, 255, 0.32),
-          0 0 38px rgba(133, 30, 255, 0.16),
-          0 0 75px rgba(53, 59, 255, 0.08),
-          inset 0 0 25px rgba(133, 30, 255, 0.07);
-      }
-      50% {
-        box-shadow:
-          0 0 8px rgba(133, 30, 255, 0.8),
-          0 0 23px rgba(133, 30, 255, 0.48),
-          0 0 48px rgba(133, 30, 255, 0.26),
-          0 0 90px rgba(53, 59, 255, 0.15),
-          inset 0 0 30px rgba(133, 30, 255, 0.12);
-      }
-    }
-
-    @keyframes dot-pulse {
-      0% {
-        transform: scale(0.8);
-        opacity: 0.9;
-      }
-      100% {
-        transform: scale(1.8);
-        opacity: 0;
-      }
-    }
-
-    @media (max-width: 480px) {
-      .loading-screen {
-        padding: 28px 18px;
-      }
-
-      .development-card {
-        margin-top: 36px;
-        padding: 20px;
-      }
-
-      .brand-title {
-        letter-spacing: 0.16em;
-      }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      *,
-      *::before,
-      *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        scroll-behavior: auto !important;
-      }
-    }
-  </style>
+  <link rel="stylesheet" href="/css/main.css" />
 </head>
 
 <body>
-  <div id="root">
-    <main class="loading-screen">
-      <div class="ambient-light" aria-hidden="true"></div>
+  <main class="coming-soon">
+    <div class="background-glow" aria-hidden="true"></div>
 
-      <div class="loading-content">
-        <header class="brand-mark">
-          <h1 class="brand-title">GROVE</h1>
-        </header>
+    <div class="page-content">
+      <header class="brand">
+        <p class="brand-eyebrow">A NEW WORLD IS GROWING</p>
 
-        <div class="brand-rule" aria-hidden="true"></div>
+        <h1 class="brand-title">GROVE</h1>
 
-        <p class="loading-message">Preparing your world...</p>
+        <div class="brand-divider" aria-hidden="true"></div>
 
-        <section
-          class="development-card"
-          aria-label="Development status"
-        >
-          <p class="status-label">
-            <span class="status-dot" aria-hidden="true"></span>
-            Development Status
-          </p>
-
-          <h2 class="status-heading">
-            Grove is actively being developed.
-          </h2>
-
-          <p class="status-description">
-            We're improving the platform and working to restore and refine
-            its features. Thank you for your patience as Grove continues
-            to grow.
-          </p>
-        </section>
-
-        <p class="brand-tagline">
-          CONNECT <span aria-hidden="true">·</span>
-          SHARE <span aria-hidden="true">·</span>
-          DISCOVER
+        <p class="brand-subtitle">
+          Your world. Your people. Your Grove.
         </p>
-      </div>
-    </main>
-  </div>
+      </header>
+
+      <section class="status-card" aria-labelledby="status-heading">
+        <div class="status-label">
+          <span class="status-indicator" aria-hidden="true"></span>
+          <span>Development Status</span>
+        </div>
+
+        <h2 id="status-heading">
+          Something new is taking root.
+        </h2>
+
+        <p class="status-description">
+          Grove is being built into a place to connect, share your world,
+          discover new people, and build communities. We're working behind
+          the scenes to bring the experience to life.
+        </p>
+
+        <div class="status-footer">
+          <span class="status-line" aria-hidden="true"></span>
+          <span>THE NEXT CHAPTER IS GROWING</span>
+          <span class="status-line" aria-hidden="true"></span>
+        </div>
+      </section>
+
+      <footer class="page-footer">
+        <p>CONNECT <span>·</span> SHARE <span>·</span> DISCOVER</p>
+        <span class="footer-brand">GROVE</span>
+      </footer>
+    </div>
+  </main>
 
   <noscript>
-    <div style="padding: 24px; text-align: center; color: #f7f5ff; background: #050019;">
+    <p class="noscript-message">
       Grove requires JavaScript to run. Please enable JavaScript in your browser.
-    </div>
+    </p>
   </noscript>
-
-  <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
 ```
