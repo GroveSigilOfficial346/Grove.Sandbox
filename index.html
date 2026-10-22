@@ -33,36 +33,85 @@
         text-align: center;
       "
     >
-      <div style="max-width: 480px;">
-        <h1 style="letter-spacing: 0.18em;">GROVE</h1>
+      <div style="width: 100%; max-width: 480px;">
+        <h1
+          style="
+            margin: 0;
+            letter-spacing: 0.22em;
+            font-size: clamp(2rem, 7vw, 3rem);
+            text-shadow:
+              0 0 18px rgba(133, 30, 255, 0.3),
+              0 0 38px rgba(53, 59, 255, 0.16);
+          "
+        >
+          GROVE
+        </h1>
 
-        <p>Preparing your world...</p>
+        <p style="color: #b8b2d0; margin: 14px 0 0;">
+          Preparing your world...
+        </p>
 
         <section
           aria-label="Development status"
           style="
             margin-top: 40px;
-            padding: 18px 22px;
-            border: 1px solid rgba(133, 30, 255, 0.28);
-            border-radius: 14px;
-            background: rgba(133, 30, 255, 0.07);
+            padding: 22px 24px;
+            border: 1px solid rgba(133, 30, 255, 0.48);
+            border-radius: 16px;
+            background:
+              radial-gradient(
+                ellipse at top left,
+                rgba(133, 30, 255, 0.13),
+                transparent 70%
+              ),
+              rgba(10, 5, 35, 0.88);
+            box-shadow:
+              0 0 12px rgba(133, 30, 255, 0.12),
+              0 0 30px rgba(53, 59, 255, 0.09),
+              inset 0 0 18px rgba(133, 30, 255, 0.04);
             text-align: left;
           "
         >
           <p
             style="
-              margin: 0 0 8px;
+              display: flex;
+              align-items: center;
+              gap: 9px;
+              margin: 0 0 10px;
               color: #c9a7ff;
               font-size: 0.75rem;
               font-weight: 700;
               letter-spacing: 0.14em;
               text-transform: uppercase;
+              text-shadow: 0 0 12px rgba(168, 85, 247, 0.45);
             "
           >
+            <span
+              aria-hidden="true"
+              style="
+                display: inline-block;
+                flex-shrink: 0;
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: #05c9f4;
+                box-shadow:
+                  0 0 8px #05c9f4,
+                  0 0 16px rgba(5, 201, 244, 0.45);
+              "
+            ></span>
             Development Status
           </p>
 
-          <p style="margin: 0 0 8px; font-size: 1rem; font-weight: 600;">
+          <p
+            style="
+              margin: 0 0 8px;
+              color: #f7f5ff;
+              font-size: 1rem;
+              font-weight: 600;
+              text-shadow: 0 0 16px rgba(133, 30, 255, 0.22);
+            "
+          >
             Grove is actively being developed.
           </p>
 
@@ -71,7 +120,7 @@
               margin: 0;
               color: #b8b2d0;
               font-size: 0.9rem;
-              line-height: 1.65;
+              line-height: 1.7;
             "
           >
             We're improving the platform and working to restore and refine
@@ -79,6 +128,17 @@
             to grow.
           </p>
         </section>
+
+        <p
+          style="
+            margin: 28px 0 0;
+            color: #77718f;
+            font-size: 0.75rem;
+            letter-spacing: 0.04em;
+          "
+        >
+          CONNECT · SHARE · DISCOVER
+        </p>
       </div>
     </main>
   </div>
