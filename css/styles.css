@@ -1,12 +1,6 @@
 :root {
   color-scheme: dark;
-  --bg: #050019;
-  --violet: #851eff;
-  --magenta: #eb36ed;
-  --blue: #353bff;
-  --cyan: #05c9f4;
-  --white: #f7f5ff;
-  --muted: #c0b9dd;
+  background: #050019;
 }
 
 * {
@@ -18,335 +12,45 @@ body {
   width: 100%;
   min-height: 100%;
   margin: 0;
-  background: var(--bg);
+  background: #050019;
 }
 
 body {
   min-width: 320px;
-  min-height: 100vh;
-  color: var(--white);
-  font-family: Inter, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    sans-serif;
-  -webkit-font-smoothing: antialiased;
-  text-rendering: optimizeLegibility;
 }
 
 .grove-page {
-  position: relative;
-  isolation: isolate;
   display: flex;
-  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  width: 100%;
   min-height: 100vh;
   min-height: 100svh;
-  overflow: hidden;
-  padding: 0 0;
-  background:
-    radial-gradient(ellipse at 50% 30%, rgba(56, 13, 151, .27), transparent 43%),
-    radial-gradient(ellipse at 50% 75%, rgba(44, 15, 115, .18), transparent 45%),
-    linear-gradient(180deg, #07021d 0%, #050019 68%, #030014 100%);
-}
-
-.grove-page::before {
-  content: "";
-  position: absolute;
-  z-index: -3;
-  top: -22%;
-  left: 50%;
-  width: min(60vw, 900px);
-  aspect-ratio: 1;
-  transform: translateX(-50%);
-  border: 1px solid rgba(69, 42, 255, .25);
-  border-radius: 50%;
-  box-shadow:
-    0 0 65px rgba(70, 28, 255, .08),
-    inset 0 0 70px rgba(70, 28, 255, .05);
-  pointer-events: none;
-}
-
-.grove-page::after {
-  content: "";
-  position: absolute;
-  z-index: -2;
-  right: -10%;
-  bottom: 8%;
-  left: -10%;
-  height: 26%;
-  background:
-    radial-gradient(ellipse at 50% 90%, rgba(133, 30, 255, .2), transparent 36%),
-    radial-gradient(ellipse at 55% 88%, rgba(5, 201, 244, .12), transparent 48%);
-  filter: blur(22px);
-  pointer-events: none;
-}
-
-.topbar {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  min-height: 72px;
-  padding: 0 3.2%;
-  border-bottom: 1px solid rgba(220, 204, 255, .18);
-}
-
-.nav-brand {
-  color: var(--white);
-  font-size: 1.65rem;
-  font-weight: 780;
-  letter-spacing: -.085em;
-  text-decoration: none;
-}
-
-.nav-brand span {
-  color: var(--cyan);
-}
-
-.nav-label {
-  color: #c6b9ff;
-  font-size: .65rem;
-  font-weight: 500;
-  letter-spacing: .24em;
-}
-
-.hero {
-  position: relative;
-  z-index: 1;
-  display: flex;
-  flex: 1;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  padding: 34px 22px 40px;
-  text-align: center;
-  animation: fade-in 800ms ease-out both;
-}
-
-.brand-lockup {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
-
-.grove-symbol {
-  display: block;
-  width: clamp(175px, 20vw, 245px);
-  height: auto;
-  overflow: visible;
-  filter:
-    drop-shadow(0 0 15px rgba(133, 30, 255, .32))
-    drop-shadow(0 0 35px rgba(53, 59, 255, .18));
-}
-
-.wordmark {
-  margin-top: -5px;
-  color: #fbfaff;
-  font-size: clamp(5.4rem, 10.8vw, 8rem);
-  font-weight: 790;
-  letter-spacing: -.085em;
-  line-height: .98;
-  text-indent: -.085em;
-  text-shadow: 0 0 32px rgba(182, 160, 255, .1);
-}
-
-.brand-rule {
-  width: 74px;
-  height: 2px;
-  margin-top: 24px;
-  border-radius: 99px;
-  background: linear-gradient(90deg, var(--magenta), var(--violet), var(--blue), var(--cyan));
-  box-shadow: 0 0 14px rgba(133, 30, 255, .4);
-}
-
-.hero-copy {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-top: 28px;
-}
-
-.hero-copy h1 {
   margin: 0;
-  color: #ded8f0;
-  font-size: clamp(1.4rem, 2.7vw, 1.95rem);
-  font-weight: 430;
-  letter-spacing: .055em;
-  line-height: 1.4;
+  padding: 0;
+  overflow: hidden;
+  background: #050019;
 }
 
-.hero-copy h1 span {
-  background: linear-gradient(100deg, #d53cff, #9272ff 50%, #05c9f4);
-  background-clip: text;
-  -webkit-background-clip: text;
-  color: transparent;
-  font-weight: 650;
-}
-
-.hero-copy p {
-  max-width: 520px;
-  margin: 18px 0 0;
-  color: var(--muted);
-  font-size: clamp(.94rem, 1.5vw, 1.08rem);
-  font-weight: 400;
-  line-height: 1.85;
-  text-wrap: balance;
-}
-
-.development-note {
-  margin: 32px 0 0;
-  color: #aa98dc;
-  font-size: .67rem;
-  font-weight: 600;
-  letter-spacing: .23em;
-}
-
-.footer {
-  position: relative;
-  z-index: 2;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 19px;
-  min-height: 68px;
-  border-top: 1px solid rgba(220, 204, 255, .18);
-  color: #c6b9ff;
-  font-size: .62rem;
-  font-weight: 550;
-  letter-spacing: .2em;
-}
-
-.footer i {
+.grove-preview {
   display: block;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
-  background: var(--cyan);
-  box-shadow: 0 0 9px rgba(5, 201, 244, .65);
-}
-
-@keyframes fade-in {
-  from {
-    opacity: 0;
-    transform: translateY(8px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  width: 100%;
+  max-width: 1536px;
+  height: auto;
+  margin: 0 auto;
+  object-fit: contain;
+  object-position: top center;
 }
 
 @media (max-width: 600px) {
-  .topbar {
-    min-height: 68px;
-    padding: 0 22px;
+  .grove-page {
+    min-height: 100svh;
   }
 
-  .nav-brand {
-    font-size: 1.45rem;
-  }
-
-  .nav-label {
-    font-size: .5rem;
-    letter-spacing: .13em;
-  }
-
-  .hero {
-    padding: 35px 22px 40px;
-  }
-
-  .grove-symbol {
-    width: clamp(155px, 44vw, 195px);
-  }
-
-  .wordmark {
-    font-size: clamp(5rem, 19vw, 6.7rem);
-  }
-
-  .brand-rule {
-    margin-top: 20px;
-  }
-
-  .hero-copy {
-    margin-top: 24px;
-  }
-
-  .hero-copy h1 {
-    font-size: clamp(1.25rem, 5vw, 1.55rem);
-  }
-
-  .hero-copy p {
-    max-width: 345px;
-    margin-top: 12px;
-    font-size: .9rem;
-    line-height: 1.8;
-  }
-
-  .desktop-break {
-    display: none;
-  }
-
-  .development-note {
-    margin-top: 25px;
-    font-size: .57rem;
-    letter-spacing: .15em;
-  }
-
-  .footer {
-    min-height: 60px;
-    gap: 10px;
-    font-size: .51rem;
-    letter-spacing: .12em;
-  }
-
-  .footer i {
-    width: 4px;
-    height: 4px;
-  }
-
-  .grove-page::before {
-    top: -4%;
-    width: 115vw;
-  }
-}
-
-@media (max-height: 760px) and (min-width: 601px) {
-  .topbar {
-    min-height: 64px;
-  }
-
-  .hero {
-    padding-top: 18px;
-    padding-bottom: 22px;
-  }
-
-  .grove-symbol {
-    width: 160px;
-  }
-
-  .wordmark {
-    font-size: 5.6rem;
-  }
-
-  .brand-rule {
-    margin-top: 15px;
-  }
-
-  .hero-copy {
-    margin-top: 18px;
-  }
-
-  .hero-copy p {
-    margin-top: 10px;
-  }
-
-  .development-note {
-    margin-top: 20px;
-  }
-
-  .footer {
-    min-height: 54px;
+  .grove-preview {
+    width: 100%;
+    height: auto;
+    object-fit: contain;
   }
 }
 
