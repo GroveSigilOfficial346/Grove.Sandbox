@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#050019">
   <meta name="description" content="Grove — Program or be programmed. A world connected.">
   <title>GROVE — A World Connected</title>
@@ -16,43 +16,103 @@
       --white: #f7f5ff;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     html, body {
-      width: 100%;
-      min-height: 100%;
       margin: 0;
+      min-height: 100%;
+      background: var(--night);
+      color: var(--white);
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
     }
 
     body {
       min-height: 100svh;
       overflow: hidden;
-      background:
-        radial-gradient(ellipse at 50% 43%, #160635 0%, #09021f 42%, var(--night) 78%);
-      color: var(--white);
-      font-family: Inter, "Segoe UI", Arial, sans-serif;
     }
 
-    #universe {
+    .scene {
       position: fixed;
       inset: 0;
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse at 50% 53%, #21104a 0%, #10062c 34%, #08021d 66%, #050019 100%);
+    }
+
+    .stars {
+      position: absolute;
+      inset: 0;
+      opacity: .7;
+      background-image:
+        radial-gradient(1px 1px at 12% 20%, #fff 50%, transparent 100%),
+        radial-gradient(1px 1px at 83% 17%, #bcaaff 50%, transparent 100%),
+        radial-gradient(2px 2px at 74% 38%, #fff 50%, transparent 100%),
+        radial-gradient(1px 1px at 21% 58%, #c7baff 50%, transparent 100%),
+        radial-gradient(1px 1px at 89% 72%, #fff 50%, transparent 100%),
+        radial-gradient(1px 1px at 35% 12%, #fff 50%, transparent 100%),
+        radial-gradient(2px 2px at 61% 82%, #a6eaff 50%, transparent 100%),
+        radial-gradient(1px 1px at 8% 83%, #fff 50%, transparent 100%),
+        radial-gradient(1px 1px at 46% 28%, #bba5ff 50%, transparent 100%),
+        radial-gradient(1px 1px at 94% 48%, #bba5ff 50%, transparent 100%);
+    }
+
+    .nebula {
+      position: absolute;
       width: 100%;
       height: 100%;
-      pointer-events: none;
-    }
-
-    .atmosphere {
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
       background:
-        radial-gradient(ellipse at 50% 52%, transparent 15%, #05001966 75%),
-        linear-gradient(180deg, #05001955, transparent 40%, #050019aa);
+        radial-gradient(ellipse at 50% 55%, #851eff20, transparent 42%),
+        radial-gradient(ellipse at 28% 48%, #353bff12, transparent 38%),
+        radial-gradient(ellipse at 73% 50%, #05c9f410, transparent 38%);
+      animation: nebula 12s ease-in-out infinite alternate;
     }
 
-    main {
+    .tree-wrap {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+    }
+
+    .tree {
+      position: absolute;
+      width: min(112vw, 1050px);
+      height: min(105vh, 900px);
+      max-width: none;
+      top: 48%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      overflow: visible;
+      animation: treeReveal 2.2s ease-out both;
+    }
+
+    .tree-halo {
+      position: absolute;
+      width: min(95vw, 760px);
+      aspect-ratio: 1;
+      top: 47%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      border-radius: 50%;
+      background: radial-gradient(circle, #851eff1c 0%, #851eff08 42%, transparent 70%);
+      animation: breathe 7s ease-in-out infinite;
+    }
+
+    .ground-light {
+      position: absolute;
+      left: 50%;
+      top: 76%;
+      transform: translateX(-50%);
+      width: min(95vw, 720px);
+      height: 120px;
+      border-radius: 50%;
+      background: radial-gradient(ellipse, #851eff3a 0%, #05c9f415 40%, transparent 72%);
+      filter: blur(15px);
+    }
+
+    .content {
       position: relative;
       z-index: 2;
       min-height: 100svh;
@@ -60,396 +120,347 @@
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      padding: 30px 20px;
       text-align: center;
-    }
-
-    .identity {
-      position: relative;
-      z-index: 3;
-      margin-top: min(5vh, 35px);
-      animation: reveal 1.6s ease both;
+      padding: 30px 20px;
     }
 
     .brand {
       margin: 0;
-      font-size: clamp(3.5rem, 11vw, 7.5rem);
-      font-weight: 800;
-      letter-spacing: 0.22em;
-      padding-left: 0.22em;
+      font-size: clamp(3.8rem, 11vw, 7.8rem);
       line-height: 1;
+      font-weight: 800;
+      letter-spacing: .24em;
+      padding-left: .24em;
       text-shadow:
-        0 0 24px #851eff55,
-        0 0 70px #851eff22;
+        0 0 30px #851eff35,
+        0 0 80px #851eff1a;
+      animation: textReveal 1.7s ease both;
     }
 
     .motto {
-      margin: 24px 0 0;
-      font-size: clamp(0.72rem, 2vw, 0.95rem);
-      letter-spacing: 0.28em;
+      margin: 25px 0 0;
+      font-size: clamp(.68rem, 1.8vw, .9rem);
+      letter-spacing: .27em;
       font-weight: 600;
-      color: #e4d6ff;
+      color: #e5dcff;
+      animation: textReveal 2s ease both;
     }
 
     .tagline {
-      margin: 12px 0 0;
-      color: #a99bc8;
-      font-size: 0.68rem;
-      letter-spacing: 0.38em;
+      margin: 13px 0 0;
+      color: #a69bc6;
+      font-size: .66rem;
+      letter-spacing: .4em;
       text-transform: uppercase;
+      animation: textReveal 2.3s ease both;
     }
 
-    .status {
+    .coming {
+      position: absolute;
+      bottom: 12%;
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 11px;
-      margin-top: clamp(36px, 7vh, 64px);
-      color: #d9d0ef;
-      font-size: 0.7rem;
+      gap: 13px;
+      color: #e4def5;
+      font-size: .68rem;
       font-weight: 500;
-      letter-spacing: 0.34em;
+      letter-spacing: .35em;
       text-transform: uppercase;
-      animation: reveal 2s ease both;
+      animation: textReveal 2.8s ease both;
     }
 
-    .status::before,
-    .status::after {
+    .coming::before,
+    .coming::after {
       content: "";
-      width: 25px;
+      display: block;
+      width: 28px;
       height: 1px;
       background: linear-gradient(90deg, transparent, var(--cyan));
-      opacity: 0.8;
     }
 
-    .status::after {
+    .coming::after {
       transform: rotate(180deg);
     }
 
-    .signal {
-      position: fixed;
-      bottom: 24px;
+    .footer {
+      position: absolute;
+      bottom: 25px;
       left: 0;
       right: 0;
-      z-index: 3;
+      color: #74668f;
       text-align: center;
-      font-size: 0.58rem;
-      letter-spacing: 0.24em;
-      color: #81749f;
+      font-size: .57rem;
+      letter-spacing: .23em;
       text-transform: uppercase;
-      animation: reveal 3s ease both;
     }
 
-    .signal span {
+    .footer span {
       color: var(--cyan);
       text-shadow: 0 0 12px #05c9f488;
     }
 
-    @keyframes reveal {
+    @keyframes breathe {
+      from { opacity: .55; transform: translate(-50%, -50%) scale(.94); }
+      to { opacity: 1; transform: translate(-50%, -50%) scale(1.07); }
+    }
+
+    @keyframes nebula {
+      from { opacity: .65; }
+      to { opacity: 1; }
+    }
+
+    @keyframes treeReveal {
+      from { opacity: 0; transform: translate(-50%, -47%) scale(.97); }
+      to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    }
+
+    @keyframes textReveal {
       from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    @media (max-width: 520px) {
+    @media (max-width: 600px) {
+      .tree {
+        width: 155vw;
+        height: 90vh;
+        top: 47%;
+      }
+
       .brand {
-        letter-spacing: 0.14em;
-        padding-left: 0.14em;
+        letter-spacing: .16em;
+        padding-left: .16em;
       }
 
       .motto {
-        letter-spacing: 0.18em;
+        letter-spacing: .16em;
       }
 
       .tagline {
-        letter-spacing: 0.25em;
+        letter-spacing: .28em;
       }
 
-      .status {
-        letter-spacing: 0.23em;
+      .coming {
+        bottom: 14%;
+        letter-spacing: .26em;
       }
+    }
+
+    @media (max-height: 650px) {
+      .tree { height: 120vh; }
+      .brand { font-size: clamp(3rem, 9vw, 6rem); }
+      .coming { bottom: 9%; }
     }
 
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
-        animation-duration: 0.01ms !important;
-        animation-iteration-count: 1 !important;
-        scroll-behavior: auto !important;
+        animation: none !important;
       }
     }
   </style>
 </head>
 
 <body>
-  <canvas id="universe" aria-hidden="true"></canvas>
-  <div class="atmosphere" aria-hidden="true"></div>
+  <div class="scene" aria-hidden="true">
+    <div class="stars"></div>
+    <div class="nebula"></div>
+    <div class="tree-halo"></div>
 
-  <main>
-    <section class="identity" aria-label="Grove">
-      <h1 class="brand">GROVE</h1>
-      <p class="motto">PROGRAM OR BE PROGRAMMED.</p>
-      <p class="tagline">A World Connected</p>
-    </section>
+    <div class="tree-wrap">
+      <svg class="tree" viewBox="0 0 900 900" preserveAspectRatio="xMidYMid meet"
+           xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="trunk" x1="0" y1="1" x2="0.7" y2="0">
+            <stop offset="0%" stop-color="#851eff"/>
+            <stop offset="45%" stop-color="#a63eff"/>
+            <stop offset="100%" stop-color="#05c9f4"/>
+          </linearGradient>
 
-    <div class="status">Coming Soon</div>
-  </main>
+          <linearGradient id="roots" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#eb36ed"/>
+            <stop offset="100%" stop-color="#851eff"/>
+          </linearGradient>
 
-  <div class="signal">
-    The network is growing <span>●</span>
+          <linearGradient id="branches" x1="0" y1="1" x2="1" y2="0">
+            <stop offset="0%" stop-color="#851eff"/>
+            <stop offset="55%" stop-color="#5965ff"/>
+            <stop offset="100%" stop-color="#05c9f4"/>
+          </linearGradient>
+
+          <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="5" result="blur"/>
+            <feMerge>
+              <feMergeNode in="blur"/>
+              <feMergeNode in="SourceGraphic"/>
+            </feMerge>
+          </filter>
+
+          <filter id="softGlow" x="-80%" y="-80%" width="260%" height="260%">
+            <feGaussianBlur stdDeviation="15"/>
+          </filter>
+        </defs>
+
+        <!-- Atmospheric silhouette behind the tree -->
+        <g fill="none" stroke="#851eff" opacity=".12" filter="url(#softGlow)">
+          <path d="M450 720 C410 600 465 500 450 380 C430 280 350 230 270 175"
+                stroke-width="38"/>
+          <path d="M450 430 C510 330 585 255 685 205"
+                stroke-width="28"/>
+        </g>
+
+        <!-- Main trunk -->
+        <g fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M450 750
+                   C435 660 467 585 448 510
+                   C430 430 457 355 449 270
+                   C446 230 449 195 450 155"
+                stroke="url(#trunk)" stroke-width="15" opacity=".22"
+                filter="url(#softGlow)"/>
+
+          <path d="M450 750
+                   C435 660 467 585 448 510
+                   C430 430 457 355 449 270
+                   C446 230 449 195 450 155"
+                stroke="url(#trunk)" stroke-width="7" filter="url(#glow)"/>
+
+          <path d="M449 568 C405 520 370 478 344 424
+                   C324 382 290 358 251 344"
+                stroke="url(#branches)" stroke-width="6" filter="url(#glow)"/>
+
+          <path d="M451 516 C501 466 535 410 550 352
+                   C566 299 607 267 650 243"
+                stroke="url(#branches)" stroke-width="6" filter="url(#glow)"/>
+
+          <path d="M450 426 C405 375 399 329 402 283
+                   C404 246 388 211 360 183"
+                stroke="url(#branches)" stroke-width="5"/>
+
+          <path d="M450 360 C489 324 510 280 506 237
+                   C503 207 519 180 542 156"
+                stroke="url(#branches)" stroke-width="5"/>
+
+          <!-- Left canopy -->
+          <path d="M344 424 C316 380 300 331 301 285
+                   C302 247 281 220 251 204"
+                stroke="url(#branches)" stroke-width="4"/>
+
+          <path d="M302 303 C262 283 231 249 221 211
+                   C214 184 197 166 173 151"
+                stroke="url(#branches)" stroke-width="3.5"/>
+
+          <path d="M290 355 C248 350 216 326 191 293
+                   C170 265 145 255 117 254"
+                stroke="url(#branches)" stroke-width="3.5"/>
+
+          <path d="M251 344 C222 314 203 281 200 249"
+                stroke="url(#branches)" stroke-width="3"/>
+
+          <path d="M402 283 C372 255 339 242 307 244
+                   C276 246 250 230 230 204"
+                stroke="url(#branches)" stroke-width="3"/>
+
+          <path d="M360 183 C344 151 321 132 291 120"
+                stroke="url(#branches)" stroke-width="3"/>
+
+          <path d="M251 204 C251 178 240 153 221 133"
+                stroke="url(#branches)" stroke-width="2.5"/>
+
+          <!-- Right canopy -->
+          <path d="M550 352 C586 319 606 276 603 236
+                   C601 207 619 180 644 164"
+                stroke="url(#branches)" stroke-width="4"/>
+
+          <path d="M603 236 C641 226 674 201 690 166
+                   C701 142 720 127 744 119"
+                stroke="url(#branches)" stroke-width="3.5"/>
+
+          <path d="M650 243 C684 252 715 242 742 220
+                   C766 201 793 197 820 203"
+                stroke="url(#branches)" stroke-width="3.5"/>
+
+          <path d="M506 237 C542 219 568 190 576 158
+                   C582 135 598 117 619 104"
+                stroke="url(#branches)" stroke-width="3"/>
+
+          <path d="M542 156 C542 130 555 108 574 91"
+                stroke="url(#branches)" stroke-width="2.5"/>
+
+          <path d="M744 119 C767 105 781 86 784 64"
+                stroke="url(#branches)" stroke-width="2.5"/>
+
+          <path d="M690 166 C714 162 733 149 748 130"
+                stroke="url(#branches)" stroke-width="2.5"/>
+
+          <!-- Living roots -->
+          <g stroke="url(#roots)" filter="url(#glow)">
+            <path d="M450 714 C412 745 382 780 342 794
+                     C303 808 270 804 237 823" stroke-width="5"/>
+            <path d="M444 730 C426 777 398 813 366 843
+                     C345 861 321 874 291 881" stroke-width="3.5"/>
+            <path d="M437 711 C397 720 356 739 323 763
+                     C290 786 257 787 220 785" stroke-width="3"/>
+            <path d="M455 720 C489 751 523 773 561 787
+                     C601 801 636 797 675 818" stroke-width="5"/>
+            <path d="M462 733 C487 780 515 812 550 839
+                     C575 858 600 870 631 879" stroke-width="3.5"/>
+            <path d="M463 707 C506 716 545 735 579 758
+                     C611 779 648 784 685 780" stroke-width="3"/>
+            <path d="M342 794 C329 816 328 838 337 857"
+                  stroke-width="2.5"/>
+            <path d="M237 823 C218 840 198 846 174 844"
+                  stroke-width="2.5"/>
+            <path d="M561 787 C574 812 574 836 563 855"
+                  stroke-width="2.5"/>
+            <path d="M675 818 C696 836 718 842 742 838"
+                  stroke-width="2.5"/>
+          </g>
+        </g>
+
+        <!-- Network nodes: small and restrained -->
+        <g fill="#05c9f4" filter="url(#glow)">
+          <circle cx="173" cy="151" r="3"/>
+          <circle cx="221" cy="211" r="3"/>
+          <circle cx="117" cy="254" r="3"/>
+          <circle cx="291" cy="120" r="2.5"/>
+          <circle cx="251" cy="344" r="3"/>
+          <circle cx="360" cy="183" r="3"/>
+          <circle cx="402" cy="283" r="3"/>
+          <circle cx="542" cy="156" r="3"/>
+          <circle cx="619" cy="104" r="3"/>
+          <circle cx="744" cy="119" r="3"/>
+          <circle cx="820" cy="203" r="3"/>
+          <circle cx="784" cy="64" r="3"/>
+          <circle cx="650" cy="243" r="3"/>
+          <circle cx="550" cy="352" r="3"/>
+        </g>
+
+        <g fill="#eb36ed" filter="url(#glow)">
+          <circle cx="450" cy="155" r="4"/>
+          <circle cx="344" cy="424" r="3"/>
+          <circle cx="237" cy="823" r="3"/>
+          <circle cx="675" cy="818" r="3"/>
+        </g>
+
+        <!-- A soft central light, like intelligence awakening -->
+        <circle cx="450" cy="440" r="90" fill="#851eff" opacity=".07"
+                filter="url(#softGlow)"/>
+        <circle cx="450" cy="440" r="3" fill="#f7f5ff" opacity=".8"
+                filter="url(#glow)"/>
+      </svg>
+    </div>
+
+    <div class="ground-light"></div>
   </div>
 
-  <script>
-    (() => {
-      const canvas = document.getElementById("universe");
-      const ctx = canvas.getContext("2d");
-      const reducedMotion = window.matchMedia(
-        "(prefers-reduced-motion: reduce)"
-      ).matches;
+  <main class="content">
+    <h1 class="brand">GROVE</h1>
+    <p class="motto">PROGRAM OR BE PROGRAMMED.</p>
+    <p class="tagline">A World Connected</p>
+    <div class="coming">Coming Soon</div>
+  </main>
 
-      let width, height, dpr;
-      let time = 0;
-      let particles = [];
-      let branches = [];
-      let roots = [];
-      let stars = [];
-
-      const rand = (min, max) => Math.random() * (max - min) + min;
-
-      function resize() {
-        dpr = Math.min(window.devicePixelRatio || 1, 2);
-        width = window.innerWidth;
-        height = window.innerHeight;
-
-        canvas.width = Math.floor(width * dpr);
-        canvas.height = Math.floor(height * dpr);
-        canvas.style.width = width + "px";
-        canvas.style.height = height + "px";
-
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        buildWorld();
-        draw();
-      }
-
-      function buildWorld() {
-        branches = [];
-        roots = [];
-        stars = [];
-        particles = [];
-
-        const cx = width * 0.5;
-        const base = height * 0.77;
-        const treeHeight = Math.min(height * 0.53, width * 0.76, 490);
-        const scale = treeHeight / 360;
-
-        function branch(x, y, angle, length, depth, root = false) {
-          if (depth <= 0 || length < 4) return;
-
-          const bend = rand(-0.10, 0.10);
-          const endX = x + Math.sin(angle + bend) * length;
-          const endY = y - Math.cos(angle + bend) * length;
-
-          const item = {
-            x, y, endX, endY, depth,
-            root,
-            seed: rand(0, 100),
-            width: Math.max(0.45, depth * scale * 0.48)
-          };
-
-          (root ? roots : branches).push(item);
-
-          const spread = root ? rand(0.30, 0.64) : rand(0.30, 0.56);
-          const shrink = rand(0.69, 0.79);
-
-          branch(endX, endY, angle - spread, length * shrink, depth - 1, root);
-          branch(endX, endY, angle + spread, length * shrink, depth - 1, root);
-
-          if (depth > 3 && Math.random() > 0.45) {
-            branch(
-              endX, endY,
-              angle + rand(-0.25, 0.25),
-              length * 0.66,
-              depth - 2,
-              root
-            );
-          }
-        }
-
-        // A living tree: its branches reach upward and outward.
-        branch(cx, base, 0, treeHeight * 0.19, 9, false);
-
-        // Roots spread into the surrounding world.
-        branch(cx, base, -1.15, treeHeight * 0.16, 8, true);
-        branch(cx, base, 1.15, treeHeight * 0.16, 8, true);
-        branch(cx, base, -0.55, treeHeight * 0.14, 7, true);
-        branch(cx, base, 0.55, treeHeight * 0.14, 7, true);
-
-        for (let i = 0; i < 100; i++) {
-          stars.push({
-            x: rand(0, width),
-            y: rand(0, height),
-            r: rand(0.3, 1.4),
-            a: rand(0.12, 0.65),
-            phase: rand(0, Math.PI * 2)
-          });
-        }
-
-        const count = Math.min(150, Math.floor(width * height / 8500));
-        for (let i = 0; i < count; i++) {
-          particles.push({
-            x: rand(0, width),
-            y: rand(0, height),
-            vx: rand(-0.14, 0.14),
-            vy: rand(-0.32, -0.05),
-            size: rand(0.5, 1.8),
-            phase: rand(0, Math.PI * 2),
-            cyan: Math.random() > 0.52
-          });
-        }
-      }
-
-      function strokeSegments(items, rootMode = false) {
-        for (const b of items) {
-          const progress = Math.min(1, Math.max(0,
-            (time * 0.035 + b.seed * 0.7) % 1.25
-          ));
-
-          const ex = b.x + (b.endX - b.x) * progress;
-          const ey = b.y + (b.endY - b.y) * progress;
-
-          const depthFactor = b.depth / 9;
-          const pulse = 0.65 + Math.sin(time * 0.025 + b.seed) * 0.2;
-          const color = rootMode
-            ? `rgba(133,30,255,${0.10 + depthFactor * 0.27})`
-            : `rgba(5,201,244,${0.08 + depthFactor * 0.26})`;
-
-          ctx.beginPath();
-          ctx.moveTo(b.x, b.y);
-          ctx.lineTo(ex, ey);
-          ctx.lineWidth = b.width;
-          ctx.strokeStyle = color;
-          ctx.shadowBlur = rootMode ? 7 : 10;
-          ctx.shadowColor = rootMode ? "#851eff" : "#05c9f4";
-          ctx.stroke();
-          ctx.shadowBlur = 0;
-
-          // Circuit nodes awaken along the growing tree.
-          if (progress > 0.94 && b.depth <= 5) {
-            const flicker = 0.4 + 0.6 *
-              Math.abs(Math.sin(time * 0.045 + b.seed));
-
-            ctx.beginPath();
-            ctx.arc(b.endX, b.endY, 1.2 + flicker, 0, Math.PI * 2);
-            ctx.fillStyle = rootMode
-              ? `rgba(235,54,237,${flicker})`
-              : `rgba(5,201,244,${flicker})`;
-            ctx.shadowBlur = 12;
-            ctx.shadowColor = rootMode ? "#eb36ed" : "#05c9f4";
-            ctx.fill();
-            ctx.shadowBlur = 0;
-          }
-        }
-      }
-
-      function drawTrunk() {
-        const cx = width * 0.5;
-        const base = height * 0.77;
-        const top = base - Math.min(height * 0.53, width * 0.76, 490);
-
-        const gradient = ctx.createLinearGradient(cx, base, cx, top);
-        gradient.addColorStop(0, "#851eff");
-        gradient.addColorStop(0.45, "#6227db");
-        gradient.addColorStop(1, "#05c9f4");
-
-        ctx.beginPath();
-        ctx.moveTo(cx, base);
-        ctx.bezierCurveTo(
-          cx - 12, base - 70,
-          cx + 15, top + 95,
-          cx, top
-        );
-        ctx.lineWidth = Math.max(2, Math.min(width, height) * 0.009);
-        ctx.strokeStyle = gradient;
-        ctx.shadowBlur = 24;
-        ctx.shadowColor = "#851eff";
-        ctx.stroke();
-        ctx.shadowBlur = 0;
-
-        // The central signal travels upward through the trunk.
-        const signalY = base - ((time * 1.2) % Math.max(1, base - top));
-        const glow = ctx.createRadialGradient(cx, signalY, 0, cx, signalY, 22);
-        glow.addColorStop(0, "#f7f5ffbb");
-        glow.addColorStop(0.2, "#05c9f477");
-        glow.addColorStop(1, "#05c9f400");
-
-        ctx.fillStyle = glow;
-        ctx.fillRect(cx - 22, signalY - 22, 44, 44);
-      }
-
-      function draw() {
-        ctx.clearRect(0, 0, width, height);
-
-        for (const star of stars) {
-          const alpha = star.a *
-            (0.65 + Math.sin(time * 0.012 + star.phase) * 0.35);
-          ctx.beginPath();
-          ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(220,210,255,${alpha})`;
-          ctx.fill();
-        }
-
-        // A faint atmospheric halo behind the tree.
-        const cx = width / 2;
-        const cy = height * 0.52;
-        const radius = Math.min(width, height) * 0.48;
-        const halo = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
-        halo.addColorStop(0, "#851eff20");
-        halo.addColorStop(0.55, "#05c9f408");
-        halo.addColorStop(1, "#05001900");
-        ctx.fillStyle = halo;
-        ctx.fillRect(0, 0, width, height);
-
-        // Roots awaken in violet; branches transmit cyan signals.
-        strokeSegments(roots, true);
-        strokeSegments(branches, false);
-        drawTrunk();
-
-        for (const p of particles) {
-          const wave = Math.sin(time * 0.018 + p.phase) * 0.2;
-
-          if (!reducedMotion) {
-            p.x += p.vx + wave * 0.15;
-            p.y += p.vy;
-
-            if (p.y < -5) {
-              p.y = height + 5;
-              p.x = rand(0, width);
-            }
-            if (p.x < -5) p.x = width + 5;
-            if (p.x > width + 5) p.x = -5;
-          }
-
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-          ctx.fillStyle = p.cyan ? "#05c9f477" : "#eb36ed77";
-          ctx.shadowBlur = 8;
-          ctx.shadowColor = p.cyan ? "#05c9f4" : "#eb36ed";
-          ctx.fill();
-          ctx.shadowBlur = 0;
-        }
-      }
-
-      function animate() {
-        if (!reducedMotion) time += 1;
-        draw();
-        if (!reducedMotion) requestAnimationFrame(animate);
-      }
-
-      window.addEventListener("resize", resize);
-      resize();
-
-      if (!reducedMotion) {
-        requestAnimationFrame(animate);
-      }
-    })();
-  </script>
+  <footer class="footer">
+    A new world is taking root <span>✦</span>
+  </footer>
 </body>
-</html>
+  </html>
+  
