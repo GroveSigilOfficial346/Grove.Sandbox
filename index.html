@@ -1,337 +1,455 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#050019">
-<title>Grove — Coming Soon</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#050019">
+  <meta name="description" content="Grove — Program or be programmed. A world connected.">
+  <title>GROVE — A World Connected</title>
 
-<style>
-:root {
-  --bg: #050019;
-  --violet: #851eff;
-  --magenta: #eb36ed;
-  --cyan: #05c9f4;
-  --white: #f7f5ff;
-}
+  <style>
+    :root {
+      --night: #050019;
+      --violet: #851eff;
+      --magenta: #eb36ed;
+      --cyan: #05c9f4;
+      --white: #f7f5ff;
+    }
 
-* { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
-body {
-  margin: 0;
-  min-height: 100svh;
-  display: grid;
-  place-items: center;
-  overflow: hidden;
-  color: var(--white);
-  background:
-    radial-gradient(ellipse at 50% 44%, #211044 0%, transparent 43%),
-    radial-gradient(ellipse at 50% 100%, #10113b 0%, transparent 55%),
-    var(--bg);
-  font-family: Arial, Helvetica, sans-serif;
-}
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+    }
 
-#particles {
-  position: fixed;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-}
+    body {
+      min-height: 100svh;
+      overflow: hidden;
+      background:
+        radial-gradient(ellipse at 50% 43%, #160635 0%, #09021f 42%, var(--night) 78%);
+      color: var(--white);
+      font-family: Inter, "Segoe UI", Arial, sans-serif;
+    }
 
-.ambient {
-  position: fixed;
-  width: min(85vw, 650px);
-  aspect-ratio: 1;
-  left: 50%;
-  top: 43%;
-  transform: translate(-50%, -50%);
-  border-radius: 50%;
-  background: radial-gradient(
-    circle, #851eff1c 0%, #353bff0b 42%, transparent 70%
-  );
-  filter: blur(12px);
-  animation: ambientPulse 7s ease-in-out infinite;
-  pointer-events: none;
-}
+    #universe {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
 
-main {
-  position: relative;
-  z-index: 1;
-  width: 100%;
-  padding: 24px;
-  text-align: center;
-}
+    .atmosphere {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background:
+        radial-gradient(ellipse at 50% 52%, transparent 15%, #05001966 75%),
+        linear-gradient(180deg, #05001955, transparent 40%, #050019aa);
+    }
 
-.logo {
-  display: block;
-  width: min(65vw, 270px);
-  height: auto;
-  margin: 0 auto 4px;
-  overflow: visible;
-  filter: drop-shadow(0 0 18px #851eff55);
-  animation: logoFloat 6s ease-in-out infinite;
-}
+    main {
+      position: relative;
+      z-index: 2;
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 30px 20px;
+      text-align: center;
+    }
 
-.branch {
-  fill: none;
-  stroke: url(#branchGradient);
-  stroke-width: 2.2;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
+    .identity {
+      position: relative;
+      z-index: 3;
+      margin-top: min(5vh, 35px);
+      animation: reveal 1.6s ease both;
+    }
 
-.node {
-  fill: #08051b;
-  stroke: url(#branchGradient);
-  stroke-width: 2;
-}
+    .brand {
+      margin: 0;
+      font-size: clamp(3.5rem, 11vw, 7.5rem);
+      font-weight: 800;
+      letter-spacing: 0.22em;
+      padding-left: 0.22em;
+      line-height: 1;
+      text-shadow:
+        0 0 24px #851eff55,
+        0 0 70px #851eff22;
+    }
 
-.node-light {
-  fill: var(--cyan);
-  filter: url(#glow);
-}
+    .motto {
+      margin: 24px 0 0;
+      font-size: clamp(0.72rem, 2vw, 0.95rem);
+      letter-spacing: 0.28em;
+      font-weight: 600;
+      color: #e4d6ff;
+    }
 
-.orbit {
-  fill: none;
-  stroke: var(--violet);
-  stroke-width: 1;
-  opacity: .22;
-}
+    .tagline {
+      margin: 12px 0 0;
+      color: #a99bc8;
+      font-size: 0.68rem;
+      letter-spacing: 0.38em;
+      text-transform: uppercase;
+    }
 
-h1 {
-  margin: 8px 0 0;
-  font-size: clamp(42px, 9vw, 68px);
-  font-weight: 500;
-  letter-spacing: .25em;
-  text-indent: .25em;
-  background: linear-gradient(
-    100deg, var(--magenta), var(--white) 48%, var(--cyan)
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
+    .status {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 11px;
+      margin-top: clamp(36px, 7vh, 64px);
+      color: #d9d0ef;
+      font-size: 0.7rem;
+      font-weight: 500;
+      letter-spacing: 0.34em;
+      text-transform: uppercase;
+      animation: reveal 2s ease both;
+    }
 
-.divider {
-  width: 100px;
-  height: 2px;
-  margin: 25px auto;
-  background: linear-gradient(
-    90deg, var(--violet), var(--magenta), var(--cyan)
-  );
-  box-shadow: 0 0 18px #851eff77;
-}
+    .status::before,
+    .status::after {
+      content: "";
+      width: 25px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, var(--cyan));
+      opacity: 0.8;
+    }
 
-.status {
-  margin: 0;
-  color: #d4c9f0;
-  font-size: 12px;
-  letter-spacing: .42em;
-  text-indent: .42em;
-  text-transform: uppercase;
-}
+    .status::after {
+      transform: rotate(180deg);
+    }
 
-.tagline {
-  margin-top: 30px;
-  color: #8179a7;
-  font-size: 10px;
-  letter-spacing: .3em;
-  text-indent: .3em;
-}
+    .signal {
+      position: fixed;
+      bottom: 24px;
+      left: 0;
+      right: 0;
+      z-index: 3;
+      text-align: center;
+      font-size: 0.58rem;
+      letter-spacing: 0.24em;
+      color: #81749f;
+      text-transform: uppercase;
+      animation: reveal 3s ease both;
+    }
 
-@keyframes logoFloat {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-7px); }
-}
+    .signal span {
+      color: var(--cyan);
+      text-shadow: 0 0 12px #05c9f488;
+    }
 
-@keyframes ambientPulse {
-  0%, 100% { opacity: .65; transform: translate(-50%, -50%) scale(.92); }
-  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
-}
+    @keyframes reveal {
+      from { opacity: 0; transform: translateY(12px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    animation: none !important;
-    scroll-behavior: auto !important;
-  }
-}
+    @media (max-width: 520px) {
+      .brand {
+        letter-spacing: 0.14em;
+        padding-left: 0.14em;
+      }
 
-@media (max-width: 420px) {
-  .status { font-size: 10px; }
-  .tagline { font-size: 9px; }
-}
-</style>
+      .motto {
+        letter-spacing: 0.18em;
+      }
+
+      .tagline {
+        letter-spacing: 0.25em;
+      }
+
+      .status {
+        letter-spacing: 0.23em;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+      }
+    }
+  </style>
 </head>
 
 <body>
-<canvas id="particles" aria-hidden="true"></canvas>
-<div class="ambient" aria-hidden="true"></div>
+  <canvas id="universe" aria-hidden="true"></canvas>
+  <div class="atmosphere" aria-hidden="true"></div>
 
-<main>
-  <svg class="logo" viewBox="0 0 240 240"
-       xmlns="http://www.w3.org/2000/svg"
-       role="img" aria-label="Grove neural tree">
+  <main>
+    <section class="identity" aria-label="Grove">
+      <h1 class="brand">GROVE</h1>
+      <p class="motto">PROGRAM OR BE PROGRAMMED.</p>
+      <p class="tagline">A World Connected</p>
+    </section>
 
-    <defs>
-      <linearGradient id="branchGradient"
-        x1="30" y1="20" x2="210" y2="220"
-        gradientUnits="userSpaceOnUse">
-        <stop stop-color="#eb36ed"/>
-        <stop offset=".5" stop-color="#851eff"/>
-        <stop offset="1" stop-color="#05c9f4"/>
-      </linearGradient>
+    <div class="status">Coming Soon</div>
+  </main>
 
-      <filter id="glow" x="-200%" y="-200%" width="400%" height="400%">
-        <feGaussianBlur stdDeviation="4" result="blur"/>
-        <feMerge>
-          <feMergeNode in="blur"/>
-          <feMergeNode in="SourceGraphic"/>
-        </feMerge>
-      </filter>
+  <div class="signal">
+    The network is growing <span>●</span>
+  </div>
 
-      <radialGradient id="coreGradient">
-        <stop stop-color="#f7f5ff"/>
-        <stop offset=".35" stop-color="#05c9f4"/>
-        <stop offset="1" stop-color="#851eff" stop-opacity="0"/>
-      </radialGradient>
-    </defs>
+  <script>
+    (() => {
+      const canvas = document.getElementById("universe");
+      const ctx = canvas.getContext("2d");
+      const reducedMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches;
 
-    <!-- Organic neural branches -->
-    <g class="branch">
-      <path d="M120 207 V157"/>
-      <path d="M120 177 Q103 164 91 147 V115"/>
-      <path d="M120 177 Q140 162 151 143 V108"/>
-      <path d="M91 132 L65 109 V79"/>
-      <path d="M91 147 H58 L39 127"/>
-      <path d="M151 124 L178 100 V72"/>
-      <path d="M151 143 H184 L202 124"/>
-      <path d="M120 157 L103 118 L120 86"/>
-      <path d="M120 157 L138 118 L120 86"/>
-      <path d="M65 91 L49 73"/>
-      <path d="M178 84 L195 65"/>
-      <path d="M120 86 V57"/>
-      <path d="M58 147 L47 164"/>
-      <path d="M184 147 L195 164"/>
-    </g>
+      let width, height, dpr;
+      let time = 0;
+      let particles = [];
+      let branches = [];
+      let roots = [];
+      let stars = [];
 
-    <!-- Neural connection points -->
-    <g class="node">
-      <circle cx="120" cy="207" r="4"/>
-      <circle cx="91" cy="115" r="4.5"/>
-      <circle cx="151" cy="108" r="4.5"/>
-      <circle cx="65" cy="79" r="4.5"/>
-      <circle cx="39" cy="127" r="4"/>
-      <circle cx="178" cy="72" r="4.5"/>
-      <circle cx="202" cy="124" r="4"/>
-      <circle cx="120" cy="57" r="4.5"/>
-      <circle cx="49" cy="73" r="3.5"/>
-      <circle cx="195" cy="65" r="3.5"/>
-      <circle cx="47" cy="164" r="3.5"/>
-      <circle cx="195" cy="164" r="3.5"/>
-    </g>
+      const rand = (min, max) => Math.random() * (max - min) + min;
 
-    <!-- Central living core -->
-    <circle cx="120" cy="157" r="28"
-      fill="url(#coreGradient)" opacity=".75"/>
-    <circle cx="120" cy="157" r="13"
-      fill="none" stroke="#05c9f4" stroke-opacity=".8"/>
-    <circle cx="120" cy="157" r="5" class="node-light"/>
+      function resize() {
+        dpr = Math.min(window.devicePixelRatio || 1, 2);
+        width = window.innerWidth;
+        height = window.innerHeight;
 
-    <!-- Organic orbital ring -->
-    <ellipse class="orbit" cx="120" cy="137"
-      rx="82" ry="94" transform="rotate(28 120 137)"/>
-  </svg>
+        canvas.width = Math.floor(width * dpr);
+        canvas.height = Math.floor(height * dpr);
+        canvas.style.width = width + "px";
+        canvas.style.height = height + "px";
 
-  <h1>GROVE</h1>
-  <div class="divider"></div>
-  <p class="status">Coming Soon</p>
-  <div class="tagline">A WORLD CONNECTED</div>
-</main>
-
-<script>
-(() => {
-  const canvas = document.getElementById("particles");
-  const ctx = canvas.getContext("2d");
-  const reducedMotion = window.matchMedia(
-    "(prefers-reduced-motion: reduce)"
-  );
-
-  let width, height, particles = [], frame;
-  const colors = ["#851eff", "#05c9f4", "#eb36ed"];
-
-  function resize() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-    width = window.innerWidth;
-    height = window.innerHeight;
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
-    canvas.style.width = width + "px";
-    canvas.style.height = height + "px";
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-
-    const count = reducedMotion.matches
-      ? 0
-      : Math.min(65, Math.floor(width * height / 14000));
-
-    particles = Array.from({ length: count }, () => ({
-      x: Math.random() * width,
-      y: Math.random() * height,
-      r: Math.random() * 1.5 + .4,
-      speed: Math.random() * .28 + .08,
-      drift: (Math.random() - .5) * .25,
-      alpha: Math.random() * .5 + .15,
-      color: colors[Math.floor(Math.random() * colors.length)]
-    }));
-  }
-
-  function draw() {
-    ctx.clearRect(0, 0, width, height);
-
-    for (const p of particles) {
-      p.y -= p.speed;
-      p.x += p.drift;
-
-      if (p.y < -5) {
-        p.y = height + 5;
-        p.x = Math.random() * width;
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        buildWorld();
+        draw();
       }
-      if (p.x < -5) p.x = width + 5;
-      if (p.x > width + 5) p.x = -5;
 
-      ctx.beginPath();
-      ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-      ctx.globalAlpha = p.alpha;
-      ctx.fillStyle = p.color;
-      ctx.fill();
-    }
+      function buildWorld() {
+        branches = [];
+        roots = [];
+        stars = [];
+        particles = [];
 
-    ctx.globalAlpha = 1;
-    frame = requestAnimationFrame(draw);
-  }
+        const cx = width * 0.5;
+        const base = height * 0.77;
+        const treeHeight = Math.min(height * 0.53, width * 0.76, 490);
+        const scale = treeHeight / 360;
 
-  function start() {
-    cancelAnimationFrame(frame);
-    if (reducedMotion.matches) {
-      ctx.clearRect(0, 0, width, height);
-      return;
-    }
-    draw();
-  }
+        function branch(x, y, angle, length, depth, root = false) {
+          if (depth <= 0 || length < 4) return;
 
-  window.addEventListener("resize", () => {
-    resize();
-    start();
-  });
+          const bend = rand(-0.10, 0.10);
+          const endX = x + Math.sin(angle + bend) * length;
+          const endY = y - Math.cos(angle + bend) * length;
 
-  reducedMotion.addEventListener?.("change", () => {
-    resize();
-    start();
-  });
+          const item = {
+            x, y, endX, endY, depth,
+            root,
+            seed: rand(0, 100),
+            width: Math.max(0.45, depth * scale * 0.48)
+          };
 
-  resize();
-  start();
-})();
-</script>
+          (root ? roots : branches).push(item);
+
+          const spread = root ? rand(0.30, 0.64) : rand(0.30, 0.56);
+          const shrink = rand(0.69, 0.79);
+
+          branch(endX, endY, angle - spread, length * shrink, depth - 1, root);
+          branch(endX, endY, angle + spread, length * shrink, depth - 1, root);
+
+          if (depth > 3 && Math.random() > 0.45) {
+            branch(
+              endX, endY,
+              angle + rand(-0.25, 0.25),
+              length * 0.66,
+              depth - 2,
+              root
+            );
+          }
+        }
+
+        // A living tree: its branches reach upward and outward.
+        branch(cx, base, 0, treeHeight * 0.19, 9, false);
+
+        // Roots spread into the surrounding world.
+        branch(cx, base, -1.15, treeHeight * 0.16, 8, true);
+        branch(cx, base, 1.15, treeHeight * 0.16, 8, true);
+        branch(cx, base, -0.55, treeHeight * 0.14, 7, true);
+        branch(cx, base, 0.55, treeHeight * 0.14, 7, true);
+
+        for (let i = 0; i < 100; i++) {
+          stars.push({
+            x: rand(0, width),
+            y: rand(0, height),
+            r: rand(0.3, 1.4),
+            a: rand(0.12, 0.65),
+            phase: rand(0, Math.PI * 2)
+          });
+        }
+
+        const count = Math.min(150, Math.floor(width * height / 8500));
+        for (let i = 0; i < count; i++) {
+          particles.push({
+            x: rand(0, width),
+            y: rand(0, height),
+            vx: rand(-0.14, 0.14),
+            vy: rand(-0.32, -0.05),
+            size: rand(0.5, 1.8),
+            phase: rand(0, Math.PI * 2),
+            cyan: Math.random() > 0.52
+          });
+        }
+      }
+
+      function strokeSegments(items, rootMode = false) {
+        for (const b of items) {
+          const progress = Math.min(1, Math.max(0,
+            (time * 0.035 + b.seed * 0.7) % 1.25
+          ));
+
+          const ex = b.x + (b.endX - b.x) * progress;
+          const ey = b.y + (b.endY - b.y) * progress;
+
+          const depthFactor = b.depth / 9;
+          const pulse = 0.65 + Math.sin(time * 0.025 + b.seed) * 0.2;
+          const color = rootMode
+            ? `rgba(133,30,255,${0.10 + depthFactor * 0.27})`
+            : `rgba(5,201,244,${0.08 + depthFactor * 0.26})`;
+
+          ctx.beginPath();
+          ctx.moveTo(b.x, b.y);
+          ctx.lineTo(ex, ey);
+          ctx.lineWidth = b.width;
+          ctx.strokeStyle = color;
+          ctx.shadowBlur = rootMode ? 7 : 10;
+          ctx.shadowColor = rootMode ? "#851eff" : "#05c9f4";
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+
+          // Circuit nodes awaken along the growing tree.
+          if (progress > 0.94 && b.depth <= 5) {
+            const flicker = 0.4 + 0.6 *
+              Math.abs(Math.sin(time * 0.045 + b.seed));
+
+            ctx.beginPath();
+            ctx.arc(b.endX, b.endY, 1.2 + flicker, 0, Math.PI * 2);
+            ctx.fillStyle = rootMode
+              ? `rgba(235,54,237,${flicker})`
+              : `rgba(5,201,244,${flicker})`;
+            ctx.shadowBlur = 12;
+            ctx.shadowColor = rootMode ? "#eb36ed" : "#05c9f4";
+            ctx.fill();
+            ctx.shadowBlur = 0;
+          }
+        }
+      }
+
+      function drawTrunk() {
+        const cx = width * 0.5;
+        const base = height * 0.77;
+        const top = base - Math.min(height * 0.53, width * 0.76, 490);
+
+        const gradient = ctx.createLinearGradient(cx, base, cx, top);
+        gradient.addColorStop(0, "#851eff");
+        gradient.addColorStop(0.45, "#6227db");
+        gradient.addColorStop(1, "#05c9f4");
+
+        ctx.beginPath();
+        ctx.moveTo(cx, base);
+        ctx.bezierCurveTo(
+          cx - 12, base - 70,
+          cx + 15, top + 95,
+          cx, top
+        );
+        ctx.lineWidth = Math.max(2, Math.min(width, height) * 0.009);
+        ctx.strokeStyle = gradient;
+        ctx.shadowBlur = 24;
+        ctx.shadowColor = "#851eff";
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // The central signal travels upward through the trunk.
+        const signalY = base - ((time * 1.2) % Math.max(1, base - top));
+        const glow = ctx.createRadialGradient(cx, signalY, 0, cx, signalY, 22);
+        glow.addColorStop(0, "#f7f5ffbb");
+        glow.addColorStop(0.2, "#05c9f477");
+        glow.addColorStop(1, "#05c9f400");
+
+        ctx.fillStyle = glow;
+        ctx.fillRect(cx - 22, signalY - 22, 44, 44);
+      }
+
+      function draw() {
+        ctx.clearRect(0, 0, width, height);
+
+        for (const star of stars) {
+          const alpha = star.a *
+            (0.65 + Math.sin(time * 0.012 + star.phase) * 0.35);
+          ctx.beginPath();
+          ctx.arc(star.x, star.y, star.r, 0, Math.PI * 2);
+          ctx.fillStyle = `rgba(220,210,255,${alpha})`;
+          ctx.fill();
+        }
+
+        // A faint atmospheric halo behind the tree.
+        const cx = width / 2;
+        const cy = height * 0.52;
+        const radius = Math.min(width, height) * 0.48;
+        const halo = ctx.createRadialGradient(cx, cy, 0, cx, cy, radius);
+        halo.addColorStop(0, "#851eff20");
+        halo.addColorStop(0.55, "#05c9f408");
+        halo.addColorStop(1, "#05001900");
+        ctx.fillStyle = halo;
+        ctx.fillRect(0, 0, width, height);
+
+        // Roots awaken in violet; branches transmit cyan signals.
+        strokeSegments(roots, true);
+        strokeSegments(branches, false);
+        drawTrunk();
+
+        for (const p of particles) {
+          const wave = Math.sin(time * 0.018 + p.phase) * 0.2;
+
+          if (!reducedMotion) {
+            p.x += p.vx + wave * 0.15;
+            p.y += p.vy;
+
+            if (p.y < -5) {
+              p.y = height + 5;
+              p.x = rand(0, width);
+            }
+            if (p.x < -5) p.x = width + 5;
+            if (p.x > width + 5) p.x = -5;
+          }
+
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fillStyle = p.cyan ? "#05c9f477" : "#eb36ed77";
+          ctx.shadowBlur = 8;
+          ctx.shadowColor = p.cyan ? "#05c9f4" : "#eb36ed";
+          ctx.fill();
+          ctx.shadowBlur = 0;
+        }
+      }
+
+      function animate() {
+        if (!reducedMotion) time += 1;
+        draw();
+        if (!reducedMotion) requestAnimationFrame(animate);
+      }
+
+      window.addEventListener("resize", resize);
+      resize();
+
+      if (!reducedMotion) {
+        requestAnimationFrame(animate);
+      }
+    })();
+  </script>
 </body>
 </html>
