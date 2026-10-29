@@ -7,60 +7,67 @@
   <title>Grove — A World Connected</title>
   <meta name="description" content="Grove — A World Connected. Join the community.">
   <link rel="stylesheet" href="css/global.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/community.js" defer></script>
 
   <style>
     .landing-actions {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 12px;
-      margin-top: 28px;
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      flex-wrap:wrap;
+      gap:12px;
+      margin-top:28px;
     }
 
     .landing-button {
-      display: inline-flex;
-      justify-content: center;
-      align-items: center;
-      min-width: 140px;
-      padding: 12px 22px;
-      border: 1px solid #851eff88;
-      border-radius: 10px;
-      background: linear-gradient(110deg, #851eff, #5965ff);
-      box-shadow: 0 0 20px #851eff24;
-      color: #f7f5ff;
-      font-family: inherit;
-      font-size: 12px;
-      font-weight: 600;
-      letter-spacing: 1px;
-      text-decoration: none;
-      transition: transform .2s ease, filter .2s ease;
+      display:inline-flex;
+      justify-content:center;
+      align-items:center;
+      min-width:140px;
+      padding:12px 22px;
+      border:1px solid #851eff88;
+      border-radius:10px;
+      background:linear-gradient(110deg,#851eff,#5965ff);
+      box-shadow:0 0 20px #851eff24;
+      color:#f7f5ff;
+      font-family:inherit;
+      font-size:12px;
+      font-weight:600;
+      letter-spacing:1px;
+      text-decoration:none;
+      transition:transform .2s ease,filter .2s ease;
     }
 
     .landing-button:hover {
-      transform: translateY(-2px);
-      filter: brightness(1.15);
+      transform:translateY(-2px);
+      filter:brightness(1.15);
     }
 
     .landing-button.secondary {
-      background: #10082dcc;
-      border-color: #05c9f466;
-      color: #c9f8ff;
+      background:#10082dcc;
+      border-color:#05c9f466;
+      color:#c9f8ff;
     }
 
     .landing-button:focus-visible {
-      outline: 2px solid #05c9f4;
-      outline-offset: 4px;
+      outline:2px solid #05c9f4;
+      outline-offset:4px;
     }
 
-    @media (prefers-reduced-motion: reduce) {
+    .landing-button[hidden] {
+      display:none !important;
+    }
+
+    @media(prefers-reduced-motion:reduce) {
       .landing-button {
-        transition: none;
+        transition:none;
       }
     }
   </style>
 </head>
+
 <body>
   <main class="landing" data-stage="seed" data-vitality="quiet">
     <img
@@ -71,6 +78,7 @@
 
     <h1>GROVE</h1>
     <div class="divider"></div>
+
     <p class="status">Coming Soon</p>
 
     <p class="community-count">
@@ -84,13 +92,78 @@
     <p class="tagline">A WORLD CONNECTED</p>
 
     <nav class="landing-actions" aria-label="Account">
-      <a class="landing-button" href="auth.html?mode=signup">
+      <a
+        class="landing-button"
+        id="open-grove"
+        href="profile.html"
+        hidden
+      >
+        OPEN GROVE
+      </a>
+
+      <a
+        class="landing-button"
+        id="join-grove"
+        href="auth.html?mode=signup"
+      >
         JOIN GROVE
       </a>
-      <a class="landing-button secondary" href="auth.html?mode=login">
+
+      <a
+        class="landing-button secondary"
+        id="login-grove"
+        href="auth.html?mode=login"
+      >
         LOG IN
       </a>
     </nav>
   </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const SUPABASE_URL =
+        "https://fpkrvgcpbnrusbfmhinj.supabase.co";
+
+      const SUPABASE_KEY =
+        "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
+
+      const openButton = document.getElementById("open-grove");
+      const joinButton = document.getElementById("join-grove");
+      const loginButton = document.getElementById("login-grove");
+
+      function showSignedInState(signedIn) {
+        openButton.hidden = !signedIn;
+        joinButton.hidden = signedIn;
+        loginButton.hidden = signedIn;
+      }
+
+      async function initializeHome() {
+        try {
+          const db = window.supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_KEY
+          );
+
+          const { data, error } = await db.auth.getSession();
+
+          if (error) throw error;
+
+          showSignedInState(Boolean(data.session));
+
+          db.auth.onAuthStateChange((_event, session) => {
+            showSignedInState(Boolean(session));
+          });
+
+        } catch (error) {
+          console.error("Grove homepage session:", error);
+          showSignedInState(false);
+        }
+      }
+
+      initializeHome();
+    })();
+  </script>
 </body>
 </html>
