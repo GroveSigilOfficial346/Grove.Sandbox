@@ -23,6 +23,9 @@
 
   function showError(message) {
     const status = $("#status");
+
+    if (!status) return;
+
     status.textContent = message;
     status.hidden = false;
   }
@@ -38,7 +41,6 @@
     $("#username").textContent =
       profile.username ? `@${profile.username}` : "";
 
-    // Biography
     const bio = $("#bio");
 
     if (profile.bio?.trim()) {
@@ -115,6 +117,134 @@
     }
   }
 
+  function formatDate(value) {
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) {
+      return "";
+    }
+
+    return date.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "short",
+      day: "numeric"
+    });
+  }
+
+  function createPostCard(post) {
+    const article = document.createElement("article");
+
+    Object.assign(article.style, {
+      padding: "20px",
+      border: "1px solid #851eff44",
+      borderRadius: "14px",
+      background: "#08051a",
+      overflowWrap: "anywhere"
+    });
+
+    // Post date
+    const date = document.createElement("p");
+    date.textContent = formatDate(post.created_at);
+
+    Object.assign(date.style, {
+      margin: "0 0 12px",
+      color: "#a99bc9",
+      fontSize: "12px"
+    });
+
+    article.appendChild(date);
+
+    // Post text
+    if (post.body?.trim()) {
+      const body = document.createElement("p");
+      body.textContent = post.body;
+
+      Object.assign(body.style, {
+        margin: "0",
+        color: "#f7f5ff",
+        lineHeight: "1.7",
+        whiteSpace: "pre-wrap"
+      });
+
+      article.appendChild(body);
+    }
+
+    // Post images
+    const mediaUrls = Array.isArray(post.media_urls)
+      ? post.media_urls
+      : [];
+
+    mediaUrls.forEach((value) => {
+      const safeUrl = isSafeWebUrl(value);
+
+      if (!safeUrl) return;
+
+      const image = document.createElement("img");
+      image.src = safeUrl.href;
+      image.alt = "Post image";
+      image.loading = "lazy";
+
+      Object.assign(image.style, {
+        display: "block",
+        width: "100%",
+        maxHeight: "500px",
+        marginTop: "14px",
+        borderRadius: "10px",
+        objectFit: "contain",
+        background: "#050019"
+      });
+
+      article.appendChild(image);
+    });
+
+    return article;
+  }
+
+  async function loadPosts(client, profile) {
+    const postsSection = $("#posts-section");
+    const postsList = $("#posts-list");
+    const postsEmpty = $("#posts-empty");
+
+    postsSection.hidden = false;
+    postsList.replaceChildren();
+
+    const loading = document.createElement("div");
+    loading.className = "empty-state";
+    loading.textContent = "Loading posts…";
+    postsList.appendChild(loading);
+
+    const { data: posts, error } = await client
+      .from("posts")
+      .select("id, author_id, body, media_urls, visibility, created_at")
+      .eq("author_id", profile.id)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Grove posts error:", error);
+      postsList.replaceChildren();
+
+      const message = document.createElement("div");
+      message.className = "empty-state";
+      message.textContent = "Posts couldn't be loaded right now.";
+      postsList.appendChild(message);
+      return;
+    }
+
+    postsList.replaceChildren();
+
+    if (!posts || posts.length === 0) {
+      postsList.appendChild(postsEmpty);
+      postsEmpty.hidden = false;
+      return;
+    }
+
+    postsEmpty.hidden = true;
+
+    posts.forEach((post) => {
+      postsList.appendChild(createPostCard(post));
+    });
+  }
+
   async function initialize() {
     const status = $("#status");
 
@@ -129,7 +259,6 @@
     );
 
     try {
-      // A visitor may have no session, so authentication is optional.
       const {
         data: sessionData,
         error: sessionError
@@ -170,24 +299,20 @@
         throw new Error("This Grove profile couldn't be found.");
       }
 
-      // Determine whether the visitor owns this profile.
+      // Determine profile ownership.
       const isOwner =
         Boolean(currentUser) && currentUser.id === profile.id;
 
-      // Only owners receive editing and account settings links.
-      const editLink = $("#edit-profile-link");
-      const settingsLink = $("#settings-link");
+      $("#edit-profile-link").hidden = !isOwner;
+      $("#settings-link").hidden = !isOwner;
 
-      editLink.hidden = !isOwner;
-      settingsLink.hidden = !isOwner;
-
-      // Display profile.
+      // Display profile and posts.
       renderProfile(profile);
 
-      // Reveal the profile and posts area.
       $("#profile-card").hidden = false;
-      $("#posts-section").hidden = false;
       status.hidden = true;
+
+      await loadPosts(client, profile);
 
     } catch (error) {
       console.error("Grove profile display error:", error);
