@@ -15,6 +15,9 @@
     return;
   }
 
+  const params = new URLSearchParams(window.location.search);
+  const viewingOtherProfile = params.has("id") || params.has("username");
+
   let currentUser = null;
   let searchTimer = null;
   let searchSequence = 0;
@@ -106,6 +109,17 @@
       border-radius:16px; background:#100b25;
       color:#b9a7df; text-align:center; line-height:1.7;
     }
+    .grove-back-discover {
+      display:inline-flex; align-items:center; gap:8px;
+      margin:0 0 18px; padding:10px 14px;
+      border:1px solid #851eff66; border-radius:9px;
+      background:#211440; color:#eee5ff;
+      font:inherit; font-size:13px; font-weight:700;
+      cursor:pointer;
+    }
+    .grove-back-discover:hover {
+      background:#33205a; border-color:#a855f7;
+    }
     @media(max-width:600px) {
       .grove-tab { min-width:0; padding:11px 8px; }
       .grove-panel { padding:20px; }
@@ -125,6 +139,14 @@
   profileCard.before(profileView);
   profileView.append(profileCard, postsSection);
 
+  // Back to Discover button for profiles belonging to other members.
+  const backButton = document.createElement("button");
+  backButton.type = "button";
+  backButton.className = "grove-back-discover";
+  backButton.textContent = "← Back to Discover";
+  backButton.hidden = !viewingOtherProfile;
+  profileView.prepend(backButton);
+
   // Navigation.
   const navigation = document.createElement("nav");
   navigation.className = "grove-navigation";
@@ -132,7 +154,7 @@
 
   const views = {};
 
-  function switchView(name) {
+  function switchView(name, selectedTab = name) {
     Object.entries(views).forEach(([key, view]) => {
       view.hidden = key !== name;
     });
@@ -142,7 +164,7 @@
     navigation.querySelectorAll(".grove-tab").forEach(button => {
       button.setAttribute(
         "aria-selected",
-        String(button.dataset.view === name)
+        String(button.dataset.view === selectedTab)
       );
     });
 
@@ -175,21 +197,24 @@
   const profileButton = document.createElement("button");
   profileButton.type = "button";
   profileButton.className = "grove-tab";
-  profileButton.textContent = "Profile";
+  profileButton.textContent = "My Profile";
   profileButton.dataset.view = "profile";
-  profileButton.setAttribute("aria-selected", "true");
+  profileButton.setAttribute("aria-selected", "false");
   navigation.appendChild(profileButton);
 
-  // FIX: Profile always returns to the signed-in user's own profile.
+  // My Profile always returns to the signed-in user's own profile.
   profileButton.addEventListener("click", () => {
-    const params = new URLSearchParams(window.location.search);
-
-    if (params.has("id") || params.has("username")) {
+    if (viewingOtherProfile) {
       window.location.href = "profile.html";
       return;
     }
 
     switchView("profile");
+  });
+
+  // Back button returns to the Discover member list.
+  backButton.addEventListener("click", () => {
+    switchView("discover");
   });
 
   const feedPanel = document.createElement("div");
@@ -424,6 +449,7 @@
   searchInput.addEventListener("input", () => {
     clearTimeout(searchTimer);
     searchTimer = setTimeout(() => {
+      discoverLoaded = false;
       loadMembers(searchInput.value.trim());
     }, 300);
   });
@@ -441,6 +467,11 @@
 
   initializeSession();
 
-  // Start on the profile currently loaded by profile-view.js.
-  switchView("profile");
+  // A viewed member's profile is displayed under the Discover tab.
+  // Your own profile is displayed under My Profile.
+  if (viewingOtherProfile) {
+    switchView("profile", "discover");
+  } else {
+    switchView("profile", "profile");
+  }
 })();
