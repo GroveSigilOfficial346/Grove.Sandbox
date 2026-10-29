@@ -1,181 +1,30 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Grove — Coming Soon</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#050019">
 
-<style>
-* {
-  box-sizing: border-box;
-}
+  <title>Grove — Coming Soon</title>
+  <meta
+    name="description"
+    content="Grove — A World Connected."
+  >
 
-body {
-  margin: 0;
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  overflow: hidden;
-  color: #f7f5ff;
-  font-family: Arial, sans-serif;
-  background:
-    radial-gradient(ellipse at 50% 45%, #20104a 0%, #0b0620 48%, #050019 100%);
-}
-
-main {
-  position: relative;
-  text-align: center;
-  padding: 24px;
-  z-index: 1;
-}
-
-.neural-tree {
-  width: min(72vw, 270px);
-  height: auto;
-  margin: 0 auto 8px;
-  overflow: visible;
-  filter: drop-shadow(0 0 18px #851eff55);
-}
-
-.neural-tree path,
-.neural-tree circle {
-  stroke-linecap: round;
-  stroke-linejoin: round;
-}
-
-h1 {
-  margin: 0;
-  font-size: clamp(38px, 9vw, 64px);
-  font-weight: 500;
-  letter-spacing: 12px;
-  text-indent: 12px;
-  background: linear-gradient(90deg, #a855f7, #f7f5ff, #05c9f4);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.line {
-  width: 90px;
-  height: 2px;
-  margin: 25px auto;
-  background: linear-gradient(90deg, #851eff, #eb36ed, #05c9f4);
-  box-shadow: 0 0 14px #851eff66;
-}
-
-p {
-  margin: 0;
-  color: #c9b9ed;
-  font-size: 13px;
-  letter-spacing: 6px;
-  text-indent: 6px;
-  text-transform: uppercase;
-}
-
-.tagline {
-  margin-top: 28px;
-  color: #8179a7;
-  font-size: 10px;
-  letter-spacing: 3px;
-}
-
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  opacity: .22;
-  background-image:
-    radial-gradient(circle, #8e65ff 1px, transparent 1.5px);
-  background-size: 62px 62px;
-  mask-image: radial-gradient(ellipse at center, black, transparent 75%);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .neural-tree {
-    animation: breathe 5s ease-in-out infinite;
-  }
-
-  @keyframes breathe {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.035); }
-  }
-}
-</style>
+  <link rel="stylesheet" href="css/global.css">
 </head>
 
 <body>
-<main>
+  <main class="landing">
+    <div id="grove-logo"></div>
 
-  <svg class="neural-tree" viewBox="0 0 240 240" fill="none"
-       xmlns="http://www.w3.org/2000/svg"
-       aria-label="Grove neural tree logo" role="img">
+    <h1>GROVE</h1>
+    <div class="divider"></div>
 
-    <defs>
-      <linearGradient id="neural" x1="30" y1="20" x2="210" y2="220"
-                      gradientUnits="userSpaceOnUse">
-        <stop stop-color="#EB36ED"/>
-        <stop offset=".5" stop-color="#851EFF"/>
-        <stop offset="1" stop-color="#05C9F4"/>
-      </linearGradient>
-      <radialGradient id="core">
-        <stop stop-color="#F7F5FF"/>
-        <stop offset=".35" stop-color="#05C9F4"/>
-        <stop offset="1" stop-color="#851EFF" stop-opacity="0"/>
-      </radialGradient>
-    </defs>
+    <p class="status">Coming Soon</p>
+    <p class="tagline">A WORLD CONNECTED</p>
+  </main>
 
-    <!-- Neural branches -->
-    <g stroke="url(#neural)" stroke-width="2.5">
-      <path d="M120 204 V151"/>
-      <path d="M120 169 L92 143 L92 112"/>
-      <path d="M120 169 L150 140 L150 105"/>
-      <path d="M92 126 L66 105 L66 78"/>
-      <path d="M92 143 L57 143 L39 124"/>
-      <path d="M150 120 L177 98 L177 70"/>
-      <path d="M150 140 L184 140 L202 121"/>
-      <path d="M120 151 L105 112 L119 85"/>
-      <path d="M120 151 L137 111 L119 85"/>
-      <path d="M66 90 L49 72"/>
-      <path d="M177 82 L194 64"/>
-      <path d="M119 85 L119 57"/>
-      <path d="M57 143 L47 160"/>
-      <path d="M184 140 L194 157"/>
-    </g>
-
-    <!-- Connected neural nodes -->
-    <g fill="#08051B" stroke="url(#neural)" stroke-width="2.5">
-      <circle cx="120" cy="204" r="5"/>
-      <circle cx="92" cy="112" r="5"/>
-      <circle cx="150" cy="105" r="5"/>
-      <circle cx="66" cy="78" r="5"/>
-      <circle cx="39" cy="124" r="5"/>
-      <circle cx="177" cy="70" r="5"/>
-      <circle cx="202" cy="121" r="5"/>
-      <circle cx="119" cy="57" r="5"/>
-      <circle cx="49" cy="72" r="4"/>
-      <circle cx="194" cy="64" r="4"/>
-      <circle cx="47" cy="160" r="4"/>
-      <circle cx="194" cy="157" r="4"/>
-    </g>
-
-    <!-- Central intelligence core -->
-    <circle cx="120" cy="151" r="24" fill="url(#core)" opacity=".8"/>
-    <circle cx="120" cy="151" r="6" fill="#F7F5FF"/>
-    <circle cx="120" cy="151" r="13" stroke="#05C9F4" stroke-opacity=".8"/>
-
-    <!-- Subtle orbital arc -->
-    <ellipse cx="120" cy="133" rx="83" ry="93"
-             stroke="#851EFF" stroke-opacity=".25"
-             stroke-width="1" transform="rotate(28 120 133)"/>
-  </svg>
-
-  <h1>GROVE</h1>
-  <div class="line"></div>
-  <p>Coming Soon</p>
-  <div class="tagline">A WORLD CONNECTED</div>
-
-</main>
+  <script src="js/logo.js"></script>
 </body>
 </html>
