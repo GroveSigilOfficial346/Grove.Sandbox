@@ -7,6 +7,20 @@
 
   const $ = (selector) => document.querySelector(selector);
 
+  function isSafeWebUrl(value) {
+    try {
+      const url = new URL(value);
+
+      if (!["https:", "http:"].includes(url.protocol)) {
+        return null;
+      }
+
+      return url;
+    } catch {
+      return null;
+    }
+  }
+
   async function initialize() {
     const status = $("#status");
 
@@ -47,35 +61,49 @@
         throw new Error("Your profile couldn't be found.");
       }
 
+      // Display name and username
       $("#display-name").textContent =
         profile.display_name || "Grove Member";
 
       $("#username").textContent =
         profile.username ? `@${profile.username}` : "";
 
+      // Biography
       const bio = $("#bio");
+
       if (profile.bio?.trim()) {
         bio.textContent = profile.bio;
         bio.hidden = false;
       }
 
+      // Profile picture
       const avatar = $("#avatar");
+      const avatarUrl = profile.avatar_url
+        ? isSafeWebUrl(profile.avatar_url)
+        : null;
 
-      if (profile.avatar_url) {
+      if (avatarUrl) {
         const image = document.createElement("img");
-        image.src = profile.avatar_url;
+        image.src = avatarUrl.href;
         image.alt = "Profile picture";
+        image.loading = "lazy";
         avatar.appendChild(image);
       } else {
         avatar.textContent =
           (profile.display_name || "G").trim().charAt(0).toUpperCase();
       }
 
-      if (profile.cover_url) {
+      // Cover image
+      const coverUrl = profile.cover_url
+        ? isSafeWebUrl(profile.cover_url)
+        : null;
+
+      if (coverUrl) {
         $("#cover").style.backgroundImage =
-          `url("${profile.cover_url.replace(/["\\]/g, "")}")`;
+          `url(${JSON.stringify(coverUrl.href)})`;
       }
 
+      // Profile details
       const details = $("#details");
 
       if (profile.location) {
@@ -90,29 +118,28 @@
         details.appendChild(pronouns);
       }
 
+      // Website
       if (profile.website) {
-        try {
-          const url = new URL(profile.website);
+        const websiteUrl = isSafeWebUrl(profile.website);
 
-          if (["https:", "http:"].includes(url.protocol)) {
-            const link = document.createElement("a");
-            link.href = url.href;
-            link.target = "_blank";
-            link.rel = "noopener noreferrer";
-            link.textContent = "Website";
-            details.appendChild(link);
-          }
-        } catch {
-          // Ignore invalid website URLs.
+        if (websiteUrl) {
+          const link = document.createElement("a");
+          link.href = websiteUrl.href;
+          link.target = "_blank";
+          link.rel = "noopener noreferrer";
+          link.textContent = "Website";
+          details.appendChild(link);
         }
       }
 
+      // Show completed profile
       $("#profile-card").hidden = false;
       $("#posts-section").hidden = false;
       status.hidden = true;
 
     } catch (error) {
       console.error("Grove profile display error:", error);
+
       status.textContent =
         error.message || "Couldn't load your profile.";
     }
