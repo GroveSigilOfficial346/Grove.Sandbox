@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#050019">
+  <title>Edit Profile | Grove</title>
+
+  <link rel="stylesheet" href="css/style.css">
+
+  <style>
+    body {
+      background: #050019;
+      color: #F7F5FF;
+      font-family: Inter, Arial, sans-serif;
+      min-height: 100vh;
+    }
+
+    .editor-page {
+      width: min(760px, 92%);
+      margin: 45px auto;
+      padding-bottom: 60px;
+    }
+
+    .editor-header {
+      margin-bottom: 28px;
+    }
+
+    .editor-header h1 {
+      font-size: 2rem;
+      margin-bottom: 8px;
+    }
+
+    .editor-header p {
+      color: #aaa4c4;
+      margin: 0;
+    }
+
+    .editor-card {
+      background: #111225;
+      border: 1px solid rgba(168, 85, 247, .25);
+      border-radius: 18px;
+      padding: 28px;
+      margin-bottom: 20px;
+    }
+
+    .editor-card h2 {
+      font-size: 1.15rem;
+      margin: 0 0 22px;
+    }
+
+    .field {
+      margin-bottom: 20px;
+    }
+
+    .field label {
+      display: block;
+      font-size: .9rem;
+      margin-bottom: 8px;
+      color: #ddd7f5;
+    }
+
+    .field input,
+    .field textarea {
+      box-sizing: border-box;
+      width: 100%;
+      padding: 13px 14px;
+      border-radius: 10px;
+      border: 1px solid #343052;
+      background: #080817;
+      color: #fff;
+      font: inherit;
+      outline: none;
+    }
+
+    .field input:focus,
+    .field textarea:focus {
+      border-color: #a855f7;
+      box-shadow: 0 0 0 2px rgba(168, 85, 247, .15);
+    }
+
+    .field textarea {
+      min-height: 115px;
+      resize: vertical;
+    }
+
+    .field small {
+      display: block;
+      color: #938cab;
+      margin-top: 7px;
+      font-size: .8rem;
+    }
+
+    .image-preview {
+      width: 112px;
+      height: 112px;
+      border-radius: 50%;
+      object-fit: cover;
+      display: block;
+      margin: 12px 0;
+      background: #080817;
+      border: 2px solid #851eff;
+    }
+
+    #cover-preview {
+      width: 100%;
+      height: 150px;
+      border-radius: 12px;
+      object-fit: cover;
+      display: block;
+      margin: 12px 0;
+      background: #080817;
+      border: 1px solid #343052;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 24px;
+    }
+
+    .actions button,
+    .actions a {
+      display: inline-block;
+      border: 0;
+      border-radius: 10px;
+      padding: 13px 20px;
+      font: inherit;
+      font-weight: 600;
+      text-decoration: none;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    #save-profile {
+      background: linear-gradient(100deg, #851eff, #5965ff);
+      color: white;
+    }
+
+    #logout {
+      background: #28243b;
+      color: #ddd7f5;
+    }
+
+    .back-link {
+      color: #45e5ff;
+      text-decoration: none;
+      display: inline-block;
+      margin-bottom: 20px;
+    }
+
+    #status {
+      margin-top: 16px;
+      color: #45e5ff;
+      min-height: 20px;
+      overflow-wrap: anywhere;
+    }
+
+    @media (max-width: 600px) {
+      .editor-page {
+        margin-top: 25px;
+      }
+
+      .editor-card {
+        padding: 20px;
+      }
+
+      .editor-header h1 {
+        font-size: 1.65rem;
+      }
+
+      .actions button,
+      .actions a {
+        width: 100%;
+        box-sizing: border-box;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="editor-page">
+
+    <a class="back-link" href="profile.html">← Back to profile</a>
+
+    <header class="editor-header">
+      <h1>Edit your profile</h1>
+      <p>Customize how other members experience your Grove profile.</p>
+    </header>
+
+    <form id="profile-form">
+
+      <section class="editor-card">
+        <h2>Profile information</h2>
+
+        <div class="field">
+          <label for="username">Username</label>
+          <input
+            type="text"
+            id="username"
+            name="username"
+            minlength="3"
+            maxlength="30"
+            autocomplete="username"
+            required
+          >
+          <small>3–30 characters. Letters, numbers, and underscores.</small>
+        </div>
+
+        <div class="field">
+          <label for="display-name">Display name</label>
+          <input
+            type="text"
+            id="display-name"
+            name="display_name"
+            maxlength="60"
+            required
+          >
+        </div>
+
+        <div class="field">
+          <label for="bio">Bio</label>
+          <textarea
+            id="bio"
+            name="bio"
+            maxlength="500"
+            placeholder="Tell the Grove community a little about yourself..."
+          ></textarea>
+        </div>
+
+        <div class="field">
+          <label for="pronouns">Pronouns</label>
+          <input
+            type="text"
+            id="pronouns"
+            name="pronouns"
+            maxlength="40"
+            placeholder="Optional"
+          >
+        </div>
+
+        <div class="field">
+          <label for="location">Location</label>
+          <input
+            type="text"
+            id="location"
+            name="location"
+            maxlength="100"
+            placeholder="Optional"
+          >
+        </div>
+
+        <div class="field">
+          <label for="website">Website</label>
+          <input
+            type="url"
+            id="website"
+            name="website"
+            maxlength="255"
+            placeholder="https://example.com"
+          >
+        </div>
+      </section>
+
+      <section class="editor-card">
+        <h2>Profile images</h2>
+
+        <div class="field">
+          <label for="avatar">Profile picture</label>
+          <img
+            id="avatar-preview"
+            class="image-preview"
+            src=""
+            alt="Profile picture preview"
+          >
+          <input
+            type="file"
+            id="avatar"
+            name="avatar"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+          >
+          <small>JPEG, PNG, WebP, or GIF. Maximum 5 MB.</small>
+        </div>
+
+        <div class="field">
+          <label for="cover">Cover image</label>
+          <img
+            id="cover-preview"
+            src=""
+            alt="Cover image preview"
+          >
+          <input
+            type="file"
+            id="cover"
+            name="cover"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+          >
+          <small>Choose an image to personalize the top of your profile.</small>
+        </div>
+      </section>
+
+      <section class="editor-card">
+        <h2>Save changes</h2>
+        <p>Your changes will update your public Grove profile.</p>
+
+        <div class="actions">
+          <button type="submit" id="save-profile">
+            Save profile
+          </button>
+
+          <button type="button" id="logout">
+            Log out
+          </button>
+        </div>
+
+        <p id="status" role="status" aria-live="polite"></p>
+      </section>
+
+    </form>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/profile.js"></script>
+</body>
+</html>
