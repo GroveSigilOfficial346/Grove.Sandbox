@@ -24,7 +24,6 @@
   const avatarInput = $("#avatar");
   const coverInput = $("#cover");
   const avatarPreview = $("#avatar-preview");
-  const profileId = $("#profile-id");
 
   let supabase;
   let currentUser;
@@ -40,7 +39,7 @@
     busy = value;
     saveButton.disabled = value;
     logoutButton.disabled = value;
-    saveButton.textContent = value ? "Saving…" : "Save Profile";
+    saveButton.textContent = value ? "Saving…" : "Save Changes";
   }
 
   function setField(selector, value) {
@@ -51,10 +50,7 @@
     if (!file) return true;
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      setStatus(
-        `${label} must be a JPG, PNG, WebP, or GIF image.`,
-        "error"
-      );
+      setStatus(`${label} must be a JPG, PNG, WebP, or GIF image.`, "error");
       return false;
     }
 
@@ -89,9 +85,7 @@
     if (error) throw error;
 
     if (!data) {
-      throw new Error(
-        "Your account exists, but its profile record could not be found."
-      );
+      throw new Error("Your profile record could not be found.");
     }
 
     originalProfile = data;
@@ -103,7 +97,6 @@
     setField("#website", data.website);
     setField("#pronouns", data.pronouns);
 
-    profileId.textContent = data.id;
     showAvatar(data.avatar_url);
   }
 
@@ -178,10 +171,7 @@
     }
 
     if (!validWebsite(website)) {
-      setStatus(
-        "Enter a valid website URL beginning with https:// or http://.",
-        "error"
-      );
+      setStatus("Enter a valid website URL beginning with https:// or http://.", "error");
       $("#website").focus();
       return;
     }
@@ -244,15 +234,9 @@
       if (error.code === "23505") {
         setStatus("That username is already taken.", "error");
       } else if (error.code === "42501") {
-        setStatus(
-          "Permission denied. Check your Supabase profile and storage policies.",
-          "error"
-        );
+        setStatus("Permission denied. Check your Supabase profile and storage policies.", "error");
       } else {
-        setStatus(
-          error.message || "Couldn't save your profile.",
-          "error"
-        );
+        setStatus(error.message || "Couldn't save your profile.", "error");
       }
     } finally {
       setBusy(false);
@@ -307,15 +291,7 @@
 
   async function initialize() {
     if (!window.supabase?.createClient) {
-      setStatus(
-        "Grove's Supabase library didn't load. Please refresh.",
-        "error"
-      );
-      return;
-    }
-
-    if (!form || !status || !saveButton || !logoutButton) {
-      console.error("Grove profile page is missing required HTML elements.");
+      setStatus("Grove's Supabase library didn't load. Please refresh.", "error");
       return;
     }
 
@@ -345,8 +321,6 @@
         return;
       }
 
-      profileId.textContent = currentUser.id;
-
       await loadProfile();
 
       initializeAvatarPreview();
@@ -354,14 +328,10 @@
       form.addEventListener("submit", saveProfile);
       logoutButton.addEventListener("click", logout);
 
-      setStatus("Ready to personalize your profile.", "success");
+      setStatus("Your settings are ready.", "success");
     } catch (error) {
-      console.error("Grove profile initialization failed:", error);
-
-      setStatus(
-        error.message || "Couldn't load your profile. Please refresh.",
-        "error"
-      );
+      console.error("Grove settings initialization failed:", error);
+      setStatus(error.message || "Couldn't load your settings.", "error");
     } finally {
       setBusy(false);
     }
