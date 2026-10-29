@@ -29,6 +29,7 @@
   let currentUser;
   let originalProfile = {};
   let busy = false;
+  let previewObjectUrl = null;
 
   function setStatus(message, kind = "info") {
     status.textContent = message;
@@ -37,9 +38,13 @@
 
   function setBusy(value) {
     busy = value;
+
     saveButton.disabled = value;
     logoutButton.disabled = value;
-    saveButton.textContent = value ? "Saving…" : "Save Changes";
+
+    saveButton.textContent = value
+      ? "Saving…"
+      : "Save Changes";
   }
 
   function setField(selector, value) {
@@ -50,19 +55,34 @@
     if (!file) return true;
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      setStatus(`${label} must be a JPG, PNG, WebP, or GIF image.`, "error");
+      setStatus(
+        `${label} must be a JPG, PNG, WebP, or GIF image.`,
+        "error"
+      );
       return false;
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      setStatus(`${label} must be no larger than 5 MB.`, "error");
+      setStatus(
+        `${label} must be no larger than 5 MB.`,
+        "error"
+      );
       return false;
     }
 
     return true;
   }
 
+  function clearPreviewObjectUrl() {
+    if (previewObjectUrl) {
+      URL.revokeObjectURL(previewObjectUrl);
+      previewObjectUrl = null;
+    }
+  }
+
   function showAvatar(url) {
+    clearPreviewObjectUrl();
+
     if (!url) {
       avatarPreview.removeAttribute("src");
       avatarPreview.hidden = true;
@@ -111,6 +131,7 @@
     };
 
     const extension = extensions[file.type];
+
     const path =
       `${currentUser.id}/${type}-${crypto.randomUUID()}.${extension}`;
 
@@ -136,7 +157,11 @@
 
     try {
       const url = new URL(value);
-      return url.protocol === "https:" || url.protocol === "http:";
+
+      return (
+        url.protocol === "https:" ||
+        url.protocol === "http:"
+      );
     } catch {
       return false;
     }
@@ -171,7 +196,10 @@
     }
 
     if (!validWebsite(website)) {
-      setStatus("Enter a valid website URL beginning with https:// or http://.", "error");
+      setStatus(
+        "Enter a valid website URL beginning with https:// or http://.",
+        "error"
+      );
       $("#website").focus();
       return;
     }
@@ -190,11 +218,17 @@
       let coverUrl = originalProfile.cover_url || null;
 
       if (avatarInput.files[0]) {
-        avatarUrl = await uploadImage(avatarInput.files[0], "avatar");
+        avatarUrl = await uploadImage(
+          avatarInput.files[0],
+          "avatar"
+        );
       }
 
       if (coverInput.files[0]) {
-        coverUrl = await uploadImage(coverInput.files[0], "cover");
+        coverUrl = await uploadImage(
+          coverInput.files[0],
+          "cover"
+        );
       }
 
       const updates = {
@@ -227,17 +261,28 @@
 
       showAvatar(data.avatar_url);
 
-      setStatus("Your Grove profile has been saved! 🌱", "success");
+      setStatus(
+        "Your Grove profile has been saved! 🌱",
+        "success"
+      );
+
     } catch (error) {
       console.error("Grove profile save failed:", error);
 
       if (error.code === "23505") {
         setStatus("That username is already taken.", "error");
       } else if (error.code === "42501") {
-        setStatus("Permission denied. Check your Supabase profile and storage policies.", "error");
+        setStatus(
+          "Permission denied. Check your Supabase profile and storage policies.",
+          "error"
+        );
       } else {
-        setStatus(error.message || "Couldn't save your profile.", "error");
+        setStatus(
+          error.message || "Couldn't save your profile.",
+          "error"
+        );
       }
+
     } finally {
       setBusy(false);
     }
@@ -255,9 +300,15 @@
       if (error) throw error;
 
       window.location.replace("auth.html?mode=login");
+
     } catch (error) {
       console.error("Grove logout failed:", error);
-      setStatus(error.message || "Couldn't sign out.", "error");
+
+      setStatus(
+        error.message || "Couldn't sign out.",
+        "error"
+      );
+
       logoutButton.disabled = false;
     }
   }
@@ -277,7 +328,12 @@
         return;
       }
 
-      showAvatar(URL.createObjectURL(file));
+      clearPreviewObjectUrl();
+
+      previewObjectUrl = URL.createObjectURL(file);
+
+      avatarPreview.src = previewObjectUrl;
+      avatarPreview.hidden = false;
     });
 
     coverInput.addEventListener("change", () => {
@@ -291,7 +347,10 @@
 
   async function initialize() {
     if (!window.supabase?.createClient) {
-      setStatus("Grove's Supabase library didn't load. Please refresh.", "error");
+      setStatus(
+        "Grove's Supabase library didn't load. Please refresh.",
+        "error"
+      );
       return;
     }
 
@@ -328,10 +387,16 @@
       form.addEventListener("submit", saveProfile);
       logoutButton.addEventListener("click", logout);
 
-      setStatus("Your settings are ready.", "success");
+      setStatus("Your profile editor is ready.", "success");
+
     } catch (error) {
-      console.error("Grove settings initialization failed:", error);
-      setStatus(error.message || "Couldn't load your settings.", "error");
+      console.error("Grove profile initialization failed:", error);
+
+      setStatus(
+        error.message || "Couldn't load your profile editor.",
+        "error"
+      );
+
     } finally {
       setBusy(false);
     }
@@ -339,6 +404,10 @@
 
   initialize().catch((error) => {
     console.error("Grove initialization error:", error);
-    setStatus("Grove couldn't initialize. Please refresh.", "error");
+
+    setStatus(
+      "Grove couldn't initialize. Please refresh.",
+      "error"
+    );
   });
 })();
