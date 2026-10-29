@@ -1,466 +1,181 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#050019">
-  <meta name="description" content="Grove — Program or be programmed. A world connected.">
-  <title>GROVE — A World Connected</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grove — Coming Soon</title>
 
-  <style>
-    :root {
-      --night: #050019;
-      --violet: #851eff;
-      --magenta: #eb36ed;
-      --cyan: #05c9f4;
-      --white: #f7f5ff;
-    }
+<style>
+* {
+  box-sizing: border-box;
+}
 
-    * { box-sizing: border-box; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  color: #f7f5ff;
+  font-family: Arial, sans-serif;
+  background:
+    radial-gradient(ellipse at 50% 45%, #20104a 0%, #0b0620 48%, #050019 100%);
+}
 
-    html, body {
-      margin: 0;
-      min-height: 100%;
-      background: var(--night);
-      color: var(--white);
-      font-family: Inter, "Segoe UI", Arial, sans-serif;
-    }
+main {
+  position: relative;
+  text-align: center;
+  padding: 24px;
+  z-index: 1;
+}
 
-    body {
-      min-height: 100svh;
-      overflow: hidden;
-    }
+.neural-tree {
+  width: min(72vw, 270px);
+  height: auto;
+  margin: 0 auto 8px;
+  overflow: visible;
+  filter: drop-shadow(0 0 18px #851eff55);
+}
 
-    .scene {
-      position: fixed;
-      inset: 0;
-      overflow: hidden;
-      background:
-        radial-gradient(ellipse at 50% 53%, #21104a 0%, #10062c 34%, #08021d 66%, #050019 100%);
-    }
+.neural-tree path,
+.neural-tree circle {
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
 
-    .stars {
-      position: absolute;
-      inset: 0;
-      opacity: .7;
-      background-image:
-        radial-gradient(1px 1px at 12% 20%, #fff 50%, transparent 100%),
-        radial-gradient(1px 1px at 83% 17%, #bcaaff 50%, transparent 100%),
-        radial-gradient(2px 2px at 74% 38%, #fff 50%, transparent 100%),
-        radial-gradient(1px 1px at 21% 58%, #c7baff 50%, transparent 100%),
-        radial-gradient(1px 1px at 89% 72%, #fff 50%, transparent 100%),
-        radial-gradient(1px 1px at 35% 12%, #fff 50%, transparent 100%),
-        radial-gradient(2px 2px at 61% 82%, #a6eaff 50%, transparent 100%),
-        radial-gradient(1px 1px at 8% 83%, #fff 50%, transparent 100%),
-        radial-gradient(1px 1px at 46% 28%, #bba5ff 50%, transparent 100%),
-        radial-gradient(1px 1px at 94% 48%, #bba5ff 50%, transparent 100%);
-    }
+h1 {
+  margin: 0;
+  font-size: clamp(38px, 9vw, 64px);
+  font-weight: 500;
+  letter-spacing: 12px;
+  text-indent: 12px;
+  background: linear-gradient(90deg, #a855f7, #f7f5ff, #05c9f4);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
 
-    .nebula {
-      position: absolute;
-      width: 100%;
-      height: 100%;
-      background:
-        radial-gradient(ellipse at 50% 55%, #851eff20, transparent 42%),
-        radial-gradient(ellipse at 28% 48%, #353bff12, transparent 38%),
-        radial-gradient(ellipse at 73% 50%, #05c9f410, transparent 38%);
-      animation: nebula 12s ease-in-out infinite alternate;
-    }
+.line {
+  width: 90px;
+  height: 2px;
+  margin: 25px auto;
+  background: linear-gradient(90deg, #851eff, #eb36ed, #05c9f4);
+  box-shadow: 0 0 14px #851eff66;
+}
 
-    .tree-wrap {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      pointer-events: none;
-    }
+p {
+  margin: 0;
+  color: #c9b9ed;
+  font-size: 13px;
+  letter-spacing: 6px;
+  text-indent: 6px;
+  text-transform: uppercase;
+}
 
-    .tree {
-      position: absolute;
-      width: min(112vw, 1050px);
-      height: min(105vh, 900px);
-      max-width: none;
-      top: 48%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      overflow: visible;
-      animation: treeReveal 2.2s ease-out both;
-    }
+.tagline {
+  margin-top: 28px;
+  color: #8179a7;
+  font-size: 10px;
+  letter-spacing: 3px;
+}
 
-    .tree-halo {
-      position: absolute;
-      width: min(95vw, 760px);
-      aspect-ratio: 1;
-      top: 47%;
-      left: 50%;
-      transform: translate(-50%, -50%);
-      border-radius: 50%;
-      background: radial-gradient(circle, #851eff1c 0%, #851eff08 42%, transparent 70%);
-      animation: breathe 7s ease-in-out infinite;
-    }
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  opacity: .22;
+  background-image:
+    radial-gradient(circle, #8e65ff 1px, transparent 1.5px);
+  background-size: 62px 62px;
+  mask-image: radial-gradient(ellipse at center, black, transparent 75%);
+}
 
-    .ground-light {
-      position: absolute;
-      left: 50%;
-      top: 76%;
-      transform: translateX(-50%);
-      width: min(95vw, 720px);
-      height: 120px;
-      border-radius: 50%;
-      background: radial-gradient(ellipse, #851eff3a 0%, #05c9f415 40%, transparent 72%);
-      filter: blur(15px);
-    }
+@media (prefers-reduced-motion: no-preference) {
+  .neural-tree {
+    animation: breathe 5s ease-in-out infinite;
+  }
 
-    .content {
-      position: relative;
-      z-index: 2;
-      min-height: 100svh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 30px 20px;
-    }
-
-    .brand {
-      margin: 0;
-      font-size: clamp(3.8rem, 11vw, 7.8rem);
-      line-height: 1;
-      font-weight: 800;
-      letter-spacing: .24em;
-      padding-left: .24em;
-      text-shadow:
-        0 0 30px #851eff35,
-        0 0 80px #851eff1a;
-      animation: textReveal 1.7s ease both;
-    }
-
-    .motto {
-      margin: 25px 0 0;
-      font-size: clamp(.68rem, 1.8vw, .9rem);
-      letter-spacing: .27em;
-      font-weight: 600;
-      color: #e5dcff;
-      animation: textReveal 2s ease both;
-    }
-
-    .tagline {
-      margin: 13px 0 0;
-      color: #a69bc6;
-      font-size: .66rem;
-      letter-spacing: .4em;
-      text-transform: uppercase;
-      animation: textReveal 2.3s ease both;
-    }
-
-    .coming {
-      position: absolute;
-      bottom: 12%;
-      display: flex;
-      align-items: center;
-      gap: 13px;
-      color: #e4def5;
-      font-size: .68rem;
-      font-weight: 500;
-      letter-spacing: .35em;
-      text-transform: uppercase;
-      animation: textReveal 2.8s ease both;
-    }
-
-    .coming::before,
-    .coming::after {
-      content: "";
-      display: block;
-      width: 28px;
-      height: 1px;
-      background: linear-gradient(90deg, transparent, var(--cyan));
-    }
-
-    .coming::after {
-      transform: rotate(180deg);
-    }
-
-    .footer {
-      position: absolute;
-      bottom: 25px;
-      left: 0;
-      right: 0;
-      color: #74668f;
-      text-align: center;
-      font-size: .57rem;
-      letter-spacing: .23em;
-      text-transform: uppercase;
-    }
-
-    .footer span {
-      color: var(--cyan);
-      text-shadow: 0 0 12px #05c9f488;
-    }
-
-    @keyframes breathe {
-      from { opacity: .55; transform: translate(-50%, -50%) scale(.94); }
-      to { opacity: 1; transform: translate(-50%, -50%) scale(1.07); }
-    }
-
-    @keyframes nebula {
-      from { opacity: .65; }
-      to { opacity: 1; }
-    }
-
-    @keyframes treeReveal {
-      from { opacity: 0; transform: translate(-50%, -47%) scale(.97); }
-      to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
-    }
-
-    @keyframes textReveal {
-      from { opacity: 0; transform: translateY(12px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    @media (max-width: 600px) {
-      .tree {
-        width: 155vw;
-        height: 90vh;
-        top: 47%;
-      }
-
-      .brand {
-        letter-spacing: .16em;
-        padding-left: .16em;
-      }
-
-      .motto {
-        letter-spacing: .16em;
-      }
-
-      .tagline {
-        letter-spacing: .28em;
-      }
-
-      .coming {
-        bottom: 14%;
-        letter-spacing: .26em;
-      }
-    }
-
-    @media (max-height: 650px) {
-      .tree { height: 120vh; }
-      .brand { font-size: clamp(3rem, 9vw, 6rem); }
-      .coming { bottom: 9%; }
-    }
-
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        animation: none !important;
-      }
-    }
-  </style>
+  @keyframes breathe {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.035); }
+  }
+}
+</style>
 </head>
 
 <body>
-  <div class="scene" aria-hidden="true">
-    <div class="stars"></div>
-    <div class="nebula"></div>
-    <div class="tree-halo"></div>
+<main>
 
-    <div class="tree-wrap">
-      <svg class="tree" viewBox="0 0 900 900" preserveAspectRatio="xMidYMid meet"
-           xmlns="http://www.w3.org/2000/svg">
-        <defs>
-          <linearGradient id="trunk" x1="0" y1="1" x2="0.7" y2="0">
-            <stop offset="0%" stop-color="#851eff"/>
-            <stop offset="45%" stop-color="#a63eff"/>
-            <stop offset="100%" stop-color="#05c9f4"/>
-          </linearGradient>
+  <svg class="neural-tree" viewBox="0 0 240 240" fill="none"
+       xmlns="http://www.w3.org/2000/svg"
+       aria-label="Grove neural tree logo" role="img">
 
-          <linearGradient id="roots" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stop-color="#eb36ed"/>
-            <stop offset="100%" stop-color="#851eff"/>
-          </linearGradient>
+    <defs>
+      <linearGradient id="neural" x1="30" y1="20" x2="210" y2="220"
+                      gradientUnits="userSpaceOnUse">
+        <stop stop-color="#EB36ED"/>
+        <stop offset=".5" stop-color="#851EFF"/>
+        <stop offset="1" stop-color="#05C9F4"/>
+      </linearGradient>
+      <radialGradient id="core">
+        <stop stop-color="#F7F5FF"/>
+        <stop offset=".35" stop-color="#05C9F4"/>
+        <stop offset="1" stop-color="#851EFF" stop-opacity="0"/>
+      </radialGradient>
+    </defs>
 
-          <linearGradient id="branches" x1="0" y1="1" x2="1" y2="0">
-            <stop offset="0%" stop-color="#851eff"/>
-            <stop offset="55%" stop-color="#5965ff"/>
-            <stop offset="100%" stop-color="#05c9f4"/>
-          </linearGradient>
+    <!-- Neural branches -->
+    <g stroke="url(#neural)" stroke-width="2.5">
+      <path d="M120 204 V151"/>
+      <path d="M120 169 L92 143 L92 112"/>
+      <path d="M120 169 L150 140 L150 105"/>
+      <path d="M92 126 L66 105 L66 78"/>
+      <path d="M92 143 L57 143 L39 124"/>
+      <path d="M150 120 L177 98 L177 70"/>
+      <path d="M150 140 L184 140 L202 121"/>
+      <path d="M120 151 L105 112 L119 85"/>
+      <path d="M120 151 L137 111 L119 85"/>
+      <path d="M66 90 L49 72"/>
+      <path d="M177 82 L194 64"/>
+      <path d="M119 85 L119 57"/>
+      <path d="M57 143 L47 160"/>
+      <path d="M184 140 L194 157"/>
+    </g>
 
-          <filter id="glow" x="-80%" y="-80%" width="260%" height="260%">
-            <feGaussianBlur stdDeviation="5" result="blur"/>
-            <feMerge>
-              <feMergeNode in="blur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
+    <!-- Connected neural nodes -->
+    <g fill="#08051B" stroke="url(#neural)" stroke-width="2.5">
+      <circle cx="120" cy="204" r="5"/>
+      <circle cx="92" cy="112" r="5"/>
+      <circle cx="150" cy="105" r="5"/>
+      <circle cx="66" cy="78" r="5"/>
+      <circle cx="39" cy="124" r="5"/>
+      <circle cx="177" cy="70" r="5"/>
+      <circle cx="202" cy="121" r="5"/>
+      <circle cx="119" cy="57" r="5"/>
+      <circle cx="49" cy="72" r="4"/>
+      <circle cx="194" cy="64" r="4"/>
+      <circle cx="47" cy="160" r="4"/>
+      <circle cx="194" cy="157" r="4"/>
+    </g>
 
-          <filter id="softGlow" x="-80%" y="-80%" width="260%" height="260%">
-            <feGaussianBlur stdDeviation="15"/>
-          </filter>
-        </defs>
+    <!-- Central intelligence core -->
+    <circle cx="120" cy="151" r="24" fill="url(#core)" opacity=".8"/>
+    <circle cx="120" cy="151" r="6" fill="#F7F5FF"/>
+    <circle cx="120" cy="151" r="13" stroke="#05C9F4" stroke-opacity=".8"/>
 
-        <!-- Atmospheric silhouette behind the tree -->
-        <g fill="none" stroke="#851eff" opacity=".12" filter="url(#softGlow)">
-          <path d="M450 720 C410 600 465 500 450 380 C430 280 350 230 270 175"
-                stroke-width="38"/>
-          <path d="M450 430 C510 330 585 255 685 205"
-                stroke-width="28"/>
-        </g>
+    <!-- Subtle orbital arc -->
+    <ellipse cx="120" cy="133" rx="83" ry="93"
+             stroke="#851EFF" stroke-opacity=".25"
+             stroke-width="1" transform="rotate(28 120 133)"/>
+  </svg>
 
-        <!-- Main trunk -->
-        <g fill="none" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M450 750
-                   C435 660 467 585 448 510
-                   C430 430 457 355 449 270
-                   C446 230 449 195 450 155"
-                stroke="url(#trunk)" stroke-width="15" opacity=".22"
-                filter="url(#softGlow)"/>
+  <h1>GROVE</h1>
+  <div class="line"></div>
+  <p>Coming Soon</p>
+  <div class="tagline">A WORLD CONNECTED</div>
 
-          <path d="M450 750
-                   C435 660 467 585 448 510
-                   C430 430 457 355 449 270
-                   C446 230 449 195 450 155"
-                stroke="url(#trunk)" stroke-width="7" filter="url(#glow)"/>
-
-          <path d="M449 568 C405 520 370 478 344 424
-                   C324 382 290 358 251 344"
-                stroke="url(#branches)" stroke-width="6" filter="url(#glow)"/>
-
-          <path d="M451 516 C501 466 535 410 550 352
-                   C566 299 607 267 650 243"
-                stroke="url(#branches)" stroke-width="6" filter="url(#glow)"/>
-
-          <path d="M450 426 C405 375 399 329 402 283
-                   C404 246 388 211 360 183"
-                stroke="url(#branches)" stroke-width="5"/>
-
-          <path d="M450 360 C489 324 510 280 506 237
-                   C503 207 519 180 542 156"
-                stroke="url(#branches)" stroke-width="5"/>
-
-          <!-- Left canopy -->
-          <path d="M344 424 C316 380 300 331 301 285
-                   C302 247 281 220 251 204"
-                stroke="url(#branches)" stroke-width="4"/>
-
-          <path d="M302 303 C262 283 231 249 221 211
-                   C214 184 197 166 173 151"
-                stroke="url(#branches)" stroke-width="3.5"/>
-
-          <path d="M290 355 C248 350 216 326 191 293
-                   C170 265 145 255 117 254"
-                stroke="url(#branches)" stroke-width="3.5"/>
-
-          <path d="M251 344 C222 314 203 281 200 249"
-                stroke="url(#branches)" stroke-width="3"/>
-
-          <path d="M402 283 C372 255 339 242 307 244
-                   C276 246 250 230 230 204"
-                stroke="url(#branches)" stroke-width="3"/>
-
-          <path d="M360 183 C344 151 321 132 291 120"
-                stroke="url(#branches)" stroke-width="3"/>
-
-          <path d="M251 204 C251 178 240 153 221 133"
-                stroke="url(#branches)" stroke-width="2.5"/>
-
-          <!-- Right canopy -->
-          <path d="M550 352 C586 319 606 276 603 236
-                   C601 207 619 180 644 164"
-                stroke="url(#branches)" stroke-width="4"/>
-
-          <path d="M603 236 C641 226 674 201 690 166
-                   C701 142 720 127 744 119"
-                stroke="url(#branches)" stroke-width="3.5"/>
-
-          <path d="M650 243 C684 252 715 242 742 220
-                   C766 201 793 197 820 203"
-                stroke="url(#branches)" stroke-width="3.5"/>
-
-          <path d="M506 237 C542 219 568 190 576 158
-                   C582 135 598 117 619 104"
-                stroke="url(#branches)" stroke-width="3"/>
-
-          <path d="M542 156 C542 130 555 108 574 91"
-                stroke="url(#branches)" stroke-width="2.5"/>
-
-          <path d="M744 119 C767 105 781 86 784 64"
-                stroke="url(#branches)" stroke-width="2.5"/>
-
-          <path d="M690 166 C714 162 733 149 748 130"
-                stroke="url(#branches)" stroke-width="2.5"/>
-
-          <!-- Living roots -->
-          <g stroke="url(#roots)" filter="url(#glow)">
-            <path d="M450 714 C412 745 382 780 342 794
-                     C303 808 270 804 237 823" stroke-width="5"/>
-            <path d="M444 730 C426 777 398 813 366 843
-                     C345 861 321 874 291 881" stroke-width="3.5"/>
-            <path d="M437 711 C397 720 356 739 323 763
-                     C290 786 257 787 220 785" stroke-width="3"/>
-            <path d="M455 720 C489 751 523 773 561 787
-                     C601 801 636 797 675 818" stroke-width="5"/>
-            <path d="M462 733 C487 780 515 812 550 839
-                     C575 858 600 870 631 879" stroke-width="3.5"/>
-            <path d="M463 707 C506 716 545 735 579 758
-                     C611 779 648 784 685 780" stroke-width="3"/>
-            <path d="M342 794 C329 816 328 838 337 857"
-                  stroke-width="2.5"/>
-            <path d="M237 823 C218 840 198 846 174 844"
-                  stroke-width="2.5"/>
-            <path d="M561 787 C574 812 574 836 563 855"
-                  stroke-width="2.5"/>
-            <path d="M675 818 C696 836 718 842 742 838"
-                  stroke-width="2.5"/>
-          </g>
-        </g>
-
-        <!-- Network nodes: small and restrained -->
-        <g fill="#05c9f4" filter="url(#glow)">
-          <circle cx="173" cy="151" r="3"/>
-          <circle cx="221" cy="211" r="3"/>
-          <circle cx="117" cy="254" r="3"/>
-          <circle cx="291" cy="120" r="2.5"/>
-          <circle cx="251" cy="344" r="3"/>
-          <circle cx="360" cy="183" r="3"/>
-          <circle cx="402" cy="283" r="3"/>
-          <circle cx="542" cy="156" r="3"/>
-          <circle cx="619" cy="104" r="3"/>
-          <circle cx="744" cy="119" r="3"/>
-          <circle cx="820" cy="203" r="3"/>
-          <circle cx="784" cy="64" r="3"/>
-          <circle cx="650" cy="243" r="3"/>
-          <circle cx="550" cy="352" r="3"/>
-        </g>
-
-        <g fill="#eb36ed" filter="url(#glow)">
-          <circle cx="450" cy="155" r="4"/>
-          <circle cx="344" cy="424" r="3"/>
-          <circle cx="237" cy="823" r="3"/>
-          <circle cx="675" cy="818" r="3"/>
-        </g>
-
-        <!-- A soft central light, like intelligence awakening -->
-        <circle cx="450" cy="440" r="90" fill="#851eff" opacity=".07"
-                filter="url(#softGlow)"/>
-        <circle cx="450" cy="440" r="3" fill="#f7f5ff" opacity=".8"
-                filter="url(#glow)"/>
-      </svg>
-    </div>
-
-    <div class="ground-light"></div>
-  </div>
-
-  <main class="content">
-    <h1 class="brand">GROVE</h1>
-    <p class="motto">PROGRAM OR BE PROGRAMMED.</p>
-    <p class="tagline">A World Connected</p>
-    <div class="coming">Coming Soon</div>
-  </main>
-
-  <footer class="footer">
-    A new world is taking root <span>✦</span>
-  </footer>
+</main>
 </body>
-  </html>
-  
+</html>
