@@ -75,7 +75,24 @@ body::before {
 
 [data-stage="thriving"] #grove-logo {
   width: min(72vw, 270px);
-  filter: drop-shadow(0 0 26px #851eff88);
+}
+
+[data-vitality="quiet"] #grove-logo {
+  filter: drop-shadow(0 0 8px #851eff33);
+}
+
+[data-vitality="awakening"] #grove-logo {
+  filter: drop-shadow(0 0 16px #851eff66);
+}
+
+[data-vitality="alive"] #grove-logo {
+  filter: drop-shadow(0 0 23px #a855f799);
+}
+
+[data-vitality="thriving"] #grove-logo {
+  filter:
+    drop-shadow(0 0 25px #851effaa)
+    drop-shadow(0 0 12px #05c9f455);
 }
 
 h1 {
@@ -111,11 +128,17 @@ h1 {
   text-transform: uppercase;
 }
 
-.community-count {
+.community-count,
+.vitality {
   margin: 18px 0 0;
   color: var(--cyan);
   font-size: 10px;
   letter-spacing: 3px;
+}
+
+.vitality {
+  margin-top: 12px;
+  color: #b39bdc;
 }
 
 .tagline {
