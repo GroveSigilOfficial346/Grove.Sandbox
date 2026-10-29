@@ -2,7 +2,7 @@
   "use strict";
 
   const API = "https://fpkrvgcpbnrusbfmhinj.supabase.co";
-  const KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwa3J2Z2NwYm5ydXNiZm1oaW5qIiwiaWF0IjoxNzkyNTE3Njk2LCJleHAiOjIxMDgwOTM2OTZ9.3CI1pHaEnpcQjnweA_g4Cmsscqp3eltMXWbPj2owHfo";
+  const KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwa3J2Z2NwYm5ydXNiZm1oaW5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1MTc2OTYsImV4cCI6MjEwODA5MzY5Nn0.3CI1pHaEnpcQjnweA_g4Cmsscqp3eltMXWbPj2owHfo";
 
   const $ = (selector) => document.querySelector(selector);
 
@@ -31,10 +31,7 @@
   let busy = false;
   let recoveryMode = false;
 
-  // Successful password login goes to the profile editor.
   const profileUrl = () => `${window.location.origin}/profile.html`;
-
-  // Email confirmation returns to the public homepage.
   const homeUrl = () => `${window.location.origin}/`;
 
   function setNotice(message, kind = "info") {
@@ -70,15 +67,8 @@
 
     showPanel("form");
 
-    $("#login-tab").setAttribute(
-      "aria-selected",
-      String(mode === "login")
-    );
-
-    $("#signup-tab").setAttribute(
-      "aria-selected",
-      String(mode === "signup")
-    );
+    $("#login-tab").setAttribute("aria-selected", String(mode === "login"));
+    $("#signup-tab").setAttribute("aria-selected", String(mode === "signup"));
 
     passwordInput.autocomplete =
       mode === "signup" ? "new-password" : "current-password";
@@ -229,11 +219,7 @@
         });
 
       if (error) {
-        if (
-          String(error.message || "")
-            .toLowerCase()
-            .includes("email not confirmed")
-        ) {
+        if (String(error.message || "").toLowerCase().includes("email not confirmed")) {
           pendingConfirmationEmail = email;
           showPanel("verification");
           title.textContent = "Verify Your Email";
@@ -253,8 +239,6 @@
 
       if (data.session) {
         setNotice("Login successful. Opening your profile…", "success");
-
-        // Go directly to the profile editor after successful login.
         window.location.assign(profileUrl());
       }
     } catch (error) {
@@ -387,18 +371,8 @@
     }
   }
 
-  function handleAuthState(event, session) {
-    if (event === "PASSWORD_RECOVERY") {
-      recoveryMode = true;
-      title.textContent = "Choose a New Password";
-      subtitle.textContent = "Set a new password for your Grove account.";
-      showPanel("recovery");
-      clearNotice();
-      return;
-    }
-
-    // Intentionally do not redirect automatically on SIGNED_IN.
-    // The login handler owns the login redirect, preventing loops.
+  function handleAuthState() {
+    // The login handler owns redirects to avoid redirect loops.
   }
 
   async function initialize() {
@@ -469,16 +443,10 @@
       return;
     }
 
-    if (
-      hashParams.get("type") === "recovery" &&
-      data.session
-    ) {
+    if (hashParams.get("type") === "recovery" && data.session) {
       recoveryMode = true;
       showPanel("recovery");
-    } else if (
-      hashParams.has("access_token") &&
-      data.session
-    ) {
+    } else if (hashParams.has("access_token") && data.session) {
       setNotice(
         "Your email link was accepted. You can now log in to Grove.",
         "success"
