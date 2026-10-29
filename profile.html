@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#050019">
+  <meta name="description" content="View a member profile on Grove.">
   <title>Profile — Grove</title>
   <link rel="stylesheet" href="css/global.css">
 
@@ -25,6 +26,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      gap: 16px;
       margin-bottom: 28px;
     }
 
@@ -49,6 +51,11 @@
       background: #100b25;
       text-decoration: none;
       font-size: 13px;
+    }
+
+    .top-actions a:hover,
+    .edit-profile-link:hover {
+      filter: brightness(1.15);
     }
 
     .profile-card {
@@ -117,7 +124,14 @@
       font-size: 14px;
     }
 
+    .profile-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
     .edit-profile-link {
+      display: inline-block;
       padding: 11px 17px;
       border: 1px solid #851eff88;
       border-radius: 9px;
@@ -166,6 +180,11 @@
       font-size: 19px;
     }
 
+    .posts-list {
+      display: grid;
+      gap: 16px;
+    }
+
     .empty-state {
       padding: 24px 10px;
       color: #a99bc9;
@@ -185,10 +204,31 @@
     }
 
     @media (max-width: 600px) {
-      .cover { height: 190px; }
-      .profile-content { padding: 0 20px 25px; }
-      .avatar { width: 108px; height: 108px; margin-top: -54px; }
-      .section { padding: 20px; }
+      body {
+        padding: 18px 12px 40px;
+      }
+
+      .cover {
+        height: 190px;
+      }
+
+      .profile-content {
+        padding: 0 20px 25px;
+      }
+
+      .avatar {
+        width: 108px;
+        height: 108px;
+        margin-top: -54px;
+      }
+
+      .section {
+        padding: 20px;
+      }
+
+      .topbar {
+        align-items: flex-start;
+      }
     }
   </style>
 
@@ -199,21 +239,29 @@
 <body>
   <main class="profile-app">
     <header class="topbar">
-      <a class="brand" href="index.html">GROVE</a>
+      <a class="brand" href="index.html" aria-label="Grove home">GROVE</a>
 
-      <nav class="top-actions">
+      <nav class="top-actions" aria-label="Main navigation">
         <a href="index.html">Home</a>
-        <a href="settings.html">Settings</a>
+        <a href="settings.html" id="settings-link" hidden>Settings</a>
       </nav>
     </header>
 
-    <p id="status" role="status" aria-live="polite">Loading your profile…</p>
+    <p id="status" role="status" aria-live="polite">
+      Loading profile…
+    </p>
 
-    <section class="profile-card" id="profile-card" hidden>
-      <div class="cover" id="cover"></div>
+    <section
+      class="profile-card"
+      id="profile-card"
+      aria-label="Member profile"
+      hidden
+    >
+      <div class="cover" id="cover" aria-label="Profile cover photo"></div>
 
       <div class="profile-content">
-        <div class="avatar" id="avatar"></div>
+        <div class="avatar" id="avatar">
+        </div>
 
         <div class="profile-heading">
           <div>
@@ -221,7 +269,16 @@
             <p class="username" id="username"></p>
           </div>
 
-          <a class="edit-profile-link" href="edit-profile.html">Edit Profile</a>
+          <div class="profile-actions">
+            <a
+              class="edit-profile-link"
+              id="edit-profile-link"
+              href="edit-profile.html"
+              hidden
+            >
+              Edit Profile
+            </a>
+          </div>
         </div>
 
         <p class="bio" id="bio" hidden></p>
@@ -230,11 +287,18 @@
       </div>
     </section>
 
-    <section class="section" id="posts-section" hidden>
-      <h2>Posts</h2>
-      <div class="empty-state">
-        Your posts will appear here.<br>
-        There's more to Grove than a profile.
+    <section
+      class="section"
+      id="posts-section"
+      aria-labelledby="posts-heading"
+      hidden
+    >
+      <h2 id="posts-heading">Posts</h2>
+
+      <div class="posts-list" id="posts-list">
+        <div class="empty-state" id="posts-empty">
+          This member hasn't posted anything yet.
+        </div>
       </div>
     </section>
   </main>
