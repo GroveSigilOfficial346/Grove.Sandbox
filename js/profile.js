@@ -3,10 +3,11 @@
 
   const SUPABASE_URL = "https://fpkrvgcpbnrusbfmhinj.supabase.co";
   const SUPABASE_ANON_KEY =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwa3J2Z2NwYm5ydXNiZm1oaW5qIiwiaWF0IjoxNzkyNTE3Njk2LCJleHAiOjIxMDgwOTM2OTZ9.3CI1pHaEnpcQjnweA_g4Cmsscqp3eltMXWbPj2owHfo";
+    "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
 
   const BUCKET = "grove-media";
   const MAX_FILE_SIZE = 5 * 1024 * 1024;
+
   const ALLOWED_TYPES = [
     "image/jpeg",
     "image/png",
@@ -23,6 +24,7 @@
   const avatarInput = $("#avatar");
   const coverInput = $("#cover");
   const avatarPreview = $("#avatar-preview");
+  const profileId = $("#profile-id");
 
   let supabase;
   let currentUser;
@@ -88,7 +90,7 @@
 
     if (!data) {
       throw new Error(
-        "Your profile record could not be found. Please sign out and sign in again."
+        "Your account exists, but its profile record could not be found."
       );
     }
 
@@ -101,24 +103,25 @@
     setField("#website", data.website);
     setField("#pronouns", data.pronouns);
 
-    $("#profile-id").textContent = data.id;
+    profileId.textContent = data.id;
     showAvatar(data.avatar_url);
   }
 
   async function uploadImage(file, type) {
     if (!file) return null;
 
-    const extensionByType = {
+    const extensions = {
       "image/jpeg": "jpg",
       "image/png": "png",
       "image/webp": "webp",
       "image/gif": "gif"
     };
 
-    const extension = extensionByType[file.type];
-    const path = `${currentUser.id}/${type}-${crypto.randomUUID()}.${extension}`;
+    const extension = extensions[file.type];
+    const path =
+      `${currentUser.id}/${type}-${crypto.randomUUID()}.${extension}`;
 
-    const { error: uploadError } = await supabase.storage
+    const { error } = await supabase.storage
       .from(BUCKET)
       .upload(path, file, {
         contentType: file.type,
@@ -126,7 +129,7 @@
         upsert: false
       });
 
-    if (uploadError) throw uploadError;
+    if (error) throw error;
 
     const { data } = supabase.storage
       .from(BUCKET)
@@ -228,8 +231,10 @@
       if (error) throw error;
 
       originalProfile = data;
+
       avatarInput.value = "";
       coverInput.value = "";
+
       showAvatar(data.avatar_url);
 
       setStatus("Your Grove profile has been saved! 🌱", "success");
@@ -237,18 +242,15 @@
       console.error("Grove profile save failed:", error);
 
       if (error.code === "23505") {
+        setStatus("That username is already taken.", "error");
+      } else if (error.code === "42501") {
         setStatus(
-          "That username is already taken. Choose another one.",
-          "error"
-        );
-      } else if (error.code === "42501" || error.code === "PGRST301") {
-        setStatus(
-          "Permission denied. Check your profile table's Supabase access policies.",
+          "Permission denied. Check your Supabase profile and storage policies.",
           "error"
         );
       } else {
         setStatus(
-          error.message || "Couldn't save your profile. Please try again.",
+          error.message || "Couldn't save your profile.",
           "error"
         );
       }
@@ -265,6 +267,7 @@
 
     try {
       const { error } = await supabase.auth.signOut();
+
       if (error) throw error;
 
       window.location.replace("auth.html?mode=login");
@@ -305,10 +308,14 @@
   async function initialize() {
     if (!window.supabase?.createClient) {
       setStatus(
-        "Grove's Supabase library didn't load. Refresh the page and try again.",
+        "Grove's Supabase library didn't load. Please refresh.",
         "error"
       );
-      saveButton.disabled = true;
+      return;
+    }
+
+    if (!form || !status || !saveButton || !logoutButton) {
+      console.error("Grove profile page is missing required HTML elements.");
       return;
     }
 
@@ -338,7 +345,10 @@
         return;
       }
 
+      profileId.textContent = currentUser.id;
+
       await loadProfile();
+
       initializeAvatarPreview();
 
       form.addEventListener("submit", saveProfile);
@@ -347,6 +357,7 @@
       setStatus("Ready to personalize your profile.", "success");
     } catch (error) {
       console.error("Grove profile initialization failed:", error);
+
       setStatus(
         error.message || "Couldn't load your profile. Please refresh.",
         "error"
@@ -357,7 +368,7 @@
   }
 
   initialize().catch((error) => {
-    console.error("Grove profile initialization error:", error);
-    setStatus("Grove couldn't initialize. Please refresh the page.", "error");
+    console.error("Grove initialization error:", error);
+    setStatus("Grove couldn't initialize. Please refresh.", "error");
   });
 })();
