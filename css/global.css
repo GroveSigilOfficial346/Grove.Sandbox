@@ -1,0 +1,238 @@
+
+:root {
+  --night: #050019;
+  --violet: #851eff;
+  --magenta: #eb36ed;
+  --cyan: #05c9f4;
+  --white: #f7f5ff;
+  --muted: #a69bc6;
+  --panel: #10062c;
+  --border: rgba(133, 30, 255, 0.3);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  scroll-behavior: smooth;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  background: var(--night);
+  color: var(--white);
+  font-family: Inter, "Segoe UI", Arial, sans-serif;
+}
+
+button,
+input,
+textarea,
+select {
+  font: inherit;
+}
+
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+img,
+svg {
+  max-width: 100%;
+}
+
+.scene {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+  background:
+    radial-gradient(
+      ellipse at 50% 53%,
+      #21104a 0%,
+      #10062c 34%,
+      #08021d 66%,
+      var(--night) 100%
+    );
+}
+
+.stars {
+  position: absolute;
+  inset: 0;
+  opacity: 0.7;
+  background-image:
+    radial-gradient(1px 1px at 12% 20%, #fff 50%, transparent 100%),
+    radial-gradient(1px 1px at 83% 17%, #bcaaff 50%, transparent 100%),
+    radial-gradient(2px 2px at 74% 38%, #fff 50%, transparent 100%),
+    radial-gradient(1px 1px at 21% 58%, #c7baff 50%, transparent 100%),
+    radial-gradient(1px 1px at 89% 72%, #fff 50%, transparent 100%),
+    radial-gradient(1px 1px at 35% 12%, #fff 50%, transparent 100%),
+    radial-gradient(2px 2px at 61% 82%, #a6eaff 50%, transparent 100%),
+    radial-gradient(1px 1px at 8% 83%, #fff 50%, transparent 100%),
+    radial-gradient(1px 1px at 46% 28%, #bba5ff 50%, transparent 100%),
+    radial-gradient(1px 1px at 94% 48%, #bba5ff 50%, transparent 100%);
+}
+
+.nebula {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 50% 55%, #851eff20, transparent 42%),
+    radial-gradient(ellipse at 28% 48%, #353bff12, transparent 38%),
+    radial-gradient(ellipse at 73% 50%, #05c9f410, transparent 38%);
+  animation: grove-nebula 12s ease-in-out infinite alternate;
+}
+
+.tree-halo {
+  position: absolute;
+  top: 47%;
+  left: 50%;
+  width: min(95vw, 760px);
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      circle,
+      #851eff1c 0%,
+      #851eff08 42%,
+      transparent 70%
+    );
+  animation: grove-breathe 7s ease-in-out infinite alternate;
+}
+
+.ground-light {
+  position: absolute;
+  top: 76%;
+  left: 50%;
+  width: min(95vw, 720px);
+  height: 120px;
+  transform: translateX(-50%);
+  border-radius: 50%;
+  background:
+    radial-gradient(
+      ellipse,
+      #851eff3a 0%,
+      #05c9f415 40%,
+      transparent 72%
+    );
+  filter: blur(15px);
+}
+
+.grove-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 46px;
+  padding: 12px 22px;
+  border: 1px solid rgba(5, 201, 244, 0.45);
+  border-radius: 12px;
+  background: linear-gradient(
+    110deg,
+    rgba(133, 30, 255, 0.22),
+    rgba(5, 201, 244, 0.12)
+  );
+  color: var(--white);
+  text-decoration: none;
+  transition:
+    border-color 180ms ease,
+    background 180ms ease,
+    transform 180ms ease;
+}
+
+.grove-button:hover {
+  border-color: var(--cyan);
+  background: linear-gradient(
+    110deg,
+    rgba(133, 30, 255, 0.35),
+    rgba(5, 201, 244, 0.2)
+  );
+}
+
+.grove-button:active {
+  transform: scale(0.98);
+}
+
+.grove-button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+}
+
+.grove-input {
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 14px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: rgba(5, 0, 25, 0.75);
+  color: var(--white);
+}
+
+.grove-input::placeholder {
+  color: #8179a7;
+}
+
+.grove-panel {
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background: rgba(16, 6, 44, 0.84);
+  box-shadow: 0 12px 50px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(16px);
+}
+
+@keyframes grove-breathe {
+  from {
+    opacity: 0.55;
+    transform: translate(-50%, -50%) scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.07);
+  }
+}
+
+@keyframes grove-nebula {
+  from {
+    opacity: 0.65;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes grove-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation: none !important;
+    transition: none !important;
+  }
+}
