@@ -7,7 +7,6 @@
 
   const app = document.querySelector(".profile-app");
   const topbar = document.querySelector(".topbar");
-  const status = document.getElementById("status");
   const profileCard = document.getElementById("profile-card");
   const postsSection = document.getElementById("posts-section");
 
@@ -118,7 +117,7 @@
   `;
   document.head.appendChild(style);
 
-  // Put the existing profile and posts inside the Profile view.
+  // Keep the existing profile and posts together.
   const profileView = document.createElement("section");
   profileView.className = "grove-view";
   profileView.id = "grove-profile-view";
@@ -126,12 +125,31 @@
   profileCard.before(profileView);
   profileView.append(profileCard, postsSection);
 
-  // Build the integrated navigation.
+  // Navigation.
   const navigation = document.createElement("nav");
   navigation.className = "grove-navigation";
   navigation.setAttribute("aria-label", "Grove sections");
 
   const views = {};
+
+  function switchView(name) {
+    Object.entries(views).forEach(([key, view]) => {
+      view.hidden = key !== name;
+    });
+
+    profileView.hidden = name !== "profile";
+
+    navigation.querySelectorAll(".grove-tab").forEach(button => {
+      button.setAttribute(
+        "aria-selected",
+        String(button.dataset.view === name)
+      );
+    });
+
+    if (name === "discover" && !discoverLoaded) {
+      loadMembers(searchInput.value.trim());
+    }
+  }
 
   function createView(name, label) {
     const button = document.createElement("button");
@@ -162,7 +180,17 @@
   profileButton.setAttribute("aria-selected", "true");
   navigation.appendChild(profileButton);
 
-  profileButton.addEventListener("click", () => switchView("profile"));
+  // FIX: Profile always returns to the signed-in user's own profile.
+  profileButton.addEventListener("click", () => {
+    const params = new URLSearchParams(window.location.search);
+
+    if (params.has("id") || params.has("username")) {
+      window.location.href = "profile.html";
+      return;
+    }
+
+    switchView("profile");
+  });
 
   const feedPanel = document.createElement("div");
   feedPanel.className = "grove-feed-placeholder";
@@ -196,25 +224,6 @@
   const discoverStatus = discoverPanel.querySelector("#grove-discover-status");
 
   topbar.after(navigation);
-
-  function switchView(name) {
-    Object.entries(views).forEach(([key, view]) => {
-      view.hidden = key !== name;
-    });
-
-    profileView.hidden = name !== "profile";
-
-    navigation.querySelectorAll(".grove-tab").forEach(button => {
-      button.setAttribute(
-        "aria-selected",
-        String(button.dataset.view === name)
-      );
-    });
-
-    if (name === "discover" && !discoverLoaded) {
-      loadMembers("");
-    }
-  }
 
   function element(tag, className, text) {
     const node = document.createElement(tag);
@@ -419,11 +428,19 @@
     }, 300);
   });
 
-  db.auth.getSession().then(({ data, error }) => {
-    if (error) console.error("Grove session:", error);
-    currentUser = data?.session?.user || null;
-  });
+  async function initializeSession() {
+    const { data, error } = await db.auth.getSession();
 
-  // Start on the member's profile.
+    if (error) {
+      console.error("Grove session:", error);
+      return;
+    }
+
+    currentUser = data?.session?.user || null;
+  }
+
+  initializeSession();
+
+  // Start on the profile currently loaded by profile-view.js.
   switchView("profile");
 })();
