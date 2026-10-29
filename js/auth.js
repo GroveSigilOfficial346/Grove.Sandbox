@@ -2,7 +2,7 @@
   "use strict";
 
   const API = "https://fpkrvgcpbnrusbfmhinj.supabase.co";
-  const KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwa3J2Z2NwYm5ydXNiZm1oaW5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1MTc2OTYsImV4cCI6MjEwODA5MzY5Nn0.3CI1pHaEnpcQjnweA_g4Cmsscqp3eltMXWbPj2owHfo";
+  const KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwa3J2Z2NwYm5ydXNiZm1oaW5qIiwiaWF0IjoxNzkyNTE3Njk2LCJleHAiOjIxMDgwOTM2OTZ9.3CI1pHaEnpcQjnweA_g4Cmsscqp3eltMXWbPj2owHfo";
 
   const $ = (selector) => document.querySelector(selector);
 
@@ -30,9 +30,12 @@
   let pendingConfirmationEmail = "";
   let busy = false;
   let recoveryMode = false;
-  let noticeTimer = null;
 
-  const redirectUrl = () => `${window.location.origin}/`;
+  // Successful password login goes to the profile editor.
+  const profileUrl = () => `${window.location.origin}/profile.html`;
+
+  // Email confirmation returns to the public homepage.
+  const homeUrl = () => `${window.location.origin}/`;
 
   function setNotice(message, kind = "info") {
     notice.textContent = message;
@@ -71,6 +74,7 @@
       "aria-selected",
       String(mode === "login")
     );
+
     $("#signup-tab").setAttribute(
       "aria-selected",
       String(mode === "signup")
@@ -111,15 +115,18 @@
     title.textContent = "Reset Password";
     subtitle.textContent =
       "Enter your email to receive a secure password-reset link.";
+
     showPanel("form");
     tabs.hidden = true;
     displayNameField.hidden = true;
     confirmPasswordField.hidden = true;
     forgotRow.hidden = true;
     passwordField.hidden = true;
+
     passwordInput.required = false;
     confirmPasswordInput.required = false;
     submitButton.textContent = "Send Reset Link";
+
     clearNotice();
   }
 
@@ -129,18 +136,23 @@
     if (message.includes("invalid login credentials")) {
       return "The email or password is incorrect.";
     }
+
     if (message.includes("email not confirmed")) {
       return "Please verify your email before logging in. You can request another confirmation email.";
     }
+
     if (message.includes("password should be at least")) {
       return "Your password must be at least 8 characters.";
     }
+
     if (message.includes("rate limit") || message.includes("too many requests")) {
       return "Too many attempts. Please wait a little while before trying again.";
     }
+
     if (message.includes("user already registered")) {
       return "An account with this email may already exist. Try logging in or requesting a password reset.";
     }
+
     if (message.includes("failed to fetch") || message.includes("network")) {
       return "Couldn't reach Grove right now. Check your connection and try again.";
     }
@@ -172,10 +184,8 @@
         email,
         password,
         options: {
-          emailRedirectTo: redirectUrl(),
-          data: {
-            display_name: name
-          }
+          emailRedirectTo: homeUrl(),
+          data: { display_name: name }
         }
       });
 
@@ -183,12 +193,14 @@
 
       if (data.session) {
         setNotice(
-          "Your account was created and you are signed in. Welcome to Grove!",
+          "Your account was created and you are signed in. Opening your profile…",
           "success"
         );
+
         window.setTimeout(() => {
-          window.location.assign(redirectUrl());
-        }, 900);
+          window.location.assign(profileUrl());
+        }, 700);
+
         return;
       }
 
@@ -218,25 +230,32 @@
 
       if (error) {
         if (
-          String(error.message || "").toLowerCase().includes("email not confirmed")
+          String(error.message || "")
+            .toLowerCase()
+            .includes("email not confirmed")
         ) {
           pendingConfirmationEmail = email;
+          showPanel("verification");
+          title.textContent = "Verify Your Email";
+          subtitle.textContent = "Confirm your email before entering Grove.";
+          resendButton.hidden = false;
+
           setNotice(
             "This account hasn't verified its email yet. Request another confirmation email below.",
             "error"
           );
-          verificationPanel.hidden = false;
-          resendButton.hidden = false;
+
           return;
         }
+
         throw error;
       }
 
       if (data.session) {
-        setNotice("Login successful. Opening Grove…", "success");
-        window.setTimeout(() => {
-          window.location.assign(redirectUrl());
-        }, 400);
+        setNotice("Login successful. Opening your profile…", "success");
+
+        // Go directly to the profile editor after successful login.
+        window.location.assign(profileUrl());
       }
     } catch (error) {
       setNotice(friendlyError(error), "error");
@@ -259,7 +278,7 @@
     try {
       const { error } =
         await window.groveSupabase.auth.resetPasswordForEmail(email, {
-          redirectTo: `${window.location.origin}/auth.html`
+          redirectTo: `${window.location.origin}/auth.html?mode=reset`
         });
 
       if (error) throw error;
@@ -290,16 +309,15 @@
       const { error } = await window.groveSupabase.auth.resend({
         type: "signup",
         email,
-        options: {
-          emailRedirectTo: redirectUrl()
-        }
+        options: { emailRedirectTo: homeUrl() }
       });
 
       if (error) throw error;
 
       pendingConfirmationEmail = email;
+
       setNotice(
-        `A confirmation email has been requested for ${email}. Check your inbox and spam folder. If you have requested several emails, wait before trying again.`,
+        `A confirmation email has been requested for ${email}. Check your inbox and spam folder.`,
         "success"
       );
     } catch (error) {
@@ -325,7 +343,8 @@
       return;
     }
 
-    setBusy(true, recoveryForm.querySelector("button[type='submit']"));
+    const recoverySubmit = recoveryForm.querySelector("button[type='submit']");
+    setBusy(true, recoverySubmit);
 
     try {
       const { error } = await window.groveSupabase.auth.updateUser({
@@ -336,15 +355,16 @@
 
       recoveryMode = false;
       setMode("login");
-      setNotice("Your password has been updated. You can now log in.", "success");
       showPanel("form");
+
+      setNotice(
+        "Your password has been updated. You can now log in.",
+        "success"
+      );
     } catch (error) {
       setNotice(friendlyError(error), "error");
     } finally {
-      setBusy(
-        false,
-        recoveryForm.querySelector("button[type='submit']")
-      );
+      setBusy(false, recoverySubmit);
     }
   }
 
@@ -367,7 +387,7 @@
     }
   }
 
-  async function handleAuthState(event, session) {
+  function handleAuthState(event, session) {
     if (event === "PASSWORD_RECOVERY") {
       recoveryMode = true;
       title.textContent = "Choose a New Password";
@@ -377,10 +397,8 @@
       return;
     }
 
-    if (event === "SIGNED_IN" && session && !recoveryMode) {
-      // Only redirect when a login action initiated the session.
-      // Signup confirmation redirects to the public homepage.
-    }
+    // Intentionally do not redirect automatically on SIGNED_IN.
+    // The login handler owns the login redirect, preventing loops.
   }
 
   async function initialize() {
@@ -411,12 +429,10 @@
     });
 
     $("#forgot-password").addEventListener("click", showRecovery);
-
     resendButton.addEventListener("click", handleResendConfirmation);
 
     backToLogin.addEventListener("click", () => {
       setMode("login");
-      verificationPanel.hidden = true;
       showPanel("form");
     });
 
@@ -430,47 +446,55 @@
       setMode(params.get("mode") === "signup" ? "signup" : "login");
     }
 
-    // Supabase processes confirmation/recovery links through the URL.
-    // Do not automatically redirect: show a clear result to the user.
-    const { data } = await window.groveSupabase.auth.getSession();
+    const { data, error } = await window.groveSupabase.auth.getSession();
 
-    if (window.location.hash.includes("error_description=")) {
-      const hashParams = new URLSearchParams(
-        window.location.hash.slice(1)
+    if (error) {
+      setNotice(friendlyError(error), "error");
+      return;
+    }
+
+    const hashParams = new URLSearchParams(
+      window.location.hash.replace(/^#/, "")
+    );
+
+    const authError = hashParams.get("error_description");
+
+    if (authError) {
+      setNotice(authError, "error");
+      window.history.replaceState(
+        {},
+        document.title,
+        window.location.pathname + window.location.search
       );
-      const description = hashParams.get("error_description");
-
-      setNotice(
-        description
-          ? decodeURIComponent(description.replace(/\+/g, " "))
-          : "This link may have expired. Request a new email and try again.",
-        "error"
-      );
-
-      window.history.replaceState({}, document.title, window.location.pathname);
       return;
     }
 
     if (
-      window.location.hash.includes("type=recovery") &&
+      hashParams.get("type") === "recovery" &&
       data.session
     ) {
       recoveryMode = true;
       showPanel("recovery");
     } else if (
-      window.location.hash.includes("access_token=") &&
+      hashParams.has("access_token") &&
       data.session
     ) {
       setNotice(
-        "Your email link was accepted. Your account is ready to use.",
+        "Your email link was accepted. You can now log in to Grove.",
         "success"
       );
-      window.history.replaceState({}, document.title, window.location.pathname);
+
+      window.history.replaceState(
+        {},
+        document.title,
+        window.location.pathname + window.location.search
+      );
     }
   }
 
   initialize().catch((error) => {
     console.error("Grove authentication initialization:", error);
+
     setNotice(
       "Grove authentication couldn't initialize. Refresh the page and try again.",
       "error"
