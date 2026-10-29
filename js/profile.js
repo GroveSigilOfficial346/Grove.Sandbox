@@ -175,7 +175,10 @@
     }
 
     if (!validWebsite(website)) {
-      setStatus("Enter a valid website URL beginning with https:// or http://.", "error");
+      setStatus(
+        "Enter a valid website URL beginning with https:// or http://.",
+        "error"
+      );
       $("#website").focus();
       return;
     }
