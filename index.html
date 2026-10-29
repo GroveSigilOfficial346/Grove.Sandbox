@@ -4,10 +4,62 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#050019">
-  <title>Grove — Coming Soon</title>
-  <meta name="description" content="Grove — A World Connected.">
+  <title>Grove — A World Connected</title>
+  <meta name="description" content="Grove — A World Connected. Join the community.">
   <link rel="stylesheet" href="css/global.css">
   <script src="js/community.js" defer></script>
+
+  <style>
+    .landing-actions {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-top: 28px;
+    }
+
+    .landing-button {
+      display: inline-flex;
+      justify-content: center;
+      align-items: center;
+      min-width: 140px;
+      padding: 12px 22px;
+      border: 1px solid #851eff88;
+      border-radius: 10px;
+      background: linear-gradient(110deg, #851eff, #5965ff);
+      box-shadow: 0 0 20px #851eff24;
+      color: #f7f5ff;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 1px;
+      text-decoration: none;
+      transition: transform .2s ease, filter .2s ease;
+    }
+
+    .landing-button:hover {
+      transform: translateY(-2px);
+      filter: brightness(1.15);
+    }
+
+    .landing-button.secondary {
+      background: #10082dcc;
+      border-color: #05c9f466;
+      color: #c9f8ff;
+    }
+
+    .landing-button:focus-visible {
+      outline: 2px solid #05c9f4;
+      outline-offset: 4px;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .landing-button {
+        transition: none;
+      }
+    }
+  </style>
 </head>
 <body>
   <main class="landing" data-stage="seed" data-vitality="quiet">
@@ -30,6 +82,15 @@
     </p>
 
     <p class="tagline">A WORLD CONNECTED</p>
+
+    <nav class="landing-actions" aria-label="Account">
+      <a class="landing-button" href="auth.html?mode=signup">
+        JOIN GROVE
+      </a>
+      <a class="landing-button secondary" href="auth.html?mode=login">
+        LOG IN
+      </a>
+    </nav>
   </main>
 </body>
 </html>
