@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#050019">
-  <title>Profile Settings — Grove</title>
+  <title>Settings — Grove</title>
   <link rel="stylesheet" href="css/global.css">
 
   <style>
@@ -17,7 +17,7 @@
     }
 
     .settings-app {
-      width: min(100%, 680px);
+      width: min(100%, 760px);
       margin: auto;
     }
 
@@ -25,7 +25,8 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 24px;
+      gap: 14px;
+      margin-bottom: 28px;
     }
 
     .brand {
@@ -35,110 +36,122 @@
       text-decoration: none;
     }
 
-    .panel {
-      padding: clamp(20px, 5vw, 34px);
-      border: 1px solid #851eff55;
-      border-radius: 18px;
-      background: #100b25ef;
-      box-shadow: 0 12px 50px #0005;
+    .top-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 9px;
+    }
+
+    .top-actions a {
+      padding: 10px 14px;
+      border: 1px solid #851eff66;
+      border-radius: 9px;
+      background: #100b25;
+      color: #eee5ff;
+      font-size: 13px;
+      text-decoration: none;
+    }
+
+    .heading {
+      margin-bottom: 24px;
     }
 
     h1 {
       margin: 0 0 8px;
       color: #f7f5ff;
-      font-size: 27px;
+      font-size: clamp(26px, 5vw, 34px);
     }
 
     .intro {
-      margin: 0 0 26px;
+      margin: 0;
       color: #bdb3dc;
       font-size: 14px;
+      line-height: 1.7;
+    }
+
+    .settings-section {
+      margin-top: 18px;
+      padding: 24px;
+      border: 1px solid #851eff55;
+      border-radius: 16px;
+      background: #100b25ef;
+      box-shadow: 0 12px 40px #0004;
+    }
+
+    .settings-section h2 {
+      margin: 0 0 8px;
+      color: #f7f5ff;
+      font-size: 18px;
+    }
+
+    .section-description {
+      margin: 0 0 18px;
+      color: #a99bc9;
+      font-size: 13px;
       line-height: 1.6;
     }
 
-    .field { margin: 18px 0; }
-
-    label {
-      display: block;
-      margin-bottom: 8px;
-      color: #d9cafa;
-      font-size: 13px;
-      font-weight: 600;
+    .setting-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 0;
+      border-top: 1px solid #ffffff12;
     }
 
-    input, textarea {
-      display: block;
-      width: 100%;
-      padding: 12px 13px;
-      border: 1px solid #57427e;
-      border-radius: 9px;
-      outline: none;
-      background: #08051a;
-      color: #f7f5ff;
-      font: inherit;
+    .setting-item:first-of-type {
+      border-top: 0;
+    }
+
+    .setting-item h3 {
+      margin: 0 0 5px;
+      color: #e9e1fa;
       font-size: 14px;
     }
 
-    input:focus, textarea:focus {
-      border-color: #05c9f4;
-      box-shadow: 0 0 0 3px #05c9f422;
-    }
-
-    textarea {
-      min-height: 110px;
-      resize: vertical;
-    }
-
-    input[type="file"] {
-      padding: 10px;
-      font-size: 12px;
-    }
-
-    .avatar-preview {
-      display: block;
-      width: 104px;
-      height: 104px;
-      margin: 0 0 12px;
-      border: 2px solid #a855f7;
-      border-radius: 50%;
-      background: #21143e;
-      object-fit: cover;
-    }
-
-    .hint {
-      margin: 7px 0 0;
+    .setting-item p {
+      margin: 0;
       color: #a99bc9;
       font-size: 12px;
       line-height: 1.5;
+    }
+
+    .setting-status {
+      flex-shrink: 0;
+      color: #a99bc9;
+      font-size: 12px;
     }
 
     .actions {
       display: flex;
       flex-wrap: wrap;
       gap: 10px;
-      margin-top: 25px;
+      margin-top: 22px;
     }
 
-    button, .button-link {
-      display: inline-flex;
-      justify-content: center;
-      align-items: center;
+    button {
       padding: 12px 18px;
       border: 1px solid #851eff88;
       border-radius: 9px;
       background: linear-gradient(110deg, #851eff, #5965ff);
-      color: #fff;
+      color: white;
       font: inherit;
       font-size: 13px;
       font-weight: 600;
-      text-decoration: none;
       cursor: pointer;
     }
 
     button.secondary {
-      background: #10082d;
       border-color: #05c9f466;
+      background: #10082d;
       color: #c9f8ff;
+    }
+
+    button.danger {
+      border-color: #ff858566;
+      background: #29101f;
+      color: #ffb5c0;
     }
 
     button:disabled {
@@ -148,95 +161,150 @@
 
     #status {
       min-height: 22px;
-      margin: 18px 0 0;
+      margin-top: 16px;
       font-size: 13px;
       line-height: 1.6;
       overflow-wrap: anywhere;
     }
 
-    #status[data-kind="error"] { color: #ff9caa; }
-    #status[data-kind="success"] { color: #7bd7a2; }
+    #status[data-kind="error"] {
+      color: #ff9caa;
+    }
 
-    [hidden] { display: none !important; }
+    #status[data-kind="success"] {
+      color: #7bd7a2;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    @media (max-width: 600px) {
+      .settings-section {
+        padding: 19px;
+      }
+
+      .setting-item {
+        align-items: flex-start;
+      }
+    }
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="js/profile.js" defer></script>
 </head>
 
 <body>
   <main class="settings-app">
+
     <header class="topbar">
       <a class="brand" href="index.html">GROVE</a>
-      <a class="button-link" href="profile.html">View Profile</a>
+
+      <nav class="top-actions">
+        <a href="profile.html">View Profile</a>
+        <a href="edit-profile.html">Edit Profile</a>
+        <a href="index.html">Home</a>
+      </nav>
     </header>
 
-    <section class="panel">
-      <h1>Profile Settings</h1>
-      <p class="intro">Manage how you appear to the Grove community.</p>
+    <div class="heading">
+      <h1>Account Settings</h1>
+      <p class="intro">
+        Manage your Grove account, security, privacy, and preferences.
+        These controls are separate from your public profile.
+      </p>
+    </div>
 
-      <form id="profile-form">
-        <div class="field">
-          <label for="avatar">Profile picture</label>
-          <img id="avatar-preview" class="avatar-preview" alt="Profile picture preview" hidden>
-          <input id="avatar" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
-          <p class="hint">JPG, PNG, WebP or GIF. Maximum 5 MB.</p>
+    <section class="settings-section">
+      <h2>Account Security</h2>
+      <p class="section-description">
+        Manage your login credentials and protect access to your account.
+      </p>
+
+      <div class="setting-item">
+        <div>
+          <h3>Email Address</h3>
+          <p>Change the email address connected to your account.</p>
         </div>
+        <span class="setting-status">Coming soon</span>
+      </div>
 
-        <div class="field">
-          <label for="cover">Profile background image</label>
-          <input id="cover" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
-          <p class="hint">Optional. Maximum 5 MB.</p>
+      <div class="setting-item">
+        <div>
+          <h3>Password</h3>
+          <p>Update your account password.</p>
         </div>
-
-        <div class="field">
-          <label for="username">Username</label>
-          <input id="username" name="username" maxlength="30"
-            autocomplete="username" placeholder="yourusername"
-            pattern="[A-Za-z0-9_]+"
-            title="Use letters, numbers, and underscores only">
-          <p class="hint">Letters, numbers, and underscores only.</p>
-        </div>
-
-        <div class="field">
-          <label for="display-name">Display name</label>
-          <input id="display-name" name="display_name"
-            maxlength="60" autocomplete="nickname"
-            placeholder="How people know you">
-        </div>
-
-        <div class="field">
-          <label for="bio">Bio</label>
-          <textarea id="bio" name="bio" maxlength="500"
-            placeholder="Tell the community a little about yourself..."></textarea>
-        </div>
-
-        <div class="field">
-          <label for="location">Location</label>
-          <input id="location" name="location" maxlength="100"
-            placeholder="City or region (optional)">
-        </div>
-
-        <div class="field">
-          <label for="pronouns">Pronouns</label>
-          <input id="pronouns" name="pronouns" maxlength="40"
-            placeholder="Optional">
-        </div>
-
-        <div class="field">
-          <label for="website">Website</label>
-          <input id="website" name="website" type="url"
-            maxlength="300" placeholder="https://example.com">
-        </div>
-
-        <div class="actions">
-          <button id="save-profile" type="submit">Save Changes</button>
-          <button id="logout" class="secondary" type="button">Log Out</button>
-        </div>
-
-        <p id="status" role="status" aria-live="polite"></p>
-      </form>
+        <span class="setting-status">Coming soon</span>
+      </div>
     </section>
+
+    <section class="settings-section">
+      <h2>Privacy</h2>
+      <p class="section-description">
+        Control how other members interact with and discover your account.
+      </p>
+
+      <div class="setting-item">
+        <div>
+          <h3>Profile Visibility</h3>
+          <p>Manage who can view your profile.</p>
+        </div>
+        <span class="setting-status">Coming soon</span>
+      </div>
+
+      <div class="setting-item">
+        <div>
+          <h3>Interactions</h3>
+          <p>Future controls for messages, comments, and member interactions.</p>
+        </div>
+        <span class="setting-status">Coming soon</span>
+      </div>
+    </section>
+
+    <section class="settings-section">
+      <h2>Notifications</h2>
+      <p class="section-description">
+        Manage future alerts for messages, follows, comments, and Grove updates.
+      </p>
+
+      <div class="setting-item">
+        <div>
+          <h3>Notification Preferences</h3>
+          <p>Choose which activity you want to receive notifications about.</p>
+        </div>
+        <span class="setting-status">Coming soon</span>
+      </div>
+    </section>
+
+    <section class="settings-section">
+      <h2>Appearance</h2>
+      <p class="section-description">
+        Personalize the way Grove looks and feels.
+      </p>
+
+      <div class="setting-item">
+        <div>
+          <h3>Display Preferences</h3>
+          <p>Future options for themes and interface appearance.</p>
+        </div>
+        <span class="setting-status">Coming soon</span>
+      </div>
+    </section>
+
+    <section class="settings-section">
+      <h2>Session</h2>
+      <p class="section-description">
+        Manage your current login session.
+      </p>
+
+      <div class="actions">
+        <button id="logout" class="danger" type="button">
+          Log Out
+        </button>
+      </div>
+
+      <p id="status" role="status" aria-live="polite"></p>
+    </section>
+
   </main>
 </body>
 </html>
