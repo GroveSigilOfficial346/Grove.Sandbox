@@ -21,11 +21,105 @@
     }
   }
 
+  function showError(message) {
+    const status = $("#status");
+    status.textContent = message;
+    status.hidden = false;
+  }
+
+  function getInitial(name) {
+    return (name || "G").trim().charAt(0).toUpperCase() || "G";
+  }
+
+  function renderProfile(profile) {
+    $("#display-name").textContent =
+      profile.display_name || "Grove Member";
+
+    $("#username").textContent =
+      profile.username ? `@${profile.username}` : "";
+
+    // Biography
+    const bio = $("#bio");
+
+    if (profile.bio?.trim()) {
+      bio.textContent = profile.bio;
+      bio.hidden = false;
+    } else {
+      bio.hidden = true;
+    }
+
+    // Profile picture
+    const avatar = $("#avatar");
+    avatar.replaceChildren();
+
+    const avatarUrl = profile.avatar_url
+      ? isSafeWebUrl(profile.avatar_url)
+      : null;
+
+    if (avatarUrl) {
+      const image = document.createElement("img");
+      image.src = avatarUrl.href;
+      image.alt = `${profile.display_name || "Member"}'s profile picture`;
+      image.loading = "lazy";
+      avatar.appendChild(image);
+    } else {
+      avatar.textContent = getInitial(profile.display_name);
+    }
+
+    // Cover photo
+    const cover = $("#cover");
+    cover.style.backgroundImage = "";
+
+    const coverUrl = profile.cover_url
+      ? isSafeWebUrl(profile.cover_url)
+      : null;
+
+    if (coverUrl) {
+      cover.style.backgroundImage =
+        `url("${coverUrl.href.replace(/["\\]/g, "\\$&")}")`;
+    }
+
+    // Profile details
+    const details = $("#details");
+    details.replaceChildren();
+
+    if (profile.location) {
+      const location = document.createElement("span");
+      location.textContent = `📍 ${profile.location}`;
+      details.appendChild(location);
+    }
+
+    if (profile.pronouns) {
+      const pronouns = document.createElement("span");
+      pronouns.textContent = profile.pronouns;
+      details.appendChild(pronouns);
+    }
+
+    if (profile.website) {
+      let websiteValue = profile.website.trim();
+
+      if (!/^https?:\/\//i.test(websiteValue)) {
+        websiteValue = `https://${websiteValue}`;
+      }
+
+      const websiteUrl = isSafeWebUrl(websiteValue);
+
+      if (websiteUrl) {
+        const link = document.createElement("a");
+        link.href = websiteUrl.href;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.textContent = "Website";
+        details.appendChild(link);
+      }
+    }
+  }
+
   async function initialize() {
     const status = $("#status");
 
     if (!window.supabase?.createClient) {
-      status.textContent = "Grove couldn't load. Please refresh.";
+      showError("Grove couldn't load. Please refresh.");
       return;
     }
 
@@ -35,104 +129,62 @@
     );
 
     try {
-      const { data: sessionData, error: sessionError } =
-        await client.auth.getSession();
+      // A visitor may have no session, so authentication is optional.
+      const {
+        data: sessionData,
+        error: sessionError
+      } = await client.auth.getSession();
 
       if (sessionError) throw sessionError;
 
-      const user = sessionData.session?.user;
+      const currentUser = sessionData.session?.user || null;
 
-      if (!user) {
-        window.location.replace("auth.html?mode=login");
-        return;
-      }
+      // Determine which profile to display.
+      const params = new URLSearchParams(window.location.search);
+      const requestedUsername = params.get("username")?.trim();
+      const requestedId = params.get("id")?.trim();
 
-      const { data: profile, error } = await client
+      let query = client
         .from("profiles")
         .select(
-          "username, display_name, bio, avatar_url, cover_url, location, website, pronouns"
-        )
-        .eq("id", user.id)
-        .maybeSingle();
+          "id, username, display_name, bio, avatar_url, cover_url, location, website, pronouns"
+        );
+
+      if (requestedId) {
+        query = query.eq("id", requestedId);
+      } else if (requestedUsername) {
+        query = query.ilike("username", requestedUsername);
+      } else if (currentUser) {
+        query = query.eq("id", currentUser.id);
+      } else {
+        throw new Error(
+          "Choose a member profile to view, or sign in to see your own."
+        );
+      }
+
+      const { data: profile, error } = await query.maybeSingle();
 
       if (error) throw error;
 
       if (!profile) {
-        throw new Error("Your profile couldn't be found.");
+        throw new Error("This Grove profile couldn't be found.");
       }
 
-      // Display name and username
-      $("#display-name").textContent =
-        profile.display_name || "Grove Member";
+      // Determine whether the visitor owns this profile.
+      const isOwner =
+        Boolean(currentUser) && currentUser.id === profile.id;
 
-      $("#username").textContent =
-        profile.username ? `@${profile.username}` : "";
+      // Only owners receive editing and account settings links.
+      const editLink = $("#edit-profile-link");
+      const settingsLink = $("#settings-link");
 
-      // Biography
-      const bio = $("#bio");
+      editLink.hidden = !isOwner;
+      settingsLink.hidden = !isOwner;
 
-      if (profile.bio?.trim()) {
-        bio.textContent = profile.bio;
-        bio.hidden = false;
-      }
+      // Display profile.
+      renderProfile(profile);
 
-      // Profile picture
-      const avatar = $("#avatar");
-      const avatarUrl = profile.avatar_url
-        ? isSafeWebUrl(profile.avatar_url)
-        : null;
-
-      if (avatarUrl) {
-        const image = document.createElement("img");
-        image.src = avatarUrl.href;
-        image.alt = "Profile picture";
-        image.loading = "lazy";
-        avatar.appendChild(image);
-      } else {
-        avatar.textContent =
-          (profile.display_name || "G").trim().charAt(0).toUpperCase();
-      }
-
-      // Cover image
-      const coverUrl = profile.cover_url
-        ? isSafeWebUrl(profile.cover_url)
-        : null;
-
-      if (coverUrl) {
-        $("#cover").style.backgroundImage =
-          `url(${JSON.stringify(coverUrl.href)})`;
-      }
-
-      // Profile details
-      const details = $("#details");
-
-      if (profile.location) {
-        const location = document.createElement("span");
-        location.textContent = `📍 ${profile.location}`;
-        details.appendChild(location);
-      }
-
-      if (profile.pronouns) {
-        const pronouns = document.createElement("span");
-        pronouns.textContent = profile.pronouns;
-        details.appendChild(pronouns);
-      }
-
-      // Website
-      if (profile.website) {
-        const websiteUrl = isSafeWebUrl(profile.website);
-
-        if (websiteUrl) {
-          const link = document.createElement("a");
-          link.href = websiteUrl.href;
-          link.target = "_blank";
-          link.rel = "noopener noreferrer";
-          link.textContent = "Website";
-          details.appendChild(link);
-        }
-      }
-
-      // Show completed profile
+      // Reveal the profile and posts area.
       $("#profile-card").hidden = false;
       $("#posts-section").hidden = false;
       status.hidden = true;
@@ -140,8 +192,9 @@
     } catch (error) {
       console.error("Grove profile display error:", error);
 
-      status.textContent =
-        error.message || "Couldn't load your profile.";
+      showError(
+        error.message || "Couldn't load this profile."
+      );
     }
   }
 
