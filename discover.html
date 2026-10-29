@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#050019">
+  <title>Discover | Grove</title>
+  <link rel="stylesheet" href="css/style.css">
+
+  <style>
+    body {
+      background: #050019;
+      color: #F7F5FF;
+      font-family: Inter, Arial, sans-serif;
+      min-height: 100vh;
+    }
+
+    .discover-page {
+      width: min(850px, 94%);
+      margin: 42px auto;
+      padding-bottom: 60px;
+    }
+
+    .discover-header {
+      margin-bottom: 28px;
+    }
+
+    .discover-header h1 {
+      font-size: 2rem;
+      margin: 0 0 8px;
+    }
+
+    .discover-header p {
+      color: #aaa4c4;
+      margin: 0;
+    }
+
+    .search-panel {
+      background: #111225;
+      border: 1px solid rgba(168, 85, 247, .25);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+
+    .search-panel label {
+      display: block;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+
+    #user-search {
+      width: 100%;
+      box-sizing: border-box;
+      background: #080817;
+      color: white;
+      border: 1px solid #343052;
+      border-radius: 10px;
+      padding: 15px;
+      font: inherit;
+      outline: none;
+    }
+
+    #user-search:focus {
+      border-color: #a855f7;
+      box-shadow: 0 0 0 2px rgba(168, 85, 247, .15);
+    }
+
+    .section-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin: 25px 0 14px;
+    }
+
+    .section-heading h2 {
+      font-size: 1.2rem;
+      margin: 0;
+    }
+
+    #results-count {
+      color: #aaa4c4;
+      font-size: .85rem;
+    }
+
+    #user-results {
+      display: grid;
+      gap: 12px;
+    }
+
+    .user-card {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      background: #111225;
+      border: 1px solid rgba(168, 85, 247, .2);
+      border-radius: 15px;
+      padding: 16px;
+      min-width: 0;
+    }
+
+    .user-avatar {
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      object-fit: cover;
+      flex-shrink: 0;
+      background: #080817;
+      border: 2px solid #851eff;
+    }
+
+    .user-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .user-info h3 {
+      margin: 0 0 4px;
+      font-size: 1rem;
+      overflow-wrap: anywhere;
+    }
+
+    .user-info .username {
+      color: #45e5ff;
+      font-size: .88rem;
+    }
+
+    .user-info .bio {
+      color: #aaa4c4;
+      font-size: .85rem;
+      margin: 7px 0 0;
+      overflow-wrap: anywhere;
+    }
+
+    .user-stats {
+      color: #aaa4c4;
+      font-size: .78rem;
+      margin-top: 8px;
+    }
+
+    .user-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      flex-shrink: 0;
+    }
+
+    .user-actions a,
+    .follow-button {
+      border: 0;
+      border-radius: 9px;
+      padding: 10px 14px;
+      font: inherit;
+      font-size: .85rem;
+      font-weight: 600;
+      text-align: center;
+      text-decoration: none;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .profile-button {
+      background: #28243b;
+      color: #ddd7f5;
+    }
+
+    .follow-button {
+      background: linear-gradient(100deg, #851eff, #5965ff);
+      color: white;
+    }
+
+    .follow-button.following {
+      background: #28243b;
+      color: #ddd7f5;
+      border: 1px solid #554b75;
+    }
+
+    .follow-button:disabled {
+      opacity: .55;
+      cursor: wait;
+    }
+
+    #discover-status {
+      color: #45e5ff;
+      margin: 18px 0;
+      min-height: 20px;
+      overflow-wrap: anywhere;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 35px 15px;
+      color: #aaa4c4;
+      background: #111225;
+      border-radius: 15px;
+    }
+
+    @media (max-width: 600px) {
+      .discover-page {
+        margin-top: 25px;
+      }
+
+      .user-card {
+        flex-wrap: wrap;
+      }
+
+      .user-info {
+        flex-basis: calc(100% - 85px);
+      }
+
+      .user-actions {
+        flex-direction: row;
+        width: 100%;
+      }
+
+      .user-actions a,
+      .user-actions button {
+        flex: 1;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <main class="discover-page">
+
+    <header class="discover-header">
+      <h1>Discover Grove</h1>
+      <p>Find people, explore profiles, and grow your community.</p>
+    </header>
+
+    <section class="search-panel">
+      <label for="user-search">Find members</label>
+      <input
+        type="search"
+        id="user-search"
+        placeholder="Search usernames or display names..."
+        autocomplete="off"
+      >
+    </section>
+
+    <div class="section-heading">
+      <h2 id="results-heading">Explore members</h2>
+      <span id="results-count"></span>
+    </div>
+
+    <div id="user-results">
+      <div class="empty-state">Loading Grove members...</div>
+    </div>
+
+    <p id="discover-status" role="status" aria-live="polite"></p>
+
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/discover.js"></script>
+</body>
+</html>
