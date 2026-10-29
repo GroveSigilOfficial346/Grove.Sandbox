@@ -32,17 +32,13 @@ body::before {
   position: fixed;
   inset: 0;
   pointer-events: none;
-  opacity: 0.22;
+  opacity: .22;
   background-image: radial-gradient(
-    circle,
-    #8e65ff 1px,
-    transparent 1.5px
+    circle, #8e65ff 1px, transparent 1.5px
   );
   background-size: 62px 62px;
   mask-image: radial-gradient(
-    ellipse at center,
-    black,
-    transparent 75%
+    ellipse at center, black, transparent 75%
   );
 }
 
@@ -55,16 +51,12 @@ body::before {
 }
 
 #grove-logo {
+  display: block;
   width: min(72vw, 270px);
+  aspect-ratio: 1;
+  height: auto;
   margin: 0 auto 8px;
   filter: drop-shadow(0 0 18px #851eff55);
-}
-
-#grove-logo svg {
-  display: block;
-  width: 100%;
-  height: auto;
-  overflow: visible;
   animation: breathe 5s ease-in-out infinite;
 }
 
@@ -75,10 +67,7 @@ h1 {
   letter-spacing: 12px;
   text-indent: 12px;
   background: linear-gradient(
-    90deg,
-    #a855f7,
-    var(--white),
-    var(--cyan)
+    90deg, #a855f7, var(--white), var(--cyan)
   );
   -webkit-background-clip: text;
   background-clip: text;
@@ -90,10 +79,7 @@ h1 {
   height: 2px;
   margin: 25px auto;
   background: linear-gradient(
-    90deg,
-    var(--violet),
-    var(--magenta),
-    var(--cyan)
+    90deg, var(--violet), var(--magenta), var(--cyan)
   );
   box-shadow: 0 0 14px #851eff66;
 }
@@ -120,7 +106,5 @@ h1 {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  #grove-logo svg {
-    animation: none;
-  }
+  #grove-logo { animation: none; }
 }
