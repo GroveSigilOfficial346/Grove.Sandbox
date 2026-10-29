@@ -4,28 +4,28 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#050019">
-  <title>My Profile — Grove</title>
+  <title>Profile — Grove</title>
   <link rel="stylesheet" href="css/global.css">
+
   <style>
     body {
       display: block;
       min-height: 100vh;
       overflow-x: hidden;
-      padding: 24px 16px 48px;
+      padding: 24px 16px 60px;
       color: #f7f5ff;
     }
 
     .profile-app {
-      width: min(100%, 680px);
-      margin: 0 auto;
+      width: min(100%, 900px);
+      margin: auto;
     }
 
     .topbar {
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      gap: 12px;
-      margin-bottom: 24px;
+      align-items: center;
+      margin-bottom: 28px;
     }
 
     .brand {
@@ -35,218 +35,206 @@
       text-decoration: none;
     }
 
-    .panel {
-      padding: clamp(20px, 5vw, 34px);
-      border: 1px solid #851eff55;
-      border-radius: 18px;
-      background: #100b25eF;
-      box-shadow: 0 12px 50px #0005;
-    }
-
-    h1 {
-      margin: 0 0 8px;
-      font-size: 28px;
-      letter-spacing: 1px;
-      text-indent: 0;
-      background: none;
-      color: #f7f5ff;
-    }
-
-    .intro {
-      margin: 0 0 26px;
-      color: #bdb3dc;
-      line-height: 1.6;
-      font-size: 14px;
-    }
-
-    .avatar-preview {
-      display: block;
-      width: 104px;
-      height: 104px;
-      object-fit: cover;
-      margin: 0 0 12px;
-      border: 2px solid #a855f7;
-      border-radius: 50%;
-      background: #21143e;
-    }
-
-    .field {
-      margin: 18px 0;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 8px;
-      color: #d9cafa;
-      font-size: 13px;
-      font-weight: 600;
-    }
-
-    input, textarea {
-      display: block;
-      width: 100%;
-      padding: 12px 13px;
-      border: 1px solid #57427e;
-      border-radius: 9px;
-      outline: none;
-      background: #08051a;
-      color: #f7f5ff;
-      font: inherit;
-      font-size: 14px;
-    }
-
-    input:focus, textarea:focus {
-      border-color: #05c9f4;
-      box-shadow: 0 0 0 3px #05c9f422;
-    }
-
-    textarea {
-      min-height: 110px;
-      resize: vertical;
-    }
-
-    input[type="file"] {
-      padding: 10px;
-      font-size: 12px;
-    }
-
-    .hint {
-      margin: 7px 0 0;
-      color: #a99bc9;
-      font-size: 12px;
-      line-height: 1.5;
-    }
-
-    .actions {
+    .top-actions {
       display: flex;
-      flex-wrap: wrap;
       gap: 10px;
-      margin-top: 25px;
     }
 
-    button, .button-link {
-      display: inline-flex;
-      justify-content: center;
-      align-items: center;
-      padding: 12px 18px;
-      border: 1px solid #851eff88;
+    .top-actions a {
+      padding: 10px 15px;
+      border: 1px solid #851eff66;
       border-radius: 9px;
-      background: linear-gradient(110deg, #851eff, #5965ff);
-      color: #fff;
-      font: inherit;
-      font-size: 13px;
-      font-weight: 600;
+      color: #eee5ff;
+      background: #100b25;
       text-decoration: none;
-      cursor: pointer;
-    }
-
-    button.secondary {
-      background: #10082d;
-      border-color: #05c9f466;
-      color: #c9f8ff;
-    }
-
-    button:disabled {
-      opacity: .6;
-      cursor: wait;
-    }
-
-    #status {
-      min-height: 22px;
-      margin: 18px 0 0;
       font-size: 13px;
-      line-height: 1.6;
+    }
+
+    .profile-card {
+      overflow: hidden;
+      border: 1px solid #851eff55;
+      border-radius: 20px;
+      background: #100b25;
+      box-shadow: 0 15px 55px #0006;
+    }
+
+    .cover {
+      height: 260px;
+      background:
+        radial-gradient(ellipse at 50% 100%, #851eff55, transparent 65%),
+        linear-gradient(120deg, #08051a, #171044, #08051a);
+      background-position: center;
+      background-size: cover;
+    }
+
+    .profile-content {
+      position: relative;
+      padding: 0 32px 30px;
+    }
+
+    .avatar {
+      width: 132px;
+      height: 132px;
+      margin-top: -66px;
+      position: relative;
+      display: grid;
+      place-items: center;
+      overflow: hidden;
+      border: 5px solid #100b25;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #851eff, #353bff);
+      color: white;
+      font-size: 42px;
+      font-weight: 700;
+    }
+
+    .avatar img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .profile-heading {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 20px;
+      flex-wrap: wrap;
+      margin-top: 15px;
+    }
+
+    .name {
+      margin: 0;
+      color: #fff;
+      font-size: clamp(25px, 5vw, 34px);
       overflow-wrap: anywhere;
     }
 
-    #status[data-kind="error"] { color: #ff9caa; }
-    #status[data-kind="success"] { color: #7bd7a2; }
+    .username {
+      margin: 5px 0 0;
+      color: #b9a7df;
+      font-size: 14px;
+    }
 
-    .public-link {
-      margin-top: 22px;
-      color: #c9b9ed;
+    .settings-link {
+      padding: 11px 17px;
+      border: 1px solid #851eff88;
+      border-radius: 9px;
+      background: linear-gradient(110deg, #851eff, #5965ff);
+      color: white;
+      text-decoration: none;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .bio {
+      max-width: 650px;
+      margin: 23px 0 0;
+      color: #e0d9f0;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+    }
+
+    .details {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 18px;
+      margin-top: 18px;
+      color: #a99bc9;
       font-size: 13px;
     }
 
-    .public-link a { color: #45e5ff; }
+    .details a {
+      color: #45e5ff;
+      text-decoration: none;
+      overflow-wrap: anywhere;
+    }
 
-    [hidden] { display: none !important; }
+    .section {
+      margin-top: 24px;
+      padding: 25px 28px;
+      border: 1px solid #851eff44;
+      border-radius: 16px;
+      background: #100b25;
+    }
 
-    @media (prefers-reduced-motion: reduce) {
-      *, *::before, *::after {
-        scroll-behavior: auto !important;
-      }
+    .section h2 {
+      margin: 0 0 10px;
+      color: #f7f5ff;
+      font-size: 19px;
+    }
+
+    .empty-state {
+      padding: 24px 10px;
+      color: #a99bc9;
+      text-align: center;
+      line-height: 1.7;
+    }
+
+    #status {
+      margin: 24px 0;
+      color: #ff9caa;
+      text-align: center;
+      font-size: 14px;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    @media (max-width: 600px) {
+      .cover { height: 190px; }
+      .profile-content { padding: 0 20px 25px; }
+      .avatar { width: 108px; height: 108px; margin-top: -54px; }
+      .section { padding: 20px; }
     }
   </style>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="js/profile.js" defer></script>
+  <script src="js/profile-view.js" defer></script>
 </head>
+
 <body>
   <main class="profile-app">
     <header class="topbar">
       <a class="brand" href="index.html">GROVE</a>
-      <a class="button-link" href="index.html">Home</a>
+
+      <nav class="top-actions">
+        <a href="index.html">Home</a>
+        <a href="settings.html">Settings</a>
+      </nav>
     </header>
 
-    <section class="panel">
-      <h1>Your Profile</h1>
-      <p class="intro">Shape how the Grove community sees you.</p>
+    <p id="status" role="status" aria-live="polite">Loading your profile…</p>
 
-      <form id="profile-form">
-        <div class="field">
-          <label for="avatar">Profile picture</label>
-          <img id="avatar-preview" class="avatar-preview" alt="Profile picture preview" hidden>
-          <input id="avatar" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
-          <p class="hint">Optional. JPG, PNG, WebP or GIF, maximum 5 MB.</p>
+    <section class="profile-card" id="profile-card" hidden>
+      <div class="cover" id="cover"></div>
+
+      <div class="profile-content">
+        <div class="avatar" id="avatar"></div>
+
+        <div class="profile-heading">
+          <div>
+            <h1 class="name" id="display-name"></h1>
+            <p class="username" id="username"></p>
+          </div>
+
+          <a class="settings-link" href="settings.html">Edit Profile</a>
         </div>
 
-        <div class="field">
-          <label for="cover">Profile background image</label>
-          <input id="cover" type="file" accept="image/jpeg,image/png,image/webp,image/gif">
-          <p class="hint">Optional. Maximum 5 MB.</p>
-        </div>
+        <p class="bio" id="bio" hidden></p>
 
-        <div class="field">
-          <label for="username">Username</label>
-          <input id="username" name="username" maxlength="30" autocomplete="username" placeholder="yourusername" pattern="[A-Za-z0-9_]+" title="Use letters, numbers, and underscores only">
-          <p class="hint">Letters, numbers, and underscores only.</p>
-        </div>
+        <div class="details" id="details"></div>
+      </div>
+    </section>
 
-        <div class="field">
-          <label for="display-name">Display name</label>
-          <input id="display-name" name="display_name" maxlength="60" autocomplete="nickname" placeholder="How people know you">
-        </div>
-
-        <div class="field">
-          <label for="bio">Bio</label>
-          <textarea id="bio" name="bio" maxlength="500" placeholder="Tell the community a little about yourself..."></textarea>
-        </div>
-
-        <div class="field">
-          <label for="location">Location</label>
-          <input id="location" name="location" maxlength="100" autocomplete="address-level2" placeholder="City or region (optional)">
-        </div>
-
-        <div class="field">
-          <label for="pronouns">Pronouns</label>
-          <input id="pronouns" name="pronouns" maxlength="40" placeholder="Optional">
-        </div>
-
-        <div class="field">
-          <label for="website">Website</label>
-          <input id="website" name="website" type="url" maxlength="300" placeholder="https://example.com" autocomplete="url">
-        </div>
-
-        <div class="actions">
-          <button id="save-profile" type="submit">Save Profile</button>
-          <button id="logout" class="secondary" type="button">Log Out</button>
-        </div>
-        <p id="status" role="status" aria-live="polite"></p>
-      </form>
-
-      <p class="public-link">
-        Your profile ID: <span id="profile-id">Loading…</span>
-      </p>
+    <section class="section" id="posts-section" hidden>
+      <h2>Posts</h2>
+      <div class="empty-state">
+        Your posts will appear here.<br>
+        There's more to Grove than a profile.
+      </div>
     </section>
   </main>
 </body>
