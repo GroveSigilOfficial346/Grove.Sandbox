@@ -4,9 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#050019">
-  <title>Grove — A World Connected</title>
   <meta name="description" content="Grove — A World Connected. Join the community.">
+  <title>Grove — A World Connected</title>
+
   <link rel="stylesheet" href="css/global.css">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/assets/grove-logo.svg" type="image/svg+xml">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Grove">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/community.js" defer></script>
@@ -20,7 +26,6 @@
       gap:12px;
       margin-top:28px;
     }
-
     .landing-button {
       display:inline-flex;
       justify-content:center;
@@ -39,31 +44,24 @@
       text-decoration:none;
       transition:transform .2s ease,filter .2s ease;
     }
-
     .landing-button:hover {
       transform:translateY(-2px);
       filter:brightness(1.15);
     }
-
     .landing-button.secondary {
       background:#10082dcc;
       border-color:#05c9f466;
       color:#c9f8ff;
     }
-
     .landing-button:focus-visible {
       outline:2px solid #05c9f4;
       outline-offset:4px;
     }
-
     .landing-button[hidden] {
       display:none !important;
     }
-
     @media(prefers-reduced-motion:reduce) {
-      .landing-button {
-        transition:none;
-      }
+      .landing-button { transition:none; }
     }
   </style>
 </head>
@@ -92,28 +90,15 @@
     <p class="tagline">A WORLD CONNECTED</p>
 
     <nav class="landing-actions" aria-label="Account">
-      <a
-        class="landing-button"
-        id="open-grove"
-        href="profile.html"
-        hidden
-      >
+      <a class="landing-button" id="open-grove" href="profile.html" hidden>
         OPEN GROVE
       </a>
 
-      <a
-        class="landing-button"
-        id="join-grove"
-        href="auth.html?mode=signup"
-      >
+      <a class="landing-button" id="join-grove" href="auth.html?mode=signup">
         JOIN GROVE
       </a>
 
-      <a
-        class="landing-button secondary"
-        id="login-grove"
-        href="auth.html?mode=login"
-      >
+      <a class="landing-button secondary" id="login-grove" href="auth.html?mode=login">
         LOG IN
       </a>
     </nav>
@@ -123,11 +108,8 @@
     (() => {
       "use strict";
 
-      const SUPABASE_URL =
-        "https://fpkrvgcpbnrusbfmhinj.supabase.co";
-
-      const SUPABASE_KEY =
-        "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
+      const SUPABASE_URL = "https://fpkrvgcpbnrusbfmhinj.supabase.co";
+      const SUPABASE_KEY = "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
 
       const openButton = document.getElementById("open-grove");
       const joinButton = document.getElementById("join-grove");
@@ -141,13 +123,8 @@
 
       async function initializeHome() {
         try {
-          const db = window.supabase.createClient(
-            SUPABASE_URL,
-            SUPABASE_KEY
-          );
-
+          const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
           const { data, error } = await db.auth.getSession();
-
           if (error) throw error;
 
           showSignedInState(Boolean(data.session));
@@ -155,7 +132,6 @@
           db.auth.onAuthStateChange((_event, session) => {
             showSignedInState(Boolean(session));
           });
-
         } catch (error) {
           console.error("Grove homepage session:", error);
           showSignedInState(false);
@@ -163,6 +139,13 @@
       }
 
       initializeHome();
+
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker.register("/sw.js")
+            .catch(error => console.error("Grove service worker:", error));
+        });
+      }
     })();
   </script>
 </body>
