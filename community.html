@@ -1165,6 +1165,124 @@ setInterval(()=>{
 
 init();
 
+/* GROVE GROUP CHAT CREATION */
+
+(function addGroupChatFeature(){
+
+ const messagesView=$("messages");
+ if(!messagesView || $("createGroupChat"))return;
+
+ const panel=document.createElement("div");
+ panel.className="panel";
+ panel.innerHTML=`
+  <h3>Create a group conversation</h3>
+  <input id="groupChatName" maxlength="80"
+   placeholder="Group name">
+  <input id="groupChatUsers" style="margin-top:8px"
+   placeholder="Usernames separated by commas">
+  <button id="createGroupChat" class="primary"
+   style="margin-top:10px">Create group</button>
+  <p class="muted">Enter the exact usernames of the people you want to invite.</p>
+ `;
+
+ messagesView.insertBefore(panel,messagesView.firstChild);
+
+ $("createGroupChat").onclick=async()=>{
+  const title=$("groupChatName").value.trim();
+  const usernames=[...new Set(
+   $("groupChatUsers").value
+    .split(",")
+    .map(x=>x.trim().replace(/^@/,"").toLowerCase())
+    .filter(Boolean)
+  )];
+
+  if(!title)return toast("Enter a group name.");
+  if(!usernames.length)return toast("Enter at least one username.");
+
+  const button=$("createGroupChat");
+  button.disabled=true;
+  button.textContent="Creating…";
+
+  try{
+   const {data:profiles,error:profileError}=await db
+    .from("profiles")
+    .select("id,username")
+    .in("username",usernames);
+
+   if(profileError)throw profileError;
+
+   const found=new Map(
+    (profiles||[]).map(p=>[p.username.toLowerCase(),p])
+   );
+
+   const missing=usernames.filter(name=>!found.has(name));
+
+   if(missing.length){
+    throw new Error("Username not found: "+missing.join(", "));
+   }
+
+   const memberIds=[
+    user.id,
+    ...[...found.values()]
+     .map(p=>p.id)
+     .filter(id=>id!==user.id)
+   ];
+
+   if(memberIds.length<3){
+    throw new Error("A group needs you and at least two other members.");
+   }
+
+   const {data:conversation,error:conversationError}=await db
+    .from("conversations")
+    .insert({
+     conversation_type:"group",
+     title,
+     created_by:user.id
+    })
+    .select()
+    .single();
+
+   if(conversationError)throw conversationError;
+
+   const rows=memberIds.map((id,index)=>({
+    conversation_id:conversation.id,
+    user_id:id,
+    role:index===0?"admin":"member"
+   }));
+
+   const {error:memberError}=await db
+    .from("conversation_members")
+    .insert(rows);
+
+   if(memberError){
+    await db.from("conversations")
+     .delete()
+     .eq("id",conversation.id)
+     .eq("created_by",user.id);
+
+    throw memberError;
+   }
+
+   $("groupChatName").value="";
+   $("groupChatUsers").value="";
+
+   activeConversation=conversation.id;
+
+   toast("Group conversation created.");
+
+   await loadConversations();
+   await openConversation(conversation.id);
+
+  }catch(error){
+   toast(error.message||"Unable to create group.");
+  }finally{
+   button.disabled=false;
+   button.textContent="Create group";
+  }
+ };
+
+})();
+
 </script>
 </body>
 </html>
