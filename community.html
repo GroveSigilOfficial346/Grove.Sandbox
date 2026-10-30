@@ -7,120 +7,264 @@
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{
-  --bg:#050019;--panel:#111225;--panel2:#191936;
-  --purple:#a855f7;--blue:#5965ff;--cyan:#45e5ff;
-  --text:#f7f5ff;--muted:#aaa8c4;--line:#302b50;
+  --bg:#050019;
+  --panel:#111225;
+  --panel2:#191936;
+  --purple:#a855f7;
+  --blue:#5965ff;
+  --cyan:#45e5ff;
+  --text:#f7f5ff;
+  --muted:#aaa8c4;
+  --line:#302b50;
 }
 *{box-sizing:border-box}
-body{margin:0;background:radial-gradient(circle at top,#17103c,var(--bg) 55%);
- color:var(--text);font:15px Inter,system-ui,sans-serif}
+body{
+  margin:0;
+  background:radial-gradient(circle at top,#17103c,var(--bg) 55%);
+  color:var(--text);
+  font:15px Inter,system-ui,sans-serif;
+}
 button,input,textarea,select{font:inherit}
 button{cursor:pointer}
 a{color:var(--cyan);text-decoration:none}
-header{position:sticky;top:0;z-index:10;background:#08051beF;
- border-bottom:1px solid var(--line);padding:13px 4%;display:flex;
- align-items:center;justify-content:space-between;gap:12px}
+header{
+  position:sticky;
+  top:0;
+  z-index:10;
+  background:#08051bef;
+  border-bottom:1px solid var(--line);
+  padding:13px 4%;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+}
 .logo{font-weight:900;letter-spacing:3px;color:white}
 .logo span{color:var(--purple)}
-header button,.btn{border:1px solid #51417b;background:#211743;color:white;
- padding:10px 14px;border-radius:10px}
+header button,.btn{
+  border:1px solid #51417b;
+  background:#211743;
+  color:white;
+  padding:10px 14px;
+  border-radius:10px;
+}
 header button:hover,.btn:hover{border-color:var(--cyan)}
-.layout{max-width:1400px;margin:auto;padding:22px;display:grid;
- grid-template-columns:210px minmax(0,1fr) 260px;gap:20px}
-nav,.panel,.card{background:#111225eF;border:1px solid var(--line);
- border-radius:16px}
-nav{padding:12px;height:max-content;position:sticky;top:78px}
-.navbtn{width:100%;text-align:left;padding:13px;border:0;border-radius:9px;
- background:transparent;color:var(--muted);margin:3px 0}
-.navbtn.active,.navbtn:hover{background:#29204b;color:white}
+.layout{
+  max-width:1400px;
+  margin:auto;
+  padding:22px;
+  display:grid;
+  grid-template-columns:210px minmax(0,1fr) 240px;
+  gap:20px;
+}
+nav,.panel,.card{
+  background:#111225ef;
+  border:1px solid var(--line);
+  border-radius:16px;
+}
+nav{
+  padding:12px;
+  height:max-content;
+  position:sticky;
+  top:78px;
+}
+.navbtn{
+  width:100%;
+  text-align:left;
+  padding:13px;
+  border:0;
+  border-radius:9px;
+  background:transparent;
+  color:var(--muted);
+  margin:3px 0;
+}
+.navbtn.active,.navbtn:hover{
+  background:#29204b;
+  color:white;
+}
 main{min-width:0}
 .panel{padding:18px;margin-bottom:16px}
 h2,h3{margin:0 0 13px}
 .muted{color:var(--muted);font-size:13px}
-input,textarea,select{width:100%;padding:12px;background:#09091b;
- color:white;border:1px solid var(--line);border-radius:10px;outline:none}
+input,textarea,select{
+  width:100%;
+  padding:12px;
+  background:#09091b;
+  color:white;
+  border:1px solid var(--line);
+  border-radius:10px;
+  outline:none;
+}
 textarea{resize:vertical;min-height:90px}
-input:focus,textarea:focus{border-color:var(--cyan)}
+input:focus,textarea:focus,select:focus{border-color:var(--cyan)}
 .row{display:flex;gap:9px;align-items:center}
 .row>*{min-width:0}
 .row .grow{flex:1}
-.primary{background:linear-gradient(110deg,#772be4,#424ce9);
- border:0;color:white;padding:11px 16px;border-radius:10px}
-.secondary{background:#211743;color:white;border:1px solid var(--line);
- padding:9px 12px;border-radius:9px}
+.primary{
+  background:linear-gradient(110deg,#772be4,#424ce9);
+  border:0;
+  color:white;
+  padding:11px 16px;
+  border-radius:10px;
+}
+.secondary{
+  background:#211743;
+  color:white;
+  border:1px solid var(--line);
+  padding:9px 12px;
+  border-radius:9px;
+}
 .danger{color:#ff9baf;border-color:#74364c}
-.view{display:none}.view.active{display:block}
-.post{background:#111225;border:1px solid var(--line);border-radius:15px;
- padding:17px;margin-bottom:14px}
+.view{display:none}
+.view.active{display:block}
+.post{
+  background:#111225;
+  border:1px solid var(--line);
+  border-radius:15px;
+  padding:17px;
+  margin-bottom:14px;
+}
 .posthead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-.avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;
- background:#29204b;display:grid;place-items:center;flex-shrink:0}
+.avatar{
+  width:42px;
+  height:42px;
+  border-radius:50%;
+  object-fit:cover;
+  background:#29204b;
+  display:grid;
+  place-items:center;
+  flex-shrink:0;
+}
 .postbody{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55}
 .postmedia{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
 .postmedia img{max-width:100%;max-height:380px;border-radius:12px}
 .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
-.actions button{background:#1b1935;border:1px solid var(--line);
- color:#ddd9f4;padding:8px 11px;border-radius:9px}
+.actions button{
+  background:#1b1935;
+  border:1px solid var(--line);
+  color:#ddd9f4;
+  padding:8px 11px;
+  border-radius:9px;
+}
 .actions button.liked{color:#ff8db3;border-color:#a94c75}
 .comment{border-top:1px solid var(--line);padding:10px 0}
-.member{display:flex;align-items:center;gap:11px;padding:12px 0;
- border-bottom:1px solid var(--line)}
+.member{display:flex;align-items:center;gap:11px;padding:12px 0;border-bottom:1px solid var(--line)}
 .member:last-child{border:0}
 .member-info{flex:1;min-width:0}
-.member-info strong,.member-info small{display:block;overflow:hidden;
- text-overflow:ellipsis;white-space:nowrap}
+.member-info strong,.member-info small{
+  display:block;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
 .member-info small{color:var(--muted);margin-top:4px}
-.chat-layout{display:grid;grid-template-columns:220px minmax(0,1fr);
- gap:12px;min-height:420px}
+.chat-layout{
+  display:grid;
+  grid-template-columns:220px minmax(0,1fr);
+  gap:12px;
+  min-height:420px;
+}
 .chat-list{border-right:1px solid var(--line);padding-right:10px}
-.chat-item{width:100%;text-align:left;background:transparent;color:white;
- border:0;border-radius:9px;padding:11px}
+.chat-item{
+  width:100%;
+  text-align:left;
+  background:transparent;
+  color:white;
+  border:0;
+  border-radius:9px;
+  padding:11px;
+}
 .chat-item.active,.chat-item:hover{background:#29204b}
 .chat-window{display:flex;flex-direction:column;min-height:400px}
 .messages{flex:1;overflow:auto;max-height:430px;padding:10px}
-.bubble{max-width:82%;width:max-content;background:#252044;
- border-radius:14px;padding:10px 13px;margin:8px 0;white-space:pre-wrap;
- overflow-wrap:anywhere}
+.bubble{
+  max-width:82%;
+  width:max-content;
+  background:#252044;
+  border-radius:14px;
+  padding:10px 13px;
+  margin:8px 0;
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
 .bubble.mine{margin-left:auto;background:#49318b}
 .bubble small{display:block;color:#c4badf;font-size:10px;margin-top:5px}
-#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
- background:#27204a;border:1px solid var(--cyan);padding:12px 18px;
- border-radius:10px;display:none;z-index:99}
+#toast{
+  position:fixed;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  background:#27204a;
+  border:1px solid var(--cyan);
+  padding:12px 18px;
+  border-radius:10px;
+  display:none;
+  z-index:99;
+}
 .rightbox{height:max-content}
+.quick-nav{
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:10px;
+}
+.quick-nav a{
+  display:inline-block;
+  background:#211743;
+  border:1px solid var(--line);
+  border-radius:9px;
+  padding:9px 12px;
+}
 @media(max-width:950px){
- .layout{grid-template-columns:1fr}
- nav{position:static;display:flex;overflow:auto;gap:5px}
- .navbtn{white-space:nowrap;width:auto}
- .rightbox{display:none}
+  .layout{grid-template-columns:1fr}
+  nav{
+    position:sticky;
+    top:65px;
+    display:flex;
+    overflow-x:auto;
+    gap:5px;
+    z-index:8;
+  }
+  .navbtn{white-space:nowrap;width:auto}
+  .rightbox{display:block}
 }
 @media(max-width:600px){
- .layout{padding:12px}.chat-layout{grid-template-columns:1fr}
- .chat-list{border:0;border-bottom:1px solid var(--line);padding:0 0 10px}
- header{padding:12px}
+  .layout{padding:12px}
+  .chat-layout{grid-template-columns:1fr}
+  .chat-list{
+    border:0;
+    border-bottom:1px solid var(--line);
+    padding:0 0 10px;
+  }
+  header{padding:12px}
+  header .muted{display:none}
 }
 </style>
 </head>
 <body>
+
 <header>
- <div class="logo">GROVE<span>.</span> COMMUNITY</div>
- <div class="row">
-  <span id="myName" class="muted">Loading account…</span>
-  <button id="logout">Log out</button>
- </div>
+  <div class="logo">GROVE<span>.</span> COMMUNITY</div>
+  <div class="row">
+    <span id="myName" class="muted">Loading account…</span>
+    <button id="logout">Log out</button>
+  </div>
 </header>
 
 <div class="layout">
+
 <nav>
- <button class="navbtn active" data-view="feed">⌂ Feed</button>
- <button class="navbtn" data-view="discover">⌕ Discover</button>
- <button class="navbtn" data-view="messages">✉ Messages</button>
- <button class="navbtn" data-view="broadcast">◉ Broadcast</button>
- <button class="navbtn" data-view="notifications">♧ Notifications</button>
- <button class="navbtn" data-view="staff">✦ Staff application</button>
+  <button class="navbtn active" data-view="feed">⌂ Feed</button>
+  <button class="navbtn" data-view="discover">⌕ Discover</button>
+  <button class="navbtn" data-view="messages">✉ Messages</button>
+  <button class="navbtn" data-view="broadcast">◉ Broadcast</button>
+  <button class="navbtn" data-view="notifications">♧ Notifications</button>
+  <button class="navbtn" data-view="staff">✦ Staff</button>
 </nav>
 
 <main>
-<section id="feed" class="view active">
+
+  <section id="feed" class="view active">
  <div class="panel">
   <h2>Community feed</h2>
   <textarea id="postBody" maxlength="5000" placeholder="Share something with Grove…"></textarea>
@@ -145,10 +289,6 @@ input:focus,textarea:focus{border-color:var(--cyan)}
   </div>
   <div id="membersList" style="margin-top:12px"></div>
  </div>
- <div class="panel">
-  <h3>Open a profile</h3>
-  <p class="muted">Search by username above. Select a member to open their public profile page.</p>
- </div>
 </section>
 
 <section id="messages" class="view">
@@ -158,7 +298,7 @@ input:focus,textarea:focus{border-color:var(--cyan)}
    <input id="messageUsername" placeholder="Start chat — enter exact username">
    <button class="primary" id="startChat">Open</button>
   </div>
-  <p class="muted">Direct messages are only visible to conversation participants permitted by your database policies.</p>
+  <p class="muted">Messages are visible only to permitted conversation participants.</p>
   <div class="chat-layout">
    <div class="chat-list" id="chatList"></div>
    <div class="chat-window">
@@ -221,427 +361,15 @@ input:focus,textarea:focus{border-color:var(--cyan)}
  </div>
  <div class="panel">
   <h3>Quick links</h3>
-  <p><a href="profile.html">My profile</a></p>
-  <p><a href="settings.html">Settings</a></p>
-  <p><a href="edit-profile.html">Edit profile</a></p>
+  <div class="quick-nav">
+   <a href="profile.html">My profile</a>
+   <a href="settings.html">Settings</a>
+   <a href="edit-profile.html">Edit profile</a>
+  </div>
  </div>
 </aside>
 </div>
+
 <div id="toast"></div>
 
-<script>
-const SUPABASE_URL = "https://fpkrvgcpbnrusbfmhinj.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwa3J2Z2NwYm5ydXNiZm1oaW5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1MTc2OTYsImV4cCI6MjEwODA5MzY5Nn0.3CI1pHaEnpcQjnweA_g4Cmsscqp3eltMXWbPj2owHfo";
-
-const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
-let user=null, myProfile=null, activeConversation=null, activeChannel=null;
-let conversationCache=[], memberCache=[];
-
-const $=id=>document.getElementById(id);
-const esc=value=>String(value??"").replace(/[&<>"']/g,c=>({
- "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-}[c]));
-function toast(message){
- const t=$("toast");t.textContent=message;t.style.display="block";
- clearTimeout(window.toastTimer);
- window.toastTimer=setTimeout(()=>t.style.display="none",2800);
-}
-function avatar(profile){
- if(profile?.avatar_url)return `<img class="avatar" src="${esc(profile.avatar_url)}" alt="">`;
- return `<div class="avatar">${esc((profile?.display_name||profile?.username||"?").slice(0,1).toUpperCase())}</div>`;
-}
-function displayName(p){
- return p?.display_name || (p?.username ? "@"+p.username : "Grove member");
-}
-function switchView(name){
- document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id===name));
- document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.dataset.view===name));
- if(name==="feed")loadFeed();
- if(name==="discover")loadMembers();
- if(name==="messages")loadConversations();
- if(name==="broadcast")loadChannels();
- if(name==="notifications")loadNotifications();
- if(name==="staff")loadApplication();
-}
-document.querySelectorAll(".navbtn").forEach(b=>b.addEventListener("click",()=>switchView(b.dataset.view)));
-$("rightDiscover").onclick=()=>switchView("discover");
-$("logout").onclick=async()=>{
- await db.auth.signOut();location.href="auth.html";
-};
-
-async function init(){
- const {data,error}=await db.auth.getSession();
- if(error||!data.session){location.href="auth.html";return}
- user=data.session.user;
- const result=await db.from("profiles").select("*").eq("id",user.id).maybeSingle();
- myProfile=result.data;
- $("myName").textContent=displayName(myProfile);
- await Promise.all([loadFeed(),loadNotifications()]);
-}
-async function loadFeed(){
- const host=$("feedPosts");host.innerHTML='<p class="muted">Loading posts…</p>';
- const {data:posts,error}=await db.from("posts").select("*")
-  .order("created_at",{ascending:false}).limit(40);
- if(error){host.textContent=error.message;return}
- if(!posts?.length){host.innerHTML='<p class="muted">No posts yet. Start the conversation.</p>';return}
- const ids=[...new Set(posts.map(p=>p.author_id))];
- const {data:profiles}=await db.from("profiles")
-  .select("id,username,display_name,avatar_url").in("id",ids);
- const map=Object.fromEntries((profiles||[]).map(p=>[p.id,p]));
- const postIds=posts.map(p=>p.id);
- const {data:likes}=await db.from("post_likes").select("post_id,user_id").in("post_id",postIds);
- const {data:comments}=await db.from("comments").select("id,post_id,author_id,body,created_at")
-  .in("post_id",postIds).order("created_at",{ascending:true});
- const liked=new Set((likes||[]).filter(l=>l.user_id===user.id).map(l=>l.post_id));
- const commentAuthors=[...new Set((comments||[]).map(c=>c.author_id))];
- let commentProfiles={};
- if(commentAuthors.length){
-  const {data:cp}=await db.from("profiles").select("id,username,display_name")
-   .in("id",commentAuthors);
-  commentProfiles=Object.fromEntries((cp||[]).map(p=>[p.id,p]));
- }
- host.innerHTML=posts.map(p=>{
-  const author=map[p.author_id]||{};
-  const postComments=(comments||[]).filter(c=>c.post_id===p.id);
-  const media=(p.media_urls||[]).map(url=>`<img src="${esc(url)}" alt="Post image">`).join("");
-  return `<article class="post" data-post="${p.id}">
-   <div class="posthead">${avatar(author)}
-    <div><strong>${esc(displayName(author))}</strong>
-     <div class="muted">@${esc(author.username||"member")} · ${new Date(p.created_at).toLocaleString()}</div>
-    </div>
-   </div>
-   <div class="postbody">${esc(p.body)}</div>
-   <div class="postmedia">${media}</div>
-   <div class="actions">
-    <button class="${liked.has(p.id)?"liked":""}" data-like="${p.id}">${liked.has(p.id)?"♥ Liked":"♡ Like"} · ${(likes||[]).filter(l=>l.post_id===p.id).length}</button>
-    <button data-comment-focus="${p.id}">Comment · ${postComments.length}</button>
-    <button data-bookmark="${p.id}">Save</button>
-    <button data-report="${p.id}">Report</button>
-    ${p.author_id===user.id?`<button class="danger" data-delete="${p.id}">Delete</button>`:""}
-   </div>
-   <div class="comments">${postComments.map(c=>{
-    const cp=commentProfiles[c.author_id]||{};
-    return `<div class="comment"><strong>${esc(displayName(cp))}</strong>
-     <span>${esc(c.body)}</span></div>`;
-   }).join("")}</div>
-   <form class="row comment-form" data-comment="${p.id}" style="margin-top:10px">
-    <input class="grow" maxlength="1500" placeholder="Write a comment…">
-    <button class="secondary">Send</button>
-   </form>
-  </article>`;
- }).join("");
-}
-$("publishPost").onclick=async()=>{
- const body=$("postBody").value.trim();if(!body)return toast("Write something first.");
- const {error}=await db.from("posts").insert({
-  author_id:user.id,body,visibility:$("postVisibility").value
- });
- if(error)return toast(error.message);
- $("postBody").value="";toast("Post published.");loadFeed();
-};
-$("feedPosts").addEventListener("click",async e=>{
- const like=e.target.closest("[data-like]");
- const bookmark=e.target.closest("[data-bookmark]");
- const focus=e.target.closest("[data-comment-focus]");
- const del=e.target.closest("[data-delete]");
- const report=e.target.closest("[data-report]");
- if(like){
-  const post_id=like.dataset.like;
-  const wasLiked=like.classList.contains("liked");
-  like.disabled=true;
-  const result=wasLiked
-   ?await db.from("post_likes").delete().eq("post_id",post_id).eq("user_id",user.id)
-   :await db.from("post_likes").insert({post_id,user_id:user.id});
-  like.disabled=false;
-  if(result.error)toast(result.error.message);else loadFeed();
- }
- if(bookmark){
-  const {error}=await db.from("bookmarks").upsert({user_id:user.id,post_id:bookmark.dataset.bookmark});
-  toast(error?error.message:"Post saved.");
- }
- if(focus){
-  const input=focus.closest(".post").querySelector(".comment-form input");
-  input.focus();
- }
- if(del&&confirm("Delete this post?")){
-  const {error}=await db.from("posts").delete().eq("id",del.dataset.delete).eq("author_id",user.id);
-  toast(error?error.message:"Post deleted.");loadFeed();
- }
- if(report){
-  toast("Report storage is not configured in this database yet. The post has not been reported.");
- }
-});
-$("feedPosts").addEventListener("submit",async e=>{
- const form=e.target.closest(".comment-form");if(!form)return;
- e.preventDefault();
- const body=form.querySelector("input").value.trim();if(!body)return;
- const {error}=await db.from("comments").insert({
-  post_id:form.dataset.comment,author_id:user.id,body
- });
- if(error)toast(error.message);else{toast("Comment added.");loadFeed();}
-});
-
-/* DISCOVER */
-async function loadMembers(mode="new"){
- const host=$("membersList");host.innerHTML='<p class="muted">Loading members…</p>';
- const term=$("memberSearch").value.trim().replace(/^@/,"");
- let query=db.from("profiles").select("id,username,display_name,bio,avatar_url,created_at,is_private")
-  .neq("id",user.id).order("created_at",{ascending:false}).limit(50);
- if(term)query=query.or(`username.ilike.%${term}%,display_name.ilike.%${term}%`);
- const {data,error}=await query;
- if(error){host.textContent=error.message;return}
- let members=data||[];
- if(mode==="following"){
-  const {data:follows,error:fe}=await db.from("follows").select("following_id")
-   .eq("follower_id",user.id);
-  if(fe){host.textContent=fe.message;return}
-  const ids=new Set((follows||[]).map(f=>f.following_id));
-  members=members.filter(m=>ids.has(m.id));
- }
- memberCache=members;
- host.innerHTML=members.length?members.map(m=>`
-  <div class="member">
-   ${avatar(m)}
-   <div class="member-info"><strong>${esc(displayName(m))}</strong>
-    <small>@${esc(m.username||"no-username")} · ${esc(m.bio||"")}</small>
-   </div>
-   <button class="secondary" data-profile="${m.id}" data-username="${esc(m.username||"")}">Profile</button>
-   <button class="secondary" data-follow="${m.id}">Follow</button>
-  </div>`).join(""):'<p class="muted">No matching members found.</p>';
-}
-$("memberSearch").addEventListener("input",()=>loadMembers());
-$("newMembers").onclick=()=>loadMembers("new");
-$("followingMembers").onclick=()=>loadMembers("following");
-$("membersList").addEventListener("click",async e=>{
- const p=e.target.closest("[data-profile]");
- const f=e.target.closest("[data-follow]");
- if(p){
-  location.href="profile.html?id="+encodeURIComponent(p.dataset.profile);
- }
- if(f){
-  const id=f.dataset.follow;
-  const {error}=await db.from("follows").upsert({
-   follower_id:user.id,following_id:id,status:"accepted"
-  },{onConflict:"follower_id,following_id"});
-  toast(error?error.message:"Follow updated.");
- }
-});
-
-/* DIRECT MESSAGES */
-async function loadConversations(){
- const host=$("chatList");host.innerHTML='<p class="muted">Loading…</p>';
- const {data:members,error}=await db.from("conversation_members")
-  .select("conversation_id,role,last_read_at").eq("user_id",user.id);
- if(error){host.textContent=error.message;return}
- const ids=(members||[]).map(m=>m.conversation_id);
- if(!ids.length){host.innerHTML='<p class="muted">No conversations yet.</p>';return}
- const {data:convos,error:ce}=await db.from("conversations")
-  .select("*").in("id",ids).order("updated_at",{ascending:false});
- if(ce){host.textContent=ce.message;return}
- conversationCache=convos||[];
- const {data:allMembers}=await db.from("conversation_members")
-  .select("conversation_id,user_id").in("conversation_id",ids);
- const otherIds=[...new Set((allMembers||[]).filter(m=>m.user_id!==user.id).map(m=>m.user_id))];
- let profiles=[];
- if(otherIds.length){
-  const {data}=await db.from("profiles").select("id,username,display_name")
-   .in("id",otherIds);profiles=data||[];
- }
- const pmap=Object.fromEntries(profiles.map(p=>[p.id,p]));
- host.innerHTML=conversationCache.map(c=>{
-  const other=(allMembers||[]).find(m=>m.conversation_id===c.id&&m.user_id!==user.id);
-  const p=pmap[other?.user_id]||{};
-  return `<button class="chat-item" data-conversation="${c.id}">
-   <strong>${esc(c.title||displayName(p)||"Conversation")}</strong>
-   <div class="muted">${esc(p.username?"@"+p.username:c.conversation_type)}</div>
-  </button>`;
- }).join("");
- if(activeConversation&&ids.includes(activeConversation))openConversation(activeConversation);
-}
-async function openConversation(id){
- activeConversation=id;
- document.querySelectorAll(".chat-item").forEach(b=>b.classList.toggle("active",b.dataset.conversation===id));
- const conv=conversationCache.find(c=>c.id===id);
- $("chatTitle").textContent=conv?.title||"Direct conversation";
- $("messageBody").disabled=false;$("sendMessage").disabled=false;
- const host=$("chatMessages");host.innerHTML='<p class="muted">Loading messages…</p>';
- const {data,error}=await db.from("conversation_messages").select("*")
-  .eq("conversation_id",id).order("created_at",{ascending:true}).limit(100);
- if(error){host.textContent=error.message;return}
- host.innerHTML=(data||[]).map(m=>`
-  <div class="bubble ${m.sender_id===user.id?"mine":""}">
-   ${esc(m.deleted_for_everyone_at?"Message deleted":m.body)}
-   <small>${new Date(m.created_at).toLocaleString()}</small>
-  </div>`).join("");
- host.scrollTop=host.scrollHeight;
- await db.from("conversation_members").update({last_read_at:new Date().toISOString()})
-  .eq("conversation_id",id).eq("user_id",user.id);
-}
-$("chatList").addEventListener("click",e=>{
- const b=e.target.closest("[data-conversation]");if(b)openConversation(b.dataset.conversation);
-});
-$("startChat").onclick=async()=>{
- const username=$("messageUsername").value.trim().replace(/^@/,"");
- if(!username)return toast("Enter a username.");
- const {data:target,error}=await db.from("profiles").select("id,username,display_name")
-  .ilike("username",username).maybeSingle();
- if(error||!target)return toast(error?.message||"Username not found.");
- if(target.id===user.id)return toast("That is your own account.");
- const {data:existing}=await db.from("conversation_members")
-  .select("conversation_id").eq("user_id",user.id);
- const ids=(existing||[]).map(x=>x.conversation_id);
- if(ids.length){
-  const {data:shared}=await db.from("conversation_members")
-   .select("conversation_id").eq("user_id",target.id).in("conversation_id",ids);
-  if(shared?.length){
-   activeConversation=shared[0].conversation_id;
-   await loadConversations();return openConversation(activeConversation);
-  }
- }
- const {data:conv,error:convError}=await db.from("conversations")
-  .insert({conversation_type:"direct",created_by:user.id})
-  .select().single();
- if(convError)return toast(convError.message);
- const {error:memberError}=await db.from("conversation_members").insert([
-  {conversation_id:conv.id,user_id:user.id,role:"member"},
-  {conversation_id:conv.id,user_id:target.id,role:"member"}
- ]);
- if(memberError)return toast(memberError.message);
- $("messageUsername").value="";
- activeConversation=conv.id;
- await loadConversations();openConversation(conv.id);
-};
-$("sendMessageForm").onsubmit=async e=>{
- e.preventDefault();
- if(!activeConversation)return toast("Open a conversation first.");
- const body=$("messageBody").value.trim();if(!body)return;
- const {error}=await db.from("conversation_messages").insert({
-  conversation_id:activeConversation,sender_id:user.id,body
- });
- if(error)return toast(error.message);
- $("messageBody").value="";openConversation(activeConversation);
-};
-
-/* BROADCAST CHANNELS */
-async function loadChannels(){
- const host=$("channelList");host.innerHTML='<p class="muted">Loading channels…</p>';
- const {data,error}=await db.from("broadcast_channels").select("*")
-  .order("created_at",{ascending:false}).limit(50);
- if(error){host.textContent=error.message;return}
- host.innerHTML=(data||[]).map(c=>`
-  <div class="panel">
-   <h3>${esc(c.name)}</h3><p class="muted">${esc(c.description||"")}</p>
-   <div class="row">
-    <button class="secondary" data-open-channel="${c.id}">Open channel</button>
-    <button class="secondary" data-join-channel="${c.id}">Subscribe</button>
-   </div>
-  </div>`).join("")||'<p class="muted">No channels yet.</p>';
-}
-$("createChannel").onclick=async()=>{
- const name=$("channelName").value.trim();if(!name)return toast("Enter a channel name.");
- const {data,error}=await db.from("broadcast_channels").insert({
-  owner_id:user.id,name,description:$("channelDescription").value.trim(),
-  is_private:$("channelPrivate").checked
- }).select().single();
- if(error)return toast(error.message);
- const {error:joinError}=await db.from("channel_members").upsert({
-  channel_id:data.id,user_id:user.id,role:"owner"
- },{onConflict:"channel_id,user_id"});
- if(joinError)toast(joinError.message);
- $("channelName").value="";$("channelDescription").value="";
- toast("Channel created.");loadChannels();openChannel(data);
-};
-$("channelList").addEventListener("click",async e=>{
- const open=e.target.closest("[data-open-channel]");
- const join=e.target.closest("[data-join-channel]");
- if(join){
-  const {error}=await db.from("channel_members").upsert({
-   channel_id:join.dataset.joinChannel,user_id:user.id,role:"subscriber"
-  },{onConflict:"channel_id,user_id"});
-  toast(error?error.message:"Subscribed to channel.");
- }
- if(open){
-  const {data,error}=await db.from("broadcast_channels").select("*")
-   .eq("id",open.dataset.openChannel).single();
-  if(error)return toast(error.message);
-  openChannel(data);
- }
-});
-async function openChannel(channel){
- activeChannel=channel;
- $("channelComposer").hidden=false;
- $("channelHeading").textContent=channel.name;
- const {data,error}=await db.from("channel_posts").select("*")
-  .eq("channel_id",channel.id).order("created_at",{ascending:false}).limit(50);
- if(error){$("channelPosts").textContent=error.message;return}
- $("channelPosts").innerHTML=(data||[]).map(p=>`
-  <article class="post"><div class="postbody">${esc(p.body)}</div>
-   <small class="muted">${new Date(p.created_at).toLocaleString()}</small>
-  </article>`).join("")||'<p class="muted">No channel updates yet.</p>';
-}
-$("publishChannelPost").onclick=async()=>{
- if(!activeChannel)return;
- const body=$("channelBody").value.trim();if(!body)return;
- const {error}=await db.from("channel_posts").insert({
-  channel_id:activeChannel.id,author_id:user.id,body
- });
- if(error)return toast(error.message);
- $("channelBody").value="";toast("Broadcast published.");openChannel(activeChannel);
-};
-
-/* NOTIFICATIONS */
-async function loadNotifications(){
- const host=$("notificationList");
- const {data,error}=await db.from("notifications").select("*")
-  .eq("recipient_id",user.id).order("created_at",{ascending:false}).limit(50);
- if(error){host.textContent=error.message;return}
- host.innerHTML=(data||[]).map(n=>`
-  <div class="member">
-   <div class="member-info"><strong>${esc(n.message||n.kind)}</strong>
-    <small>${new Date(n.created_at).toLocaleString()} · ${n.read_at?"Read":"New"}</small>
-   </div>
-   ${!n.read_at?`<button class="secondary" data-read="${n.id}">Mark read</button>`:""}
-  </div>`).join("")||'<p class="muted">You are all caught up.</p>';
-}
-$("refreshNotifications").onclick=loadNotifications;
-$("notificationList").addEventListener("click",async e=>{
- const b=e.target.closest("[data-read]");if(!b)return;
- const {error}=await db.from("notifications").update({read_at:new Date().toISOString()})
-  .eq("id",b.dataset.read).eq("recipient_id",user.id);
- if(error)toast(error.message);else loadNotifications();
-});
-
-/* MODERATOR APPLICATION */
-async function loadApplication(){
- const {data,error}=await db.from("moderator_applications").select("*")
-  .eq("applicant_id",user.id).order("created_at",{ascending:false}).limit(1).maybeSingle();
- if(error){$("applicationStatus").textContent=error.message;return}
- if(data){
-  $("applicationStatus").textContent="Application status: "+data.status+
-   " · Submitted "+new Date(data.created_at).toLocaleDateString();
- }else $("applicationStatus").textContent="You have not submitted an application yet.";
-}
-$("submitApplication").onclick=async()=>{
- const experience=$("staffExperience").value.trim();
- const availability=$("staffAvailability").value.trim();
- if(!experience)return toast("Tell us about your experience first.");
- const {data:existing}=await db.from("moderator_applications").select("id,status")
-  .eq("applicant_id",user.id).eq("status","pending").maybeSingle();
- if(existing)return toast("You already have a pending application.");
- const {error}=await db.from("moderator_applications").insert({
-  applicant_id:user.id,experience,availability
- });
- if(error)return toast(error.message);
- $("staffExperience").value="";$("staffAvailability").value="";
- toast("Application submitted.");loadApplication();
-};
-
-/* Refresh message list and open chat periodically while page remains open. */
-setInterval(()=>{
- if(activeConversation&&$("messages").classList.contains("active"))openConversation(activeConversation);
-},12000);
-
-init();
-</script>
-</body>
-</html>
+  
