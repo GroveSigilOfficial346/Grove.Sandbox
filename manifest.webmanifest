@@ -1,0 +1,20 @@
+{
+  "id": "/",
+  "name": "Grove — A World Connected",
+  "short_name": "Grove",
+  "description": "A world connected.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#050019",
+  "theme_color": "#050019",
+  "icons": [
+    {
+      "src": "/assets/grove-logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
