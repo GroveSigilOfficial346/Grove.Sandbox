@@ -926,3 +926,245 @@ $("sendMessageForm").onsubmit=async e=>{
  $("messageBody").value="";
  openConversation(activeConversation);
 };
+
+/* BROADCAST CHANNELS */
+
+async function loadChannels(){
+ const host=$("channelList");
+ host.innerHTML='<p class="muted">Loading channels…</p>';
+
+ const {data,error}=await db.from("broadcast_channels")
+  .select("*")
+  .order("created_at",{ascending:false})
+  .limit(50);
+
+ if(error){
+  host.textContent=error.message;
+  return;
+ }
+
+ host.innerHTML=(data||[]).map(c=>`
+  <div class="panel">
+   <h3>${esc(c.name)}</h3>
+   <p class="muted">${esc(c.description||"")}</p>
+   <div class="row">
+    <button class="secondary" data-open-channel="${c.id}">Open channel</button>
+    <button class="secondary" data-join-channel="${c.id}">Subscribe</button>
+   </div>
+  </div>
+ `).join("")||'<p class="muted">No channels yet.</p>';
+}
+
+$("createChannel").onclick=async()=>{
+ const name=$("channelName").value.trim();
+
+ if(!name)return toast("Enter a channel name.");
+
+ const {data,error}=await db.from("broadcast_channels").insert({
+  owner_id:user.id,
+  name,
+  description:$("channelDescription").value.trim(),
+  is_private:$("channelPrivate").checked
+ }).select().single();
+
+ if(error)return toast(error.message);
+
+ const {error:joinError}=await db.from("channel_members").upsert({
+  channel_id:data.id,
+  user_id:user.id,
+  role:"owner"
+ },{onConflict:"channel_id,user_id"});
+
+ if(joinError){
+  toast("Channel created, but owner membership failed: "+joinError.message);
+ }else{
+  toast("Channel created.");
+ }
+
+ $("channelName").value="";
+ $("channelDescription").value="";
+
+ await loadChannels();
+ openChannel(data);
+};
+
+$("channelList").addEventListener("click",async e=>{
+ const open=e.target.closest("[data-open-channel]");
+ const join=e.target.closest("[data-join-channel]");
+
+ if(join){
+  const {error}=await db.from("channel_members").upsert({
+   channel_id:join.dataset.joinChannel,
+   user_id:user.id,
+   role:"subscriber"
+  },{onConflict:"channel_id,user_id"});
+
+  toast(error?error.message:"Subscribed to channel.");
+ }
+
+ if(open){
+  const {data,error}=await db.from("broadcast_channels")
+   .select("*")
+   .eq("id",open.dataset.openChannel)
+   .single();
+
+  if(error)return toast(error.message);
+
+  openChannel(data);
+ }
+});
+
+async function openChannel(channel){
+ activeChannel=channel;
+
+ $("channelComposer").hidden=false;
+ $("channelHeading").textContent=channel.name;
+
+ const {data,error}=await db.from("channel_posts")
+  .select("*")
+  .eq("channel_id",channel.id)
+  .order("created_at",{ascending:false})
+  .limit(50);
+
+ if(error){
+  $("channelPosts").textContent=error.message;
+  return;
+ }
+
+ $("channelPosts").innerHTML=(data||[]).map(p=>`
+  <article class="post">
+   <div class="postbody">${esc(p.body)}</div>
+   <small class="muted">${new Date(p.created_at).toLocaleString()}</small>
+  </article>
+ `).join("")||'<p class="muted">No channel updates yet.</p>';
+}
+
+$("publishChannelPost").onclick=async()=>{
+ if(!activeChannel)return;
+
+ const body=$("channelBody").value.trim();
+ if(!body)return;
+
+ const {error}=await db.from("channel_posts").insert({
+  channel_id:activeChannel.id,
+  author_id:user.id,
+  body
+ });
+
+ if(error)return toast(error.message);
+
+ $("channelBody").value="";
+ toast("Broadcast published.");
+ openChannel(activeChannel);
+};
+
+/* NOTIFICATIONS */
+
+async function loadNotifications(){
+ const host=$("notificationList");
+
+ const {data,error}=await db.from("notifications")
+  .select("*")
+  .eq("recipient_id",user.id)
+  .order("created_at",{ascending:false})
+  .limit(50);
+
+ if(error){
+  host.textContent=error.message;
+  return;
+ }
+
+ host.innerHTML=(data||[]).map(n=>`
+  <div class="member">
+   <div class="member-info">
+    <strong>${esc(n.message||n.kind)}</strong>
+    <small>${new Date(n.created_at).toLocaleString()} · ${n.read_at?"Read":"New"}</small>
+   </div>
+   ${!n.read_at?`<button class="secondary" data-read="${n.id}">Mark read</button>`:""}
+  </div>
+ `).join("")||'<p class="muted">You are all caught up.</p>';
+}
+
+$("refreshNotifications").onclick=loadNotifications;
+
+$("notificationList").addEventListener("click",async e=>{
+ const b=e.target.closest("[data-read]");
+ if(!b)return;
+
+ const {error}=await db.from("notifications").update({
+  read_at:new Date().toISOString()
+ })
+ .eq("id",b.dataset.read)
+ .eq("recipient_id",user.id);
+
+ if(error)toast(error.message);
+ else loadNotifications();
+});
+
+/* MODERATOR APPLICATION */
+
+async function loadApplication(){
+ const {data,error}=await db.from("moderator_applications")
+  .select("*")
+  .eq("applicant_id",user.id)
+  .order("created_at",{ascending:false})
+  .limit(1)
+  .maybeSingle();
+
+ if(error){
+  $("applicationStatus").textContent=error.message;
+  return;
+ }
+
+ if(data){
+  $("applicationStatus").textContent=
+   "Application status: "+data.status+
+   " · Submitted "+new Date(data.created_at).toLocaleDateString();
+ }else{
+  $("applicationStatus").textContent=
+   "You have not submitted an application yet.";
+ }
+}
+
+$("submitApplication").onclick=async()=>{
+ const experience=$("staffExperience").value.trim();
+ const availability=$("staffAvailability").value.trim();
+
+ if(!experience)return toast("Tell us about your experience first.");
+
+ const {data:existing}=await db.from("moderator_applications")
+  .select("id,status")
+  .eq("applicant_id",user.id)
+  .eq("status","pending")
+  .maybeSingle();
+
+ if(existing)return toast("You already have a pending application.");
+
+ const {error}=await db.from("moderator_applications").insert({
+  applicant_id:user.id,
+  experience,
+  availability
+ });
+
+ if(error)return toast(error.message);
+
+ $("staffExperience").value="";
+ $("staffAvailability").value="";
+
+ toast("Application submitted.");
+ loadApplication();
+};
+
+/* MESSAGE REFRESH */
+
+setInterval(()=>{
+ if(activeConversation&&$("messages").classList.contains("active")){
+  openConversation(activeConversation);
+ }
+},12000);
+
+init();
+
+</script>
+</body>
+</html>
