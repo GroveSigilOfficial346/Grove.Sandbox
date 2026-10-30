@@ -231,10 +231,7 @@ input:focus,textarea:focus{border-color:var(--cyan)}
 
 <script>
 const SUPABASE_URL = "https://fpkrvgcpbnrusbfmhinj.supabase.co";
-
-/* Use the existing public anon/publishable key from your current app.
-   Never put a service_role or secret key in this file. */
-const SUPABASE_ANON_KEY = "PASTE_YOUR_EXISTING_PUBLIC_ANON_KEY_HERE";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwa3J2Z2NwYm5ydXNiZm1oaW5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1MTc2OTYsImV4cCI6MjEwODA5MzY5Nn0.3CI1pHaEnpcQjnweA_g4Cmsscqp3eltMXWbPj2owHfo";
 
 const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 let user=null, myProfile=null, activeConversation=null, activeChannel=null;
