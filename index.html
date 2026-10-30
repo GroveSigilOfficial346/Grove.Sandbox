@@ -10,12 +10,14 @@
   <link rel="stylesheet" href="css/global.css">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/assets/grove-logo.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/assets/grove-logo.svg">
+
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Grove">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/community.js" defer></script>
+  <script src="js/grove-ticker.js" defer></script>
 
   <style>
     .landing-actions {
@@ -26,6 +28,7 @@
       gap:12px;
       margin-top:28px;
     }
+
     .landing-button {
       display:inline-flex;
       justify-content:center;
@@ -39,27 +42,32 @@
       color:#f7f5ff;
       font-family:inherit;
       font-size:12px;
-      font-weight:600;
+      font-weight:700;
       letter-spacing:1px;
       text-decoration:none;
       transition:transform .2s ease,filter .2s ease;
     }
+
     .landing-button:hover {
       transform:translateY(-2px);
       filter:brightness(1.15);
     }
+
     .landing-button.secondary {
       background:#10082dcc;
       border-color:#05c9f466;
       color:#c9f8ff;
     }
+
     .landing-button:focus-visible {
       outline:2px solid #05c9f4;
       outline-offset:4px;
     }
+
     .landing-button[hidden] {
       display:none !important;
     }
+
     @media(prefers-reduced-motion:reduce) {
       .landing-button { transition:none; }
     }
@@ -77,7 +85,7 @@
     <h1>GROVE</h1>
     <div class="divider"></div>
 
-    <p class="status">Coming Soon</p>
+    <p class="status">A World Connected</p>
 
     <p class="community-count">
       <span id="member-count">—</span> MEMBERS
@@ -90,15 +98,28 @@
     <p class="tagline">A WORLD CONNECTED</p>
 
     <nav class="landing-actions" aria-label="Account">
-      <a class="landing-button" id="open-grove" href="profile.html" hidden>
-        OPEN GROVE
+      <a
+        class="landing-button"
+        id="open-grove"
+        href="community.html"
+        hidden
+      >
+        ENTER COMMUNITY
       </a>
 
-      <a class="landing-button" id="join-grove" href="auth.html?mode=signup">
+      <a
+        class="landing-button"
+        id="join-grove"
+        href="auth.html?mode=signup"
+      >
         JOIN GROVE
       </a>
 
-      <a class="landing-button secondary" id="login-grove" href="auth.html?mode=login">
+      <a
+        class="landing-button secondary"
+        id="login-grove"
+        href="auth.html?mode=login"
+      >
         LOG IN
       </a>
     </nav>
@@ -108,8 +129,11 @@
     (() => {
       "use strict";
 
-      const SUPABASE_URL = "https://fpkrvgcpbnrusbfmhinj.supabase.co";
-      const SUPABASE_KEY = "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
+      const SUPABASE_URL =
+        "https://fpkrvgcpbnrusbfmhinj.supabase.co";
+
+      const SUPABASE_KEY =
+        "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
 
       const openButton = document.getElementById("open-grove");
       const joinButton = document.getElementById("join-grove");
@@ -122,9 +146,19 @@
       }
 
       async function initializeHome() {
+        if (!window.supabase?.createClient) {
+          showSignedInState(false);
+          return;
+        }
+
         try {
-          const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+          const db = window.supabase.createClient(
+            SUPABASE_URL,
+            SUPABASE_KEY
+          );
+
           const { data, error } = await db.auth.getSession();
+
           if (error) throw error;
 
           showSignedInState(Boolean(data.session));
@@ -132,9 +166,23 @@
           db.auth.onAuthStateChange((_event, session) => {
             showSignedInState(Boolean(session));
           });
+
+          const { count, error: countError } = await db
+            .from("profiles")
+            .select("id", { count: "exact", head: true });
+
+          if (!countError && Number.isFinite(count)) {
+            document.getElementById("member-count").textContent =
+              count.toLocaleString();
+          }
+
+          document.getElementById("vitality-status").textContent =
+            "ONLINE";
         } catch (error) {
-          console.error("Grove homepage session:", error);
+          console.error("Grove homepage:", error);
           showSignedInState(false);
+          document.getElementById("vitality-status").textContent =
+            "CONNECTING";
         }
       }
 
@@ -143,7 +191,9 @@
       if ("serviceWorker" in navigator) {
         window.addEventListener("load", () => {
           navigator.serviceWorker.register("/sw.js")
-            .catch(error => console.error("Grove service worker:", error));
+            .catch(error => {
+              console.error("Grove service worker:", error);
+            });
         });
       }
     })();
