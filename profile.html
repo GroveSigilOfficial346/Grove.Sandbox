@@ -9,226 +9,49 @@
   <link rel="stylesheet" href="css/global.css">
 
   <style>
-    body {
-      display: block;
-      min-height: 100vh;
-      overflow-x: hidden;
-      padding: 24px 16px 60px;
-      color: #f7f5ff;
-    }
-
-    .profile-app {
-      width: min(100%, 900px);
-      margin: auto;
-    }
-
-    .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      margin-bottom: 28px;
-    }
-
-    .brand {
-      color: #f7f5ff;
-      font-size: 19px;
-      letter-spacing: 5px;
-      text-decoration: none;
-    }
-
-    .top-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .top-actions a {
-      padding: 10px 15px;
-      border: 1px solid #851eff66;
-      border-radius: 9px;
-      color: #eee5ff;
-      background: #100b25;
-      text-decoration: none;
-      font-size: 13px;
-    }
-
-    .top-actions a:hover,
-    .edit-profile-link:hover {
-      filter: brightness(1.15);
-    }
-
-    .profile-card {
-      overflow: hidden;
-      border: 1px solid #851eff55;
-      border-radius: 20px;
-      background: #100b25;
-      box-shadow: 0 15px 55px #0006;
-    }
-
-    .cover {
-      height: 260px;
-      background:
-        radial-gradient(ellipse at 50% 100%, #851eff55, transparent 65%),
-        linear-gradient(120deg, #08051a, #171044, #08051a);
-      background-position: center;
-      background-size: cover;
-    }
-
-    .profile-content {
-      position: relative;
-      padding: 0 32px 30px;
-    }
-
-    .avatar {
-      width: 132px;
-      height: 132px;
-      margin-top: -66px;
-      position: relative;
-      display: grid;
-      place-items: center;
-      overflow: hidden;
-      border: 5px solid #100b25;
-      border-radius: 50%;
-      background: linear-gradient(135deg, #851eff, #353bff);
-      color: white;
-      font-size: 42px;
-      font-weight: 700;
-    }
-
-    .avatar img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .profile-heading {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 20px;
-      flex-wrap: wrap;
-      margin-top: 15px;
-    }
-
-    .name {
-      margin: 0;
-      color: #fff;
-      font-size: clamp(25px, 5vw, 34px);
-      overflow-wrap: anywhere;
-    }
-
-    .username {
-      margin: 5px 0 0;
-      color: #b9a7df;
-      font-size: 14px;
-    }
-
-    .profile-actions {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-
-    .edit-profile-link {
-      display: inline-block;
-      padding: 11px 17px;
-      border: 1px solid #851eff88;
-      border-radius: 9px;
-      background: linear-gradient(110deg, #851eff, #5965ff);
-      color: white;
-      text-decoration: none;
-      font-size: 13px;
-      font-weight: 600;
-    }
-
-    .bio {
-      max-width: 650px;
-      margin: 23px 0 0;
-      color: #e0d9f0;
-      line-height: 1.7;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-    }
-
-    .details {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 18px;
-      margin-top: 18px;
-      color: #a99bc9;
-      font-size: 13px;
-    }
-
-    .details a {
-      color: #45e5ff;
-      text-decoration: none;
-      overflow-wrap: anywhere;
-    }
-
-    .section {
-      margin-top: 24px;
-      padding: 25px 28px;
-      border: 1px solid #851eff44;
-      border-radius: 16px;
-      background: #100b25;
-    }
-
-    .section h2 {
-      margin: 0 0 10px;
-      color: #f7f5ff;
-      font-size: 19px;
-    }
-
-    .posts-list {
-      display: grid;
-      gap: 16px;
-    }
-
-    .empty-state {
-      padding: 24px 10px;
-      color: #a99bc9;
-      text-align: center;
-      line-height: 1.7;
-    }
-
-    #status {
-      margin: 24px 0;
-      color: #ff9caa;
-      text-align: center;
-      font-size: 14px;
-    }
-
-    [hidden] {
-      display: none !important;
-    }
-
-    @media (max-width: 600px) {
-      body {
-        padding: 18px 12px 40px;
-      }
-
-      .cover {
-        height: 190px;
-      }
-
-      .profile-content {
-        padding: 0 20px 25px;
-      }
-
-      .avatar {
-        width: 108px;
-        height: 108px;
-        margin-top: -54px;
-      }
-
-      .section {
-        padding: 20px;
-      }
-
-      .topbar {
-        align-items: flex-start;
-      }
+    body{display:block;min-height:100vh;overflow-x:hidden;padding:24px 16px 60px;color:#f7f5ff}
+    .profile-app{width:min(100%,900px);margin:auto}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:28px}
+    .brand{color:#f7f5ff;font-size:19px;letter-spacing:5px;text-decoration:none}
+    .top-actions,.profile-actions{display:flex;gap:10px;flex-wrap:wrap}
+    .top-actions a,.action-button,.upload-button{padding:10px 15px;border:1px solid #851eff66;border-radius:9px;color:#eee5ff;background:#100b25;text-decoration:none;font-size:13px;cursor:pointer}
+    .top-actions a:hover,.action-button:hover,.upload-button:hover{filter:brightness(1.2)}
+    .profile-card{overflow:hidden;border:1px solid #851eff55;border-radius:20px;background:#100b25;box-shadow:0 15px 55px #0006}
+    .cover-wrap{height:260px;position:relative;background:radial-gradient(ellipse at 50% 100%,#851eff55,transparent 65%),linear-gradient(120deg,#08051a,#171044,#08051a);background-position:center;background-size:cover}
+    .cover-upload{position:absolute;right:16px;bottom:16px}
+    .profile-content{position:relative;padding:0 32px 30px}
+    .avatar-row{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-top:-66px;position:relative}
+    .avatar{width:132px;height:132px;display:grid;place-items:center;overflow:hidden;border:5px solid #100b25;border-radius:50%;background:linear-gradient(135deg,#851eff,#353bff);color:white;font-size:42px;font-weight:700}
+    .avatar img{width:100%;height:100%;object-fit:cover}
+    .avatar-upload{margin-bottom:8px}
+    .profile-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-top:15px}
+    .name{margin:0;color:#fff;font-size:clamp(25px,5vw,34px);overflow-wrap:anywhere}
+    .username{margin:5px 0 0;color:#b9a7df;font-size:14px}
+    .edit-profile-link{display:inline-block;padding:11px 17px;border:1px solid #851eff88;border-radius:9px;background:linear-gradient(110deg,#851eff,#5965ff);color:white;text-decoration:none;font-size:13px;font-weight:600}
+    .bio{max-width:650px;margin:23px 0 0;color:#e0d9f0;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
+    .details{display:flex;flex-wrap:wrap;gap:18px;margin-top:18px;color:#a99bc9;font-size:13px}
+    .details a{color:#45e5ff;text-decoration:none;overflow-wrap:anywhere}
+    .section{margin-top:24px;padding:25px 28px;border:1px solid #851eff44;border-radius:16px;background:#100b25}
+    .section h2{margin:0 0 10px;color:#f7f5ff;font-size:19px}
+    .posts-list{display:grid;gap:16px}
+    .empty-state{padding:24px 10px;color:#a99bc9;text-align:center;line-height:1.7}
+    #status{margin:24px 0;color:#ff9caa;text-align:center;font-size:14px}
+    #action-status{min-height:20px;margin:12px 0 0;color:#45e5ff;font-size:13px}
+    .music-player{display:grid;gap:12px;margin-top:22px;padding:16px;border:1px solid #851eff44;border-radius:13px;background:#08051a}
+    .music-title{margin:0;color:#fff;font-weight:700}
+    .music-artist{margin:4px 0 0;color:#a99bc9;font-size:13px}
+    .music-player audio{width:100%}
+    .music-download{width:max-content;color:#45e5ff;font-size:13px}
+    .private-note{margin-top:12px;color:#b9a7df;font-size:13px}
+    [hidden]{display:none!important}
+    @media(max-width:600px){
+      body{padding:18px 12px 40px}
+      .cover-wrap{height:190px}
+      .profile-content{padding:0 20px 25px}
+      .avatar{width:108px;height:108px}
+      .avatar-row{margin-top:-54px}
+      .section{padding:20px}
+      .topbar{align-items:flex-start}
     }
   </style>
 
@@ -236,32 +59,34 @@
   <script src="js/profile-view.js" defer></script>
   <script src="js/app-shell.js" defer></script>
 </head>
-
 <body>
   <main class="profile-app">
     <header class="topbar">
       <a class="brand" href="index.html" aria-label="Grove home">GROVE</a>
-
       <nav class="top-actions" aria-label="Main navigation">
         <a href="index.html">Home</a>
+        <a href="community.html">Community</a>
         <a href="settings.html" id="settings-link" hidden>Settings</a>
       </nav>
     </header>
 
-    <p id="status" role="status" aria-live="polite">
-      Loading profile…
-    </p>
+    <p id="status" role="status" aria-live="polite">Loading profile…</p>
 
-    <section
-      class="profile-card"
-      id="profile-card"
-      aria-label="Member profile"
-      hidden
-    >
-      <div class="cover" id="cover" aria-label="Profile cover photo"></div>
+    <section class="profile-card" id="profile-card" aria-label="Member profile" hidden>
+      <div class="cover-wrap" id="cover">
+        <button class="upload-button cover-upload" id="cover-upload-button" type="button" hidden>
+          Change cover photo
+        </button>
+        <input id="cover-file" type="file" accept="image/*" hidden>
+      </div>
 
       <div class="profile-content">
-        <div class="avatar" id="avatar">
+        <div class="avatar-row">
+          <div class="avatar" id="avatar"></div>
+          <button class="upload-button avatar-upload" id="avatar-upload-button" type="button" hidden>
+            Change profile photo
+          </button>
+          <input id="avatar-file" type="file" accept="image/*" hidden>
         </div>
 
         <div class="profile-heading">
@@ -269,37 +94,29 @@
             <h1 class="name" id="display-name"></h1>
             <p class="username" id="username"></p>
           </div>
-
           <div class="profile-actions">
-            <a
-              class="edit-profile-link"
-              id="edit-profile-link"
-              href="edit-profile.html"
-              hidden
-            >
-              Edit Profile
-            </a>
+            <a class="edit-profile-link" id="edit-profile-link" href="edit-profile.html" hidden>Edit Profile</a>
+            <button class="action-button" id="follow-button" type="button" hidden>Follow</button>
+            <a class="action-button" id="message-button" href="community.html#messages" hidden>Message</a>
           </div>
         </div>
 
         <p class="bio" id="bio" hidden></p>
-
         <div class="details" id="details"></div>
+        <p class="private-note" id="private-note" hidden>This is a private account. Follow and be accepted to view members-only content.</p>
+        <p id="action-status" role="status" aria-live="polite"></p>
       </div>
     </section>
 
-    <section
-      class="section"
-      id="posts-section"
-      aria-labelledby="posts-heading"
-      hidden
-    >
-      <h2 id="posts-heading">Posts</h2>
+    <section class="section" id="music-section" hidden>
+      <h2>Profile music</h2>
+      <div id="music-content"></div>
+    </section>
 
+    <section class="section" id="posts-section" aria-labelledby="posts-heading" hidden>
+      <h2 id="posts-heading">Posts</h2>
       <div class="posts-list" id="posts-list">
-        <div class="empty-state" id="posts-empty">
-          This member hasn't posted anything yet.
-        </div>
+        <div class="empty-state" id="posts-empty">This member hasn't posted anything yet.</div>
       </div>
     </section>
   </main>
