@@ -2,18 +2,11 @@
   "use strict";
 
   const SUPABASE_URL = "https://fpkrvgcpbnrusbfmhinj.supabase.co";
-  const SUPABASE_ANON_KEY =
-    "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
+  const SUPABASE_KEY = "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
 
   const BUCKET = "grove-media";
   const MAX_FILE_SIZE = 5 * 1024 * 1024;
-
-  const ALLOWED_TYPES = [
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-    "image/gif"
-  ];
+  const ALLOWED_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
 
   const $ = (selector) => document.querySelector(selector);
 
@@ -21,15 +14,18 @@
   const status = $("#status");
   const saveButton = $("#save-profile");
   const logoutButton = $("#logout");
+  const usernameInput = $("#username");
   const avatarInput = $("#avatar");
   const coverInput = $("#cover");
   const avatarPreview = $("#avatar-preview");
+  const coverPreview = $("#cover-preview");
 
   let supabase;
   let currentUser;
   let originalProfile = {};
   let busy = false;
-  let previewObjectUrl = null;
+  let avatarObjectUrl = null;
+  let coverObjectUrl = null;
 
   function setStatus(message, kind = "info") {
     status.textContent = message;
@@ -38,13 +34,9 @@
 
   function setBusy(value) {
     busy = value;
-
     saveButton.disabled = value;
     logoutButton.disabled = value;
-
-    saveButton.textContent = value
-      ? "Saving…"
-      : "Save Changes";
+    saveButton.textContent = value ? "Saving…" : "Save profile";
   }
 
   function setField(selector, value) {
@@ -55,58 +47,47 @@
     if (!file) return true;
 
     if (!ALLOWED_TYPES.includes(file.type)) {
-      setStatus(
-        `${label} must be a JPG, PNG, WebP, or GIF image.`,
-        "error"
-      );
+      setStatus(`${label} must be JPG, PNG, WebP, or GIF.`, "error");
       return false;
     }
 
     if (file.size > MAX_FILE_SIZE) {
-      setStatus(
-        `${label} must be no larger than 5 MB.`,
-        "error"
-      );
+      setStatus(`${label} must be no larger than 5 MB.`, "error");
       return false;
     }
 
     return true;
   }
 
-  function clearPreviewObjectUrl() {
-    if (previewObjectUrl) {
-      URL.revokeObjectURL(previewObjectUrl);
-      previewObjectUrl = null;
-    }
+  function replacePreview(image, file, type) {
+    const oldUrl = type === "avatar" ? avatarObjectUrl : coverObjectUrl;
+
+    if (oldUrl) URL.revokeObjectURL(oldUrl);
+
+    const url = URL.createObjectURL(file);
+    image.src = url;
+    image.hidden = false;
+
+    if (type === "avatar") avatarObjectUrl = url;
+    else coverObjectUrl = url;
   }
 
-  function showAvatar(url) {
-    clearPreviewObjectUrl();
+  function showImage(image, url) {
+    image.hidden = !url;
 
-    if (!url) {
-      avatarPreview.removeAttribute("src");
-      avatarPreview.hidden = true;
-      return;
-    }
-
-    avatarPreview.src = url;
-    avatarPreview.hidden = false;
+    if (url) image.src = url;
+    else image.removeAttribute("src");
   }
 
   async function loadProfile() {
     const { data, error } = await supabase
       .from("profiles")
-      .select(
-        "id, username, display_name, bio, avatar_url, cover_url, location, website, pronouns"
-      )
+      .select("id, username, display_name, bio, avatar_url, cover_url, location, website, pronouns")
       .eq("id", currentUser.id)
       .maybeSingle();
 
     if (error) throw error;
-
-    if (!data) {
-      throw new Error("Your profile record could not be found.");
-    }
+    if (!data) throw new Error("Your profile record could not be found.");
 
     originalProfile = data;
 
@@ -117,7 +98,20 @@
     setField("#website", data.website);
     setField("#pronouns", data.pronouns);
 
-    showAvatar(data.avatar_url);
+    showImage(avatarPreview, data.avatar_url);
+    showImage(coverPreview, data.cover_url);
+  }
+
+  async function usernameAvailable(username) {
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("id")
+      .eq("username", username)
+      .neq("id", currentUser.id)
+      .limit(1);
+
+    if (error) throw error;
+    return !data?.length;
   }
 
   async function uploadImage(file, type) {
@@ -130,10 +124,7 @@
       "image/gif": "gif"
     };
 
-    const extension = extensions[file.type];
-
-    const path =
-      `${currentUser.id}/${type}-${crypto.randomUUID()}.${extension}`;
+    const path = `${currentUser.id}/${type}-${crypto.randomUUID()}.${extensions[file.type]}`;
 
     const { error } = await supabase.storage
       .from(BUCKET)
@@ -145,10 +136,7 @@
 
     if (error) throw error;
 
-    const { data } = supabase.storage
-      .from(BUCKET)
-      .getPublicUrl(path);
-
+    const { data } = supabase.storage.from(BUCKET).getPublicUrl(path);
     return data.publicUrl;
   }
 
@@ -157,11 +145,7 @@
 
     try {
       const url = new URL(value);
-
-      return (
-        url.protocol === "https:" ||
-        url.protocol === "http:"
-      );
+      return url.protocol === "https:" || url.protocol === "http:";
     } catch {
       return false;
     }
@@ -169,23 +153,20 @@
 
   async function saveProfile(event) {
     event.preventDefault();
-
     if (busy) return;
 
     setStatus("");
 
-    const username = $("#username").value.trim();
+    const username = usernameInput.value.trim().toLowerCase();
     const displayName = $("#display-name").value.trim();
     const bio = $("#bio").value.trim();
     const location = $("#location").value.trim();
     const website = $("#website").value.trim();
     const pronouns = $("#pronouns").value.trim();
 
-    if (username && !/^[A-Za-z0-9_]{3,30}$/.test(username)) {
-      setStatus(
-        "Username must be 3–30 characters and use only letters, numbers, and underscores.",
-        "error"
-      );
+    if (!/^[a-z0-9_]{3,30}$/.test(username)) {
+      setStatus("Username must be 3–30 characters using lowercase letters, numbers, and underscores.", "error");
+      usernameInput.focus();
       return;
     }
 
@@ -196,43 +177,40 @@
     }
 
     if (!validWebsite(website)) {
-      setStatus(
-        "Enter a valid website URL beginning with https:// or http://.",
-        "error"
-      );
+      setStatus("Enter a valid website URL beginning with https:// or http://.", "error");
       $("#website").focus();
       return;
     }
 
+    const avatarFile = avatarInput.files[0];
+    const coverFile = coverInput.files[0];
+
     if (
-      !validateImage(avatarInput.files[0], "Profile picture") ||
-      !validateImage(coverInput.files[0], "Background image")
-    ) {
-      return;
-    }
+      !validateImage(avatarFile, "Profile picture") ||
+      !validateImage(coverFile, "Cover image")
+    ) return;
 
     setBusy(true);
 
     try {
+      if (username !== (originalProfile.username || "").toLowerCase()) {
+        const available = await usernameAvailable(username);
+
+        if (!available) {
+          setStatus("That username is already taken. Try another one.", "error");
+          usernameInput.focus();
+          return;
+        }
+      }
+
       let avatarUrl = originalProfile.avatar_url || null;
       let coverUrl = originalProfile.cover_url || null;
 
-      if (avatarInput.files[0]) {
-        avatarUrl = await uploadImage(
-          avatarInput.files[0],
-          "avatar"
-        );
-      }
-
-      if (coverInput.files[0]) {
-        coverUrl = await uploadImage(
-          coverInput.files[0],
-          "cover"
-        );
-      }
+      if (avatarFile) avatarUrl = await uploadImage(avatarFile, "avatar");
+      if (coverFile) coverUrl = await uploadImage(coverFile, "cover");
 
       const updates = {
-        username: username || null,
+        username,
         display_name: displayName,
         bio,
         location,
@@ -247,24 +225,19 @@
         .from("profiles")
         .update(updates)
         .eq("id", currentUser.id)
-        .select(
-          "id, username, display_name, bio, avatar_url, cover_url, location, website, pronouns"
-        )
+        .select("id, username, display_name, bio, avatar_url, cover_url, location, website, pronouns")
         .single();
 
       if (error) throw error;
 
       originalProfile = data;
-
       avatarInput.value = "";
       coverInput.value = "";
 
-      showAvatar(data.avatar_url);
+      showImage(avatarPreview, data.avatar_url);
+      showImage(coverPreview, data.cover_url);
 
-      setStatus(
-        "Your Grove profile has been saved! 🌱",
-        "success"
-      );
+      setStatus("Profile saved successfully! Your username is @" + data.username, "success");
 
     } catch (error) {
       console.error("Grove profile save failed:", error);
@@ -272,17 +245,10 @@
       if (error.code === "23505") {
         setStatus("That username is already taken.", "error");
       } else if (error.code === "42501") {
-        setStatus(
-          "Permission denied. Check your Supabase profile and storage policies.",
-          "error"
-        );
+        setStatus("Permission denied. Check your Supabase profile and storage policies.", "error");
       } else {
-        setStatus(
-          error.message || "Couldn't save your profile.",
-          "error"
-        );
+        setStatus(error.message || "Couldn't save your profile.", "error");
       }
-
     } finally {
       setBusy(false);
     }
@@ -296,81 +262,66 @@
 
     try {
       const { error } = await supabase.auth.signOut();
-
       if (error) throw error;
-
       window.location.replace("auth.html?mode=login");
-
     } catch (error) {
-      console.error("Grove logout failed:", error);
-
-      setStatus(
-        error.message || "Couldn't sign out.",
-        "error"
-      );
-
+      setStatus(error.message || "Couldn't sign out.", "error");
       logoutButton.disabled = false;
     }
   }
 
-  function initializeAvatarPreview() {
+  function initializePreviews() {
     avatarInput.addEventListener("change", () => {
       const file = avatarInput.files[0];
 
       if (!file) {
-        showAvatar(originalProfile.avatar_url);
+        showImage(avatarPreview, originalProfile.avatar_url);
         return;
       }
 
       if (!validateImage(file, "Profile picture")) {
         avatarInput.value = "";
-        showAvatar(originalProfile.avatar_url);
         return;
       }
 
-      clearPreviewObjectUrl();
-
-      previewObjectUrl = URL.createObjectURL(file);
-
-      avatarPreview.src = previewObjectUrl;
-      avatarPreview.hidden = false;
+      replacePreview(avatarPreview, file, "avatar");
     });
 
     coverInput.addEventListener("change", () => {
       const file = coverInput.files[0];
 
-      if (file && !validateImage(file, "Background image")) {
-        coverInput.value = "";
+      if (!file) {
+        showImage(coverPreview, originalProfile.cover_url);
+        return;
       }
+
+      if (!validateImage(file, "Cover image")) {
+        coverInput.value = "";
+        return;
+      }
+
+      replacePreview(coverPreview, file, "cover");
     });
   }
 
   async function initialize() {
     if (!window.supabase?.createClient) {
-      setStatus(
-        "Grove's Supabase library didn't load. Please refresh.",
-        "error"
-      );
+      setStatus("Grove's Supabase library didn't load. Please refresh.", "error");
       return;
     }
 
-    supabase = window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_ANON_KEY,
-      {
-        auth: {
-          persistSession: true,
-          autoRefreshToken: true,
-          detectSessionInUrl: true
-        }
+    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
       }
-    );
+    });
 
     setBusy(true);
 
     try {
       const { data, error } = await supabase.auth.getSession();
-
       if (error) throw error;
 
       currentUser = data.session?.user;
@@ -381,22 +332,15 @@
       }
 
       await loadProfile();
-
-      initializeAvatarPreview();
+      initializePreviews();
 
       form.addEventListener("submit", saveProfile);
       logoutButton.addEventListener("click", logout);
 
-      setStatus("Your profile editor is ready.", "success");
-
+      setStatus("Profile editor ready.", "success");
     } catch (error) {
       console.error("Grove profile initialization failed:", error);
-
-      setStatus(
-        error.message || "Couldn't load your profile editor.",
-        "error"
-      );
-
+      setStatus(error.message || "Couldn't load your profile editor.", "error");
     } finally {
       setBusy(false);
     }
@@ -404,10 +348,6 @@
 
   initialize().catch((error) => {
     console.error("Grove initialization error:", error);
-
-    setStatus(
-      "Grove couldn't initialize. Please refresh.",
-      "error"
-    );
+    setStatus("Grove couldn't initialize. Please refresh.", "error");
   });
 })();
