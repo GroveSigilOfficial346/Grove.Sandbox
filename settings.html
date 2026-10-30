@@ -1,4 +1,3 @@
-```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -25,7 +24,6 @@
     input:not([type=checkbox]):not([type=file]),select,textarea{width:100%;padding:12px;border:1px solid #554477;border-radius:9px;background:#08051a;color:#f7f5ff;font:inherit;font-size:13px}
     input[type=file]{max-width:100%;color:#b9add3;font-size:12px}
     .setting-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 0;border-top:1px solid #ffffff13}
-    .setting-row:first-of-type{border-top:0}
     .setting-row p{margin:5px 0 0;color:#a99bc9;font-size:12px;line-height:1.5}
     .setting-row input[type=checkbox]{width:20px;height:20px;accent-color:#a855f7;flex-shrink:0}
     .theme-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px}
@@ -45,9 +43,22 @@
     button.danger{padding:11px 15px;border:1px solid #ff858566;border-radius:9px;background:#29101f;color:#ffb5c0;cursor:pointer}
     button:disabled{opacity:.55;cursor:wait}
     #status{min-height:22px;margin-top:15px;font-size:13px;overflow-wrap:anywhere}
-    #status[data-kind=error]{color:#ff9caa}#status[data-kind=success]{color:#7bd7a2}
+    #status[data-kind=error]{color:#ff9caa}
+    #status[data-kind=success]{color:#7bd7a2}
     [hidden]{display:none!important}
-    @media(max-width:560px){.settings-section{padding:17px}.setting-row{align-items:flex-start}}
+    .track-list{display:grid;gap:9px;margin-top:14px}
+    .track{display:grid;grid-template-columns:1fr auto;align-items:center;gap:12px;padding:13px;border:1px solid #ffffff20;border-radius:11px;background:#08051a}
+    .track strong{display:block;font-size:13px;overflow-wrap:anywhere}
+    .track small{display:block;margin-top:4px;color:#a99bc9}
+    .track-actions{display:flex;gap:6px;flex-wrap:wrap}
+    .track-actions button{padding:8px 10px;border:1px solid #554477;border-radius:8px;background:#211440;color:white;cursor:pointer;font-size:12px}
+    .now-playing{padding:15px;border:1px solid #45e5ff55;border-radius:12px;background:linear-gradient(120deg,#171033,#091b32)}
+    .now-playing strong{display:block}
+    .now-playing p{margin:5px 0;color:#b9add3;font-size:12px}
+    audio{width:100%;margin-top:12px}
+    .volume-row{display:flex;align-items:center;gap:12px;margin-top:10px;font-size:12px;color:#b9add3}
+    .volume-row input{flex:1;accent-color:#a855f7}
+    @media(max-width:560px){.settings-section{padding:17px}.setting-row{align-items:flex-start}.track{grid-template-columns:1fr}.track-actions{justify-content:flex-start}}
   </style>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="js/settings.js" defer></script>
@@ -63,8 +74,8 @@
     </nav>
   </header>
 
-  <h1>Headquarters Settings</h1>
-  <p class="intro">Your account, privacy, notifications, and personal Grove environment.</p>
+  <h1>Grove Settings</h1>
+  <p class="intro">Manage your account, privacy, notifications, music, and personal environment.</p>
 
   <section class="settings-section">
     <h2>Account & Security</h2>
@@ -82,9 +93,9 @@
     <div class="field"><label for="comment-privacy">Who can comment on your posts?</label>
       <select id="comment-privacy"><option value="everyone">Everyone</option><option value="followers">Accepted followers</option><option value="nobody">Nobody</option></select>
     </div>
-    <div class="setting-row"><div><strong>Allow image saves</strong><p>Let other members save your post images to their Grove gallery.</p></div><input id="allow-image-saves" type="checkbox"></div>
+    <div class="setting-row"><div><strong>Allow image saves</strong><p>Let other members save your post images.</p></div><input id="allow-image-saves" type="checkbox"></div>
     <div class="setting-row"><div><strong>Allow image downloads</strong><p>Let other members download your post images.</p></div><input id="allow-image-downloads" type="checkbox"></div>
-    <div class="setting-row"><div><strong>Saved gallery</strong><p>Enable your personal saved-media gallery.</p></div><input id="saved-gallery-enabled" type="checkbox" checked></div>
+    <div class="setting-row"><div><strong>Saved gallery</strong><p>Enable your personal saved-media gallery.</p></div><input id="saved-gallery-enabled" type="checkbox"></div>
   </section>
 
   <section class="settings-section">
@@ -93,14 +104,14 @@
     <div class="setting-row"><div><strong>Messages</strong><p>New direct and group messages.</p></div><input type="checkbox" id="notify-messages"></div>
     <div class="setting-row"><div><strong>Follows</strong><p>New follows and follow requests.</p></div><input type="checkbox" id="notify-follows"></div>
     <div class="setting-row"><div><strong>Likes</strong><p>Likes on your posts.</p></div><input type="checkbox" id="notify-likes"></div>
-    <div class="setting-row"><div><strong>Comments</strong><p>Comments and replies on your posts.</p></div><input type="checkbox" id="notify-comments"></div>
+    <div class="setting-row"><div><strong>Comments</strong><p>Comments and replies.</p></div><input type="checkbox" id="notify-comments"></div>
     <div class="setting-row"><div><strong>Grove nudges</strong><p>Nudges from other members.</p></div><input type="checkbox" id="notify-nudges"></div>
     <div class="setting-row"><div><strong>Mentions</strong><p>When someone mentions your account.</p></div><input type="checkbox" id="notify-mentions"></div>
   </section>
 
   <section class="settings-section">
     <h2>Appearance & Themes</h2>
-    <p class="section-description">Choose a visual theme for your Grove experience.</p>
+    <p class="section-description">Choose your Grove visual theme.</p>
     <div class="theme-grid" id="theme-grid">
       <button class="theme-choice theme-violet" data-theme="midnight-violet" aria-pressed="false" type="button">Midnight <span>Violet / blue</span></button>
       <button class="theme-choice theme-ocean" data-theme="deep-ocean" aria-pressed="false" type="button">Deep Ocean <span>Blue / cyan</span></button>
@@ -124,7 +135,46 @@
       <button class="secondary" id="upload-background" type="button">Upload background</button>
       <button class="secondary" id="remove-background" type="button">Remove custom background</button>
     </div>
-    <p class="muted">Images are stored in your Grove media space. Use images you own or have permission to use.</p>
+  </section>
+
+  <section class="settings-section">
+    <h2>Grove Music Library</h2>
+    <p class="section-description">Upload audio you have permission to use. Your selected account track is saved to your profile preferences.</p>
+
+    <div class="field">
+      <label for="music-file">Upload audio track</label>
+      <input id="music-file" type="file" accept="audio/*">
+    </div>
+    <div class="field">
+      <label for="music-title">Track title</label>
+      <input id="music-title" type="text" maxlength="150" placeholder="Track title">
+    </div>
+    <div class="field">
+      <label for="music-artist">Artist</label>
+      <input id="music-artist" type="text" maxlength="150" placeholder="Artist name">
+    </div>
+    <button class="primary" id="upload-track" type="button">Upload to my library</button>
+
+    <div class="track-list" id="track-list">
+      <p class="muted">Loading your tracks…</p>
+    </div>
+
+    <div class="now-playing" style="margin-top:18px">
+      <strong id="now-title">No track selected</strong>
+      <p id="now-artist">Choose a track from your library.</p>
+      <audio id="grove-audio" controls preload="metadata"></audio>
+      <div class="volume-row">
+        <label for="music-volume">Volume</label>
+        <input id="music-volume" type="range" min="0" max="1" step="0.01" value="0.7">
+        <span id="volume-value">70%</span>
+      </div>
+      <div class="setting-row">
+        <div><strong>Enable account music</strong><p>Save this track as your account's Grove music.</p></div>
+        <input id="music-enabled" type="checkbox">
+      </div>
+      <button class="secondary" id="save-music" type="button">Save music selection</button>
+    </div>
+    <p class="muted">Device lock-screen and notification controls appear only when your browser and operating system support Media Session. Press Play once on each device to begin playback.</p>
   </section>
 
   <section class="settings-section">
@@ -142,4 +192,3 @@
 </main>
 </body>
 </html>
-```
