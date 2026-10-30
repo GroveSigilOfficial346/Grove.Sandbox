@@ -1,257 +1,145 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#050019">
-  <meta name="description" content="Manage your Grove account settings.">
   <title>Settings — Grove</title>
-
   <link rel="stylesheet" href="css/global.css">
-  <link rel="manifest" href="/manifest.webmanifest">
-  <link rel="icon" href="/assets/grove-logo.svg" type="image/svg+xml">
-
   <style>
-    body {
-      display:block;
-      min-height:100vh;
-      overflow-x:hidden;
-      padding:24px 16px 48px;
-      color:#f7f5ff;
-    }
-    .settings-app {
-      width:min(100%,760px);
-      margin:auto;
-    }
-    .topbar {
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:14px;
-      margin-bottom:28px;
-    }
-    .brand {
-      color:#f7f5ff;
-      font-size:19px;
-      letter-spacing:5px;
-      text-decoration:none;
-    }
-    .top-actions {
-      display:flex;
-      flex-wrap:wrap;
-      gap:9px;
-    }
-    .top-actions a {
-      padding:10px 14px;
-      border:1px solid #851eff66;
-      border-radius:9px;
-      background:#100b25;
-      color:#eee5ff;
-      font-size:13px;
-      text-decoration:none;
-    }
-    .heading { margin-bottom:24px; }
-    h1 {
-      margin:0 0 8px;
-      color:#f7f5ff;
-      font-size:clamp(26px,5vw,34px);
-    }
-    .intro {
-      margin:0;
-      color:#bdb3dc;
-      font-size:14px;
-      line-height:1.7;
-    }
-    .settings-section {
-      margin-top:18px;
-      padding:24px;
-      border:1px solid #851eff55;
-      border-radius:16px;
-      background:#100b25ef;
-      box-shadow:0 12px 40px #0004;
-    }
-    .settings-section h2 {
-      margin:0 0 8px;
-      color:#f7f5ff;
-      font-size:18px;
-    }
-    .section-description {
-      margin:0 0 18px;
-      color:#a99bc9;
-      font-size:13px;
-      line-height:1.6;
-    }
-    .setting-item {
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:16px;
-      padding:16px 0;
-      border-top:1px solid #ffffff12;
-    }
-    .setting-item:first-of-type { border-top:0; }
-    .setting-item h3 {
-      margin:0 0 5px;
-      color:#e9e1fa;
-      font-size:14px;
-    }
-    .setting-item p {
-      margin:0;
-      color:#a99bc9;
-      font-size:12px;
-      line-height:1.5;
-    }
-    .setting-status {
-      flex-shrink:0;
-      color:#a99bc9;
-      font-size:12px;
-    }
-    .actions {
-      display:flex;
-      flex-wrap:wrap;
-      gap:10px;
-      margin-top:22px;
-    }
-    button {
-      padding:12px 18px;
-      border:1px solid #851eff88;
-      border-radius:9px;
-      background:linear-gradient(110deg,#851eff,#5965ff);
-      color:white;
-      font:inherit;
-      font-size:13px;
-      font-weight:600;
-      cursor:pointer;
-    }
-    button.danger {
-      border-color:#ff858566;
-      background:#29101f;
-      color:#ffb5c0;
-    }
-    button:disabled {
-      opacity:.6;
-      cursor:wait;
-    }
-    #status {
-      min-height:22px;
-      margin-top:16px;
-      font-size:13px;
-      line-height:1.6;
-      overflow-wrap:anywhere;
-    }
-    #status[data-kind="error"] { color:#ff9caa; }
-    #status[data-kind="success"] { color:#7bd7a2; }
-    [hidden] { display:none !important; }
-
-    @media(max-width:600px) {
-      .settings-section { padding:19px; }
-      .setting-item { align-items:flex-start; }
-    }
+    *{box-sizing:border-box}
+    body{display:block;min-height:100vh;overflow-x:hidden;padding:22px 14px 60px;color:#f7f5ff}
+    .settings-app{width:min(100%,850px);margin:auto}
+    .topbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:28px}
+    .brand{color:#f7f5ff;font-size:19px;letter-spacing:5px;text-decoration:none}
+    .top-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .top-actions a,.setting-button{padding:10px 13px;border:1px solid #851eff66;border-radius:9px;background:#100b25;color:#eee5ff;font-size:13px;text-decoration:none;cursor:pointer}
+    h1{font-size:clamp(27px,5vw,36px);margin:0 0 7px}
+    .intro,.muted{color:#b9add3;font-size:13px;line-height:1.65}
+    .settings-section{margin-top:17px;padding:22px;border:1px solid #851eff55;border-radius:16px;background:#100b25ef}
+    .settings-section h2{font-size:18px;margin:0 0 6px}
+    .section-description{margin:0 0 15px;color:#a99bc9;font-size:13px;line-height:1.6}
+    .field{display:grid;gap:7px;margin:14px 0}
+    .field label,.setting-row strong{font-size:13px;color:#eee5ff;font-weight:700}
+    input:not([type=checkbox]):not([type=file]),select,textarea{width:100%;padding:12px;border:1px solid #554477;border-radius:9px;background:#08051a;color:#f7f5ff;font:inherit;font-size:13px}
+    input[type=file]{max-width:100%;color:#b9add3;font-size:12px}
+    .setting-row{display:flex;justify-content:space-between;align-items:center;gap:16px;padding:14px 0;border-top:1px solid #ffffff13}
+    .setting-row:first-of-type{border-top:0}
+    .setting-row p{margin:5px 0 0;color:#a99bc9;font-size:12px;line-height:1.5}
+    .setting-row input[type=checkbox]{width:20px;height:20px;accent-color:#a855f7;flex-shrink:0}
+    .theme-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(135px,1fr));gap:10px}
+    .theme-choice{min-height:78px;padding:12px;border:2px solid #554477;border-radius:11px;color:white;text-align:left;cursor:pointer;font:inherit;font-size:12px}
+    .theme-choice[aria-pressed=true]{border-color:#45e5ff;box-shadow:0 0 0 2px #45e5ff33}
+    .theme-choice span{display:block;margin-top:7px;color:#eee5ff}
+    .theme-violet{background:linear-gradient(135deg,#08051a,#35165f,#353bff)}
+    .theme-ocean{background:linear-gradient(135deg,#031725,#07506b,#353bff)}
+    .theme-ember{background:linear-gradient(135deg,#160a0b,#642b22,#c36b35)}
+    .theme-forest{background:linear-gradient(135deg,#071712,#164d3b,#6c9b72)}
+    .theme-rose{background:linear-gradient(135deg,#1a0719,#70265c,#bd5d91)}
+    .theme-void{background:linear-gradient(135deg,#050505,#202027,#494956)}
+    .preview{width:100%;height:130px;border-radius:11px;background-position:center;background-size:cover;border:1px solid #554477;margin-top:10px}
+    .actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}
+    button.primary{padding:12px 17px;border:0;border-radius:9px;background:linear-gradient(110deg,#851eff,#5965ff);color:white;font-weight:700;cursor:pointer}
+    button.secondary{padding:11px 15px;border:1px solid #554477;border-radius:9px;background:#211440;color:white;cursor:pointer}
+    button.danger{padding:11px 15px;border:1px solid #ff858566;border-radius:9px;background:#29101f;color:#ffb5c0;cursor:pointer}
+    button:disabled{opacity:.55;cursor:wait}
+    #status{min-height:22px;margin-top:15px;font-size:13px;overflow-wrap:anywhere}
+    #status[data-kind=error]{color:#ff9caa}#status[data-kind=success]{color:#7bd7a2}
+    [hidden]{display:none!important}
+    @media(max-width:560px){.settings-section{padding:17px}.setting-row{align-items:flex-start}}
   </style>
-
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="js/settings.js" defer></script>
 </head>
-
 <body>
-  <main class="settings-app">
-    <header class="topbar">
-      <a class="brand" href="index.html">GROVE</a>
-      <nav class="top-actions" aria-label="Settings navigation">
-        <a href="profile.html">View Profile</a>
-        <a href="edit-profile.html">Edit Profile</a>
-        <a href="index.html">Home</a>
-      </nav>
-    </header>
+<main class="settings-app">
+  <header class="topbar">
+    <a class="brand" href="index.html">GROVE</a>
+    <nav class="top-actions">
+      <a href="profile.html">Profile</a>
+      <a href="edit-profile.html">Edit Profile</a>
+      <a href="index.html">Home</a>
+    </nav>
+  </header>
 
-    <div class="heading">
-      <h1>Account Settings</h1>
-      <p class="intro">
-        Manage your Grove account, security, privacy, and preferences.
-        These controls are separate from your public profile.
-      </p>
+  <h1>Headquarters Settings</h1>
+  <p class="intro">Your account, privacy, notifications, and personal Grove environment.</p>
+
+  <section class="settings-section">
+    <h2>Account & Security</h2>
+    <p class="section-description">Manage your sign-in details.</p>
+    <div class="field"><label for="email">Account email</label><input id="email" type="email" autocomplete="email"></div>
+    <button class="secondary" id="change-email" type="button">Update email</button>
+    <div class="field"><label for="password">New password</label><input id="password" type="password" minlength="8" autocomplete="new-password" placeholder="At least 8 characters"></div>
+    <button class="secondary" id="change-password" type="button">Change password</button>
+  </section>
+
+  <section class="settings-section">
+    <h2>Privacy & Interactions</h2>
+    <p class="section-description">Control profile visibility and image permissions.</p>
+    <div class="setting-row"><div><strong>Private profile</strong><p>Require approval before new members can follow you.</p></div><input id="is-private" type="checkbox"></div>
+    <div class="field"><label for="comment-privacy">Who can comment on your posts?</label>
+      <select id="comment-privacy"><option value="everyone">Everyone</option><option value="followers">Accepted followers</option><option value="nobody">Nobody</option></select>
     </div>
+    <div class="setting-row"><div><strong>Allow image saves</strong><p>Let other members save your post images to their Grove gallery.</p></div><input id="allow-image-saves" type="checkbox"></div>
+    <div class="setting-row"><div><strong>Allow image downloads</strong><p>Let other members download your post images.</p></div><input id="allow-image-downloads" type="checkbox"></div>
+    <div class="setting-row"><div><strong>Saved gallery</strong><p>Enable your personal saved-media gallery.</p></div><input id="saved-gallery-enabled" type="checkbox" checked></div>
+  </section>
 
-    <section class="settings-section">
-      <h2>Account Security</h2>
-      <p class="section-description">
-        Manage your login credentials and protect access to your account.
-      </p>
-      <div class="setting-item">
-        <div>
-          <h3>Email Address</h3>
-          <p>Change the email address connected to your account.</p>
-        </div>
-        <span class="setting-status">Coming soon</span>
-      </div>
-      <div class="setting-item">
-        <div>
-          <h3>Password</h3>
-          <p>Update your account password.</p>
-        </div>
-        <span class="setting-status">Coming soon</span>
-      </div>
-    </section>
+  <section class="settings-section">
+    <h2>Notifications</h2>
+    <p class="section-description">Choose which activity alerts you want enabled.</p>
+    <div class="setting-row"><div><strong>Messages</strong><p>New direct and group messages.</p></div><input type="checkbox" id="notify-messages"></div>
+    <div class="setting-row"><div><strong>Follows</strong><p>New follows and follow requests.</p></div><input type="checkbox" id="notify-follows"></div>
+    <div class="setting-row"><div><strong>Likes</strong><p>Likes on your posts.</p></div><input type="checkbox" id="notify-likes"></div>
+    <div class="setting-row"><div><strong>Comments</strong><p>Comments and replies on your posts.</p></div><input type="checkbox" id="notify-comments"></div>
+    <div class="setting-row"><div><strong>Grove nudges</strong><p>Nudges from other members.</p></div><input type="checkbox" id="notify-nudges"></div>
+    <div class="setting-row"><div><strong>Mentions</strong><p>When someone mentions your account.</p></div><input type="checkbox" id="notify-mentions"></div>
+  </section>
 
-    <section class="settings-section">
-      <h2>Privacy</h2>
-      <p class="section-description">
-        Control how other members interact with and discover your account.
-      </p>
-      <div class="setting-item">
-        <div>
-          <h3>Profile Visibility</h3>
-          <p>Manage who can view your profile.</p>
-        </div>
-        <span class="setting-status">Coming soon</span>
-      </div>
-      <div class="setting-item">
-        <div>
-          <h3>Interactions</h3>
-          <p>Future controls for messages, comments, and member interactions.</p>
-        </div>
-        <span class="setting-status">Coming soon</span>
-      </div>
-    </section>
+  <section class="settings-section">
+    <h2>Appearance & Themes</h2>
+    <p class="section-description">Choose a visual theme for your Grove experience.</p>
+    <div class="theme-grid" id="theme-grid">
+      <button class="theme-choice theme-violet" data-theme="midnight-violet" aria-pressed="false" type="button">Midnight <span>Violet / blue</span></button>
+      <button class="theme-choice theme-ocean" data-theme="deep-ocean" aria-pressed="false" type="button">Deep Ocean <span>Blue / cyan</span></button>
+      <button class="theme-choice theme-ember" data-theme="ember" aria-pressed="false" type="button">Ember <span>Charcoal / amber</span></button>
+      <button class="theme-choice theme-forest" data-theme="forest" aria-pressed="false" type="button">Forest <span>Evergreen</span></button>
+      <button class="theme-choice theme-rose" data-theme="rose" aria-pressed="false" type="button">Rose Nebula <span>Magenta / rose</span></button>
+      <button class="theme-choice theme-void" data-theme="void" aria-pressed="false" type="button">Void <span>Monochrome</span></button>
+    </div>
+    <div class="field"><label for="featured-space">Featured-space background</label>
+      <select id="featured-space">
+        <option value="">Use selected theme</option>
+        <option value="starfield">Starfield</option>
+        <option value="nebula">Nebula</option>
+        <option value="aurora">Aurora</option>
+        <option value="deep-space">Deep Space</option>
+      </select>
+    </div>
+    <div class="field"><label for="custom-background">Upload your own background image</label><input id="custom-background" type="file" accept="image/png,image/jpeg,image/webp"></div>
+    <div class="preview" id="background-preview" aria-label="Background preview"></div>
+    <div class="actions">
+      <button class="secondary" id="upload-background" type="button">Upload background</button>
+      <button class="secondary" id="remove-background" type="button">Remove custom background</button>
+    </div>
+    <p class="muted">Images are stored in your Grove media space. Use images you own or have permission to use.</p>
+  </section>
 
-    <section class="settings-section">
-      <h2>Notifications</h2>
-      <p class="section-description">
-        Manage future alerts for messages, follows, comments, and Grove updates.
-      </p>
-      <div class="setting-item">
-        <div>
-          <h3>Notification Preferences</h3>
-          <p>Choose which activity you want to receive notifications about.</p>
-        </div>
-        <span class="setting-status">Coming soon</span>
-      </div>
-    </section>
+  <section class="settings-section">
+    <h2>Save Settings</h2>
+    <p class="section-description">Save your account and preference changes.</p>
+    <button class="primary" id="save-settings" type="button">Save all settings</button>
+    <p id="status" role="status" aria-live="polite"></p>
+  </section>
 
-    <section class="settings-section">
-      <h2>Appearance</h2>
-      <p class="section-description">
-        Personalize the way Grove looks and feels.
-      </p>
-      <div class="setting-item">
-        <div>
-          <h3>Display Preferences</h3>
-          <p>Future options for themes and interface appearance.</p>
-        </div>
-        <span class="setting-status">Coming soon</span>
-      </div>
-    </section>
-
-    <section class="settings-section">
-      <h2>Session</h2>
-      <p class="section-description">
-        Manage your current login session.
-      </p>
-      <div class="actions">
-        <button id="logout" class="danger" type="button">Log Out</button>
-      </div>
-      <p id="status" role="status" aria-live="polite"></p>
-    </section>
-  </main>
+  <section class="settings-section">
+    <h2>Session</h2>
+    <p class="section-description">Sign out of this device.</p>
+    <button class="danger" id="logout" type="button">Log out</button>
+  </section>
+</main>
 </body>
 </html>
+```
