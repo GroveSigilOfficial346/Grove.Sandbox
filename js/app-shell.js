@@ -177,6 +177,22 @@
     .grove-action {
       border:0;color:white;background:linear-gradient(110deg,#851eff,#5965ff);
     }
+    .grove-profile-link,.grove-username-link,.grove-comment-author,
+    .grove-member-profile-link,.grove-member-username-link {
+      color:inherit;text-decoration:none;cursor:pointer;
+    }
+    .grove-profile-link:hover,.grove-username-link:hover,
+    .grove-comment-author:hover,.grove-member-profile-link:hover,
+    .grove-member-username-link:hover {
+      color:#45e5ff;text-decoration:underline;
+    }
+    .grove-username-link,.grove-member-username-link {
+      display:block;color:#a99bc9;font-size:12px;
+    }
+    .grove-comment-author{font-weight:700;margin-right:8px}
+    .grove-profile-avatar-link,.grove-member-avatar-link {
+      display:inline-flex;flex-shrink:0;text-decoration:none;
+    }
     @media(min-width:800px) {
       .grove-feed-layout{grid-template-columns:minmax(0,1fr) 260px;align-items:start}
     }
@@ -190,6 +206,41 @@
     }
   `;
   document.head.appendChild(style);
+
+  function element(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
+  }
+
+  function profileHref(profile) {
+    if (profile?.username) {
+      return "profile.html?username=" + encodeURIComponent(profile.username);
+    }
+    if (profile?.id) {
+      return "profile.html?id=" + encodeURIComponent(profile.id);
+    }
+    return "profile.html";
+  }
+
+  function profileLink(text, profile, className) {
+    const link = element("a", className || "", text);
+    link.href = profileHref(profile);
+    return link;
+  }
+
+  function linkedAvatar(profile, className) {
+    const link = element("a", className || "grove-profile-avatar-link");
+    link.href = profileHref(profile);
+    link.setAttribute("aria-label", "Open member profile");
+
+    const image = element("img", "grove-post-avatar");
+    image.alt = "";
+    image.src = profile?.avatar_url || fallbackAvatar();
+    link.appendChild(image);
+    return link;
+  }
 
   const profileView = document.createElement("section");
   profileView.className = "grove-view";
@@ -256,17 +307,6 @@
 
   backButton.addEventListener("click", () => switchView("discover"));
   topbar.after(navigation);
-
-  function element(tag, className, text) {
-    const node = document.createElement(tag);
-    if (className) node.className = className;
-    if (text !== undefined) node.textContent = text;
-    return node;
-  }
-
-  function showDiscoverMessage(text) {
-    discoverStatus.textContent = text || "";
-  }
 
   // FEED
   const feedView = views.feed;
@@ -433,14 +473,18 @@
 
         const { data: follows, error: followError } = await db.from("follows")
           .select("following_id")
-          .eq("follower_id", currentUser.id);
+          .eq("follower_id", currentUser.id)
+          .eq("status", "accepted");
         if (followError) throw followError;
 
-        const authorIds = [
-          currentUser.id,
-          ...(follows || []).map(row => row.following_id)
-        ];
-        query = query.in("author_id", [...new Set(authorIds)]);
+        const authorIds = (follows || []).map(row => row.following_id);
+        if (!authorIds.length) {
+          postList.replaceChildren(
+            element("div", "grove-empty", "No posts here yet. Follow members to fill your feed.")
+          );
+          return;
+        }
+        query = query.in("author_id", authorIds);
       } else {
         query = query.eq("visibility", "public");
       }
@@ -515,14 +559,19 @@
     const card = element("article", "grove-post");
     const header = element("div", "grove-post-header");
 
-    const avatar = element("img", "grove-post-avatar");
-    avatar.alt = "";
-    avatar.src = profile?.avatar_url || fallbackAvatar();
-
+    const avatar = linkedAvatar(profile, "grove-profile-avatar-link");
     const author = element("div", "grove-post-author");
     author.append(
-      element("strong", "", profile?.display_name || profile?.username || "Grove Member"),
-      element("small", "", profile?.username ? "@" + profile.username : "Grove member")
+      profileLink(
+        profile?.display_name || profile?.username || "Grove Member",
+        { ...profile, id: post.author_id },
+        "grove-profile-link"
+      ),
+      profileLink(
+        profile?.username ? "@" + profile.username : "Grove member",
+        { ...profile, id: post.author_id },
+        "grove-username-link"
+      )
     );
 
     const date = element("small", "", new Date(post.created_at).toLocaleString());
@@ -576,7 +625,6 @@
       }
     });
 
-    // Author-only controls. Supabase RLS must also enforce ownership.
     if (currentUser && currentUser.id === post.author_id) {
       const editButton = element("button", "post-manage", "Edit");
       editButton.type = "button";
@@ -682,10 +730,12 @@
       (comments || []).forEach(comment => {
         const profile = profiles.get(comment.author_id);
         const row = element("div", "grove-comment");
-        row.append(
-          element("strong", "", profile?.display_name || profile?.username || "Member"),
-          document.createTextNode(comment.body)
+        const author = profileLink(
+          profile?.display_name || profile?.username || "Member",
+          { ...profile, id: comment.author_id },
+          "grove-comment-author"
         );
+        row.append(author, document.createTextNode(comment.body));
         container.appendChild(row);
       });
 
@@ -769,6 +819,39 @@
   const memberList = discoverPanel.querySelector("#grove-members");
   const discoverStatus = discoverPanel.querySelector("#grove-discover-status");
 
+  function showDiscoverMessage(text) {
+    discoverStatus.textContent = text || "";
+  }
+
+  async function getRelationshipMap(memberIds) {
+    const relationships = new Map();
+    if (!currentUser || !memberIds.length) return relationships;
+
+    const [followsResult, requestsResult] = await Promise.all([
+      db.from("follows")
+        .select("following_id,status")
+        .eq("follower_id", currentUser.id)
+        .in("following_id", memberIds),
+      db.from("follow_requests")
+        .select("target_id,status")
+        .eq("requester_id", currentUser.id)
+        .in("target_id", memberIds)
+    ]);
+
+    if (followsResult.error) throw followsResult.error;
+    if (requestsResult.error) throw requestsResult.error;
+
+    (followsResult.data || []).forEach(row => {
+      relationships.set(row.following_id, row.status === "accepted" ? "following" : "pending");
+    });
+
+    (requestsResult.data || []).forEach(row => {
+      if (row.status === "pending") relationships.set(row.target_id, "requested");
+    });
+
+    return relationships;
+  }
+
   async function loadMembers(term) {
     const sequence = ++searchSequence;
     showDiscoverMessage("");
@@ -776,7 +859,7 @@
 
     try {
       let query = db.from("profiles")
-        .select("id, username, display_name, bio, avatar_url, created_at")
+        .select("id, username, display_name, bio, avatar_url, created_at, is_private")
         .order("created_at", { ascending: false })
         .limit(40);
 
@@ -804,19 +887,17 @@
       }
 
       const ids = members.map(member => member.id);
-      const [followingResult, followersResult] = await Promise.all([
-        currentUser
-          ? db.from("follows").select("following_id")
-              .eq("follower_id", currentUser.id).in("following_id", ids)
-          : Promise.resolve({ data: [], error: null }),
-        db.from("follows").select("following_id").in("following_id", ids)
+      const [relationships, followersResult] = await Promise.all([
+        getRelationshipMap(ids),
+        db.from("follows")
+          .select("following_id")
+          .eq("status", "accepted")
+          .in("following_id", ids)
       ]);
 
-      if (followingResult.error) throw followingResult.error;
       if (followersResult.error) throw followersResult.error;
       if (sequence !== searchSequence) return;
 
-      const following = new Set((followingResult.data || []).map(row => row.following_id));
       const counts = new Map();
       (followersResult.data || []).forEach(row => {
         counts.set(row.following_id, (counts.get(row.following_id) || 0) + 1);
@@ -825,7 +906,9 @@
       memberList.replaceChildren();
       members.forEach(member => {
         memberList.appendChild(renderMember(
-          member, following.has(member.id), counts.get(member.id) || 0
+          member,
+          relationships.get(member.id) || "none",
+          counts.get(member.id) || 0
         ));
       });
       discoverLoaded = true;
@@ -838,17 +921,102 @@
     }
   }
 
-  function renderMember(member, isFollowing, followerCount) {
+  async function updateFollow(member, relationship, button) {
+    if (!currentUser) return;
+
+    button.disabled = true;
+    showDiscoverMessage("");
+
+    try {
+      if (relationship === "following") {
+        const { error } = await db.from("follows")
+          .delete()
+          .eq("follower_id", currentUser.id)
+          .eq("following_id", member.id);
+        if (error) throw error;
+
+        relationship = "none";
+        showDiscoverMessage("You unfollowed this member.");
+      } else if (relationship === "requested") {
+        const { error } = await db.from("follow_requests")
+          .delete()
+          .eq("requester_id", currentUser.id)
+          .eq("target_id", member.id);
+        if (error) throw error;
+
+        relationship = "none";
+        showDiscoverMessage("Follow request cancelled.");
+      } else if (member.is_private) {
+        const { error } = await db.from("follow_requests").upsert({
+          requester_id: currentUser.id,
+          target_id: member.id,
+          status: "pending",
+          updated_at: new Date().toISOString()
+        }, { onConflict: "requester_id,target_id" });
+        if (error) throw error;
+
+        relationship = "requested";
+        showDiscoverMessage("Follow request sent.");
+      } else {
+        const { error } = await db.from("follows").insert({
+          follower_id: currentUser.id,
+          following_id: member.id,
+          status: "accepted"
+        });
+        if (error) throw error;
+
+        relationship = "following";
+        showDiscoverMessage("You're now following this member!");
+      }
+
+      setFollowButtonState(button, relationship);
+      discoverLoaded = false;
+      await loadSuggestions();
+      if (feedMode === "following") await loadFeed();
+    } catch (error) {
+      console.error("Grove follow:", error);
+      showDiscoverMessage(error.message || "Could not update your follow.");
+      button.disabled = false;
+    }
+  }
+
+  function setFollowButtonState(button, relationship) {
+    const labels = {
+      none: "Follow",
+      following: "Following",
+      requested: "Requested",
+      pending: "Requested"
+    };
+    button.textContent = labels[relationship] || "Follow";
+    button.classList.toggle("primary", relationship === "none");
+    button.disabled = false;
+    button.dataset.relationship = relationship;
+  }
+
+  function renderMember(member, relationship, followerCount) {
     const card = element("article", "grove-member");
+
+    const avatarLink = element("a", "grove-member-avatar-link");
+    avatarLink.href = profileHref(member);
+
     const avatar = element("img");
     avatar.alt = "";
     avatar.loading = "lazy";
     avatar.src = member.avatar_url || fallbackAvatar();
+    avatarLink.appendChild(avatar);
 
     const info = element("div", "grove-member-info");
     info.append(
-      element("strong", "", member.display_name || member.username || "Grove Member"),
-      element("small", "", member.username ? "@" + member.username : ""),
+      profileLink(
+        member.display_name || member.username || "Grove Member",
+        member,
+        "grove-member-profile-link"
+      ),
+      profileLink(
+        member.username ? "@" + member.username : "",
+        member,
+        "grove-member-username-link"
+      ),
       element(
         "p",
         "",
@@ -858,50 +1026,21 @@
     );
 
     const actions = element("div", "grove-member-actions");
-    const profileLink = element("a", "", "View profile");
-    profileLink.href = "profile.html?id=" + encodeURIComponent(member.id);
-    actions.appendChild(profileLink);
+    const viewLink = element("a", "", "View profile");
+    viewLink.href = profileHref(member);
+    actions.appendChild(viewLink);
 
     if (currentUser) {
-      const followButton = element(
-        "button",
-        isFollowing ? "" : "primary",
-        isFollowing ? "Following" : "Follow"
-      );
+      const followButton = element("button", "", "");
       followButton.type = "button";
-
-      followButton.addEventListener("click", async () => {
-        followButton.disabled = true;
-        showDiscoverMessage("");
-
-        try {
-          const result = isFollowing
-            ? await db.from("follows").delete()
-                .eq("follower_id", currentUser.id).eq("following_id", member.id)
-            : await db.from("follows").insert({
-                follower_id: currentUser.id,
-                following_id: member.id
-              });
-
-          if (result.error) throw result.error;
-
-          showDiscoverMessage(isFollowing
-            ? "You unfollowed this member."
-            : "You're now following this member!"
-          );
-          discoverLoaded = false;
-          await loadMembers(searchInput.value.trim());
-        } catch (error) {
-          console.error("Grove follow:", error);
-          showDiscoverMessage(error.message || "Could not update your follow.");
-          followButton.disabled = false;
-        }
+      setFollowButtonState(followButton, relationship);
+      followButton.addEventListener("click", () => {
+        updateFollow(member, followButton.dataset.relationship || "none", followButton);
       });
-
       actions.appendChild(followButton);
     }
 
-    card.append(avatar, info, actions);
+    card.append(avatarLink, info, actions);
     return card;
   }
 
@@ -921,9 +1060,9 @@
 
     try {
       let query = db.from("profiles")
-        .select("id, username, display_name, avatar_url")
+        .select("id, username, display_name, avatar_url, is_private")
         .order("created_at", { ascending: false })
-        .limit(5);
+        .limit(20);
 
       if (currentUser) query = query.neq("id", currentUser.id);
 
@@ -937,38 +1076,55 @@
         return;
       }
 
+      const relationships = await getRelationshipMap(data.map(member => member.id));
+
+      const suggestionsToShow = data
+        .filter(member => !relationships.has(member.id))
+        .slice(0, 5);
+
+      if (!suggestionsToShow.length) {
+        suggestionsList.replaceChildren(
+          element("div", "grove-empty", "You're caught up with these members. Discover more people.")
+        );
+        return;
+      }
+
       suggestionsList.replaceChildren();
-      data.forEach(member => {
+
+      data.slice(0, 5).forEach(member => {
         const row = element("div", "grove-suggestion");
+
+        const imageLink = element("a");
+        imageLink.href = profileHref(member);
+
         const image = element("img");
         image.alt = "";
         image.src = member.avatar_url || fallbackAvatar();
+        imageLink.appendChild(image);
 
-        const link = element(
-          "a", "", member.display_name || member.username || "Grove Member"
+        const link = profileLink(
+          member.display_name || member.username || "Grove Member",
+          member,
+          ""
         );
-        link.href = "profile.html?id=" + encodeURIComponent(member.id);
-        row.append(image, link);
+
+        row.append(imageLink, link);
 
         if (currentUser) {
-          const follow = element("button", "", "Follow");
+          const relationship = relationships.get(member.id) || "none";
+          const follow = element("button", "", "");
           follow.type = "button";
+          follow.dataset.relationship = relationship;
+          setFollowButtonState(follow, relationship);
 
           follow.addEventListener("click", async () => {
-            follow.disabled = true;
-            try {
-              const { error: followError } = await db.from("follows").insert({
-                follower_id: currentUser.id,
-                following_id: member.id
-              });
-              if (followError) throw followError;
-              follow.textContent = "Following";
-            } catch (error) {
-              console.error("Grove suggested follow:", error);
-              follow.textContent = "Retry";
-              follow.disabled = false;
+            await updateFollow(member, follow.dataset.relationship || "none", follow);
+            if (follow.dataset.relationship === "following" ||
+                follow.dataset.relationship === "requested") {
+              await loadSuggestions();
             }
           });
+
           row.appendChild(follow);
         }
 
