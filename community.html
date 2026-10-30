@@ -372,4 +372,557 @@ input:focus,textarea:focus,select:focus{border-color:var(--cyan)}
 
 <div id="toast"></div>
 
-  
+<script>
+const SUPABASE_URL = "https://fpkrvgcpbnrusbfmhinj.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwa3J2Z2NwYm5ydXNiZm1oaW5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1MTc2OTYsImV4cCI6MjEwODA5MzY5Nn0.3CI1pHaEnpcQjnweA_g4Cmsscqp3eltMXWbPj2owHfo";
+
+const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+let user=null;
+let myProfile=null;
+let activeConversation=null;
+let activeChannel=null;
+let conversationCache=[];
+let memberCache=[];
+
+const $=id=>document.getElementById(id);
+
+const esc=value=>String(value??"").replace(/[&<>"']/g,c=>({
+ "&":"&amp;",
+ "<":"&lt;",
+ ">":"&gt;",
+ '"':"&quot;",
+ "'":"&#39;"
+}[c]));
+
+function toast(message){
+ const t=$("toast");
+ t.textContent=message;
+ t.style.display="block";
+ clearTimeout(window.toastTimer);
+ window.toastTimer=setTimeout(()=>t.style.display="none",2800);
+}
+
+function avatar(profile){
+ if(profile?.avatar_url){
+  return `<img class="avatar" src="${esc(profile.avatar_url)}" alt="">`;
+ }
+ return `<div class="avatar">${esc((profile?.display_name||profile?.username||"?").slice(0,1).toUpperCase())}</div>`;
+}
+
+function displayName(p){
+ return p?.display_name || (p?.username ? "@"+p.username : "Grove member");
+}
+
+function switchView(name){
+ document.querySelectorAll(".view").forEach(v=>{
+  v.classList.toggle("active",v.id===name);
+ });
+ document.querySelectorAll(".navbtn").forEach(b=>{
+  b.classList.toggle("active",b.dataset.view===name);
+ });
+
+ if(name==="feed")loadFeed();
+ if(name==="discover")loadMembers();
+ if(name==="messages")loadConversations();
+ if(name==="broadcast")loadChannels();
+ if(name==="notifications")loadNotifications();
+ if(name==="staff")loadApplication();
+}
+
+document.querySelectorAll(".navbtn").forEach(b=>{
+ b.addEventListener("click",()=>switchView(b.dataset.view));
+});
+
+$("rightDiscover").onclick=()=>switchView("discover");
+
+$("logout").onclick=async()=>{
+ await db.auth.signOut();
+ location.href="auth.html";
+};
+
+async function init(){
+ const {data,error}=await db.auth.getSession();
+
+ if(error||!data.session){
+  location.href="auth.html";
+  return;
+ }
+
+ user=data.session.user;
+
+ const result=await db.from("profiles")
+  .select("*")
+  .eq("id",user.id)
+  .maybeSingle();
+
+ myProfile=result.data;
+ $("myName").textContent=displayName(myProfile);
+
+ await Promise.all([loadFeed(),loadNotifications()]);
+}
+
+/* FEED */
+
+async function loadFeed(){
+ const host=$("feedPosts");
+ host.innerHTML='<p class="muted">Loading posts…</p>';
+
+ const {data:posts,error}=await db.from("posts")
+  .select("*")
+  .order("created_at",{ascending:false})
+  .limit(40);
+
+ if(error){
+  host.textContent=error.message;
+  return;
+ }
+
+ if(!posts?.length){
+  host.innerHTML='<p class="muted">No posts yet. Start the conversation.</p>';
+  return;
+ }
+
+ const ids=[...new Set(posts.map(p=>p.author_id))];
+
+ const {data:profiles}=await db.from("profiles")
+  .select("id,username,display_name,avatar_url")
+  .in("id",ids);
+
+ const map=Object.fromEntries((profiles||[]).map(p=>[p.id,p]));
+ const postIds=posts.map(p=>p.id);
+
+ const {data:likes}=await db.from("post_likes")
+  .select("post_id,user_id")
+  .in("post_id",postIds);
+
+ const {data:comments}=await db.from("comments")
+  .select("id,post_id,author_id,body,created_at")
+  .in("post_id",postIds)
+  .order("created_at",{ascending:true});
+
+ const liked=new Set((likes||[])
+  .filter(l=>l.user_id===user.id)
+  .map(l=>l.post_id));
+
+ const commentAuthors=[...new Set((comments||[]).map(c=>c.author_id))];
+ let commentProfiles={};
+
+ if(commentAuthors.length){
+  const {data:cp}=await db.from("profiles")
+   .select("id,username,display_name")
+   .in("id",commentAuthors);
+
+  commentProfiles=Object.fromEntries((cp||[]).map(p=>[p.id,p]));
+ }
+
+ host.innerHTML=posts.map(p=>{
+  const author=map[p.author_id]||{};
+  const postComments=(comments||[]).filter(c=>c.post_id===p.id);
+
+  const media=(p.media_urls||[])
+   .map(url=>`<img src="${esc(url)}" alt="Post image">`)
+   .join("");
+
+  return `<article class="post" data-post="${p.id}">
+   <div class="posthead">
+    ${avatar(author)}
+    <div>
+     <strong>${esc(displayName(author))}</strong>
+     <div class="muted">@${esc(author.username||"member")} · ${new Date(p.created_at).toLocaleString()}</div>
+    </div>
+   </div>
+   <div class="postbody">${esc(p.body)}</div>
+   <div class="postmedia">${media}</div>
+   <div class="actions">
+    <button class="${liked.has(p.id)?"liked":""}" data-like="${p.id}">
+     ${liked.has(p.id)?"♥ Liked":"♡ Like"} · ${(likes||[]).filter(l=>l.post_id===p.id).length}
+    </button>
+    <button data-comment-focus="${p.id}">Comment · ${postComments.length}</button>
+    <button data-bookmark="${p.id}">Save</button>
+    <button data-report="${p.id}">Report</button>
+    ${p.author_id===user.id?`<button class="danger" data-delete="${p.id}">Delete</button>`:""}
+   </div>
+   <div class="comments">
+    ${postComments.map(c=>{
+     const cp=commentProfiles[c.author_id]||{};
+     return `<div class="comment">
+      <strong>${esc(displayName(cp))}</strong>
+      <span>${esc(c.body)}</span>
+     </div>`;
+    }).join("")}
+   </div>
+   <form class="row comment-form" data-comment="${p.id}" style="margin-top:10px">
+    <input class="grow" maxlength="1500" placeholder="Write a comment…">
+    <button class="secondary">Send</button>
+   </form>
+  </article>`;
+ }).join("");
+}
+
+$("publishPost").onclick=async()=>{
+ const body=$("postBody").value.trim();
+ if(!body)return toast("Write something first.");
+
+ const {error}=await db.from("posts").insert({
+  author_id:user.id,
+  body,
+  visibility:$("postVisibility").value
+ });
+
+ if(error)return toast(error.message);
+
+ $("postBody").value="";
+ toast("Post published.");
+ loadFeed();
+};
+
+$("feedPosts").addEventListener("click",async e=>{
+ const like=e.target.closest("[data-like]");
+ const bookmark=e.target.closest("[data-bookmark]");
+ const focus=e.target.closest("[data-comment-focus]");
+ const del=e.target.closest("[data-delete]");
+ const report=e.target.closest("[data-report]");
+
+ if(like){
+  const post_id=like.dataset.like;
+  const wasLiked=like.classList.contains("liked");
+  like.disabled=true;
+
+  const result=wasLiked
+   ?await db.from("post_likes").delete().eq("post_id",post_id).eq("user_id",user.id)
+   :await db.from("post_likes").insert({post_id,user_id:user.id});
+
+  like.disabled=false;
+
+  if(result.error)toast(result.error.message);
+  else loadFeed();
+ }
+
+ if(bookmark){
+  const {error}=await db.from("bookmarks").upsert({
+   user_id:user.id,
+   post_id:bookmark.dataset.bookmark
+  });
+  toast(error?error.message:"Post saved.");
+ }
+
+ if(focus){
+  focus.closest(".post").querySelector(".comment-form input").focus();
+ }
+
+ if(del&&confirm("Delete this post?")){
+  const {error}=await db.from("posts").delete()
+   .eq("id",del.dataset.delete)
+   .eq("author_id",user.id);
+
+  toast(error?error.message:"Post deleted.");
+  loadFeed();
+ }
+
+ if(report){
+  toast("Report storage is not configured yet. The post has not been reported.");
+ }
+});
+
+$("feedPosts").addEventListener("submit",async e=>{
+ const form=e.target.closest(".comment-form");
+ if(!form)return;
+
+ e.preventDefault();
+
+ const body=form.querySelector("input").value.trim();
+ if(!body)return;
+
+ const {error}=await db.from("comments").insert({
+  post_id:form.dataset.comment,
+  author_id:user.id,
+  body
+ });
+
+ if(error)toast(error.message);
+ else{
+  toast("Comment added.");
+  loadFeed();
+ }
+});
+
+  /* DISCOVER */
+
+async function loadMembers(mode="new"){
+ const host=$("membersList");
+ host.innerHTML='<p class="muted">Loading members…</p>';
+
+ const term=$("memberSearch").value.trim().replace(/^@/,"");
+
+ let query=db.from("profiles")
+  .select("id,username,display_name,bio,avatar_url,created_at,is_private")
+  .neq("id",user.id)
+  .order("created_at",{ascending:false})
+  .limit(50);
+
+ if(term){
+  query=query.or(`username.ilike.%${term}%,display_name.ilike.%${term}%`);
+ }
+
+ const {data,error}=await query;
+
+ if(error){
+  host.textContent=error.message;
+  return;
+ }
+
+ let members=data||[];
+
+ if(mode==="following"){
+  const {data:follows,error:fe}=await db.from("follows")
+   .select("following_id")
+   .eq("follower_id",user.id);
+
+  if(fe){
+   host.textContent=fe.message;
+   return;
+  }
+
+  const ids=new Set((follows||[]).map(f=>f.following_id));
+  members=members.filter(m=>ids.has(m.id));
+ }
+
+ memberCache=members;
+
+ host.innerHTML=members.length?members.map(m=>`
+  <div class="member">
+   ${avatar(m)}
+   <div class="member-info">
+    <strong>${esc(displayName(m))}</strong>
+    <small>@${esc(m.username||"no-username")} · ${esc(m.bio||"")}</small>
+   </div>
+   <button class="secondary" data-profile="${m.id}">Profile</button>
+   <button class="secondary" data-follow="${m.id}">Follow</button>
+  </div>
+ `).join(""):'<p class="muted">No matching members found.</p>';
+}
+
+$("memberSearch").addEventListener("input",()=>loadMembers());
+$("newMembers").onclick=()=>loadMembers("new");
+$("followingMembers").onclick=()=>loadMembers("following");
+
+$("membersList").addEventListener("click",async e=>{
+ const p=e.target.closest("[data-profile]");
+ const f=e.target.closest("[data-follow]");
+
+ if(p){
+  location.href="profile.html?id="+encodeURIComponent(p.dataset.profile);
+ }
+
+ if(f){
+  const id=f.dataset.follow;
+
+  const {error}=await db.from("follows").upsert({
+   follower_id:user.id,
+   following_id:id,
+   status:"accepted"
+  },{onConflict:"follower_id,following_id"});
+
+  toast(error?error.message:"Follow updated.");
+ }
+});
+
+/* DIRECT MESSAGES */
+
+async function loadConversations(){
+ const host=$("chatList");
+ host.innerHTML='<p class="muted">Loading…</p>';
+
+ const {data:members,error}=await db.from("conversation_members")
+  .select("conversation_id,role,last_read_at")
+  .eq("user_id",user.id);
+
+ if(error){
+  host.textContent=error.message;
+  return;
+ }
+
+ const ids=(members||[]).map(m=>m.conversation_id);
+
+ if(!ids.length){
+  host.innerHTML='<p class="muted">No conversations yet.</p>';
+  return;
+ }
+
+ const {data:convos,error:ce}=await db.from("conversations")
+  .select("*")
+  .in("id",ids)
+  .order("updated_at",{ascending:false});
+
+ if(ce){
+  host.textContent=ce.message;
+  return;
+ }
+
+ conversationCache=convos||[];
+
+ const {data:allMembers}=await db.from("conversation_members")
+  .select("conversation_id,user_id")
+  .in("conversation_id",ids);
+
+ const otherIds=[...new Set((allMembers||[])
+  .filter(m=>m.user_id!==user.id)
+  .map(m=>m.user_id))];
+
+ let profiles=[];
+
+ if(otherIds.length){
+  const {data}=await db.from("profiles")
+   .select("id,username,display_name")
+   .in("id",otherIds);
+
+  profiles=data||[];
+ }
+
+ const pmap=Object.fromEntries(profiles.map(p=>[p.id,p]));
+
+ host.innerHTML=conversationCache.map(c=>{
+  const other=(allMembers||[]).find(m=>
+   m.conversation_id===c.id&&m.user_id!==user.id
+  );
+
+  const p=pmap[other?.user_id]||{};
+
+  return `<button class="chat-item" data-conversation="${c.id}">
+   <strong>${esc(c.title||displayName(p)||"Conversation")}</strong>
+   <div class="muted">${esc(p.username?"@"+p.username:c.conversation_type)}</div>
+  </button>`;
+ }).join("");
+
+ if(activeConversation&&ids.includes(activeConversation)){
+  openConversation(activeConversation);
+ }
+}
+
+async function openConversation(id){
+ activeConversation=id;
+
+ document.querySelectorAll(".chat-item").forEach(b=>{
+  b.classList.toggle("active",b.dataset.conversation===id);
+ });
+
+ const conv=conversationCache.find(c=>c.id===id);
+
+ $("chatTitle").textContent=conv?.title||"Direct conversation";
+ $("messageBody").disabled=false;
+ $("sendMessage").disabled=false;
+
+ const host=$("chatMessages");
+ host.innerHTML='<p class="muted">Loading messages…</p>';
+
+ const {data,error}=await db.from("conversation_messages")
+  .select("*")
+  .eq("conversation_id",id)
+  .order("created_at",{ascending:true})
+  .limit(100);
+
+ if(error){
+  host.textContent=error.message;
+  return;
+ }
+
+ host.innerHTML=(data||[]).map(m=>`
+  <div class="bubble ${m.sender_id===user.id?"mine":""}">
+   ${esc(m.deleted_for_everyone_at?"Message deleted":m.body)}
+   <small>${new Date(m.created_at).toLocaleString()}</small>
+  </div>
+ `).join("");
+
+ host.scrollTop=host.scrollHeight;
+
+ await db.from("conversation_members").update({
+  last_read_at:new Date().toISOString()
+ })
+ .eq("conversation_id",id)
+ .eq("user_id",user.id);
+}
+
+$("chatList").addEventListener("click",e=>{
+ const b=e.target.closest("[data-conversation]");
+ if(b)openConversation(b.dataset.conversation);
+});
+
+$("startChat").onclick=async()=>{
+ const username=$("messageUsername").value.trim().replace(/^@/,"");
+
+ if(!username)return toast("Enter a username.");
+
+ const {data:target,error}=await db.from("profiles")
+  .select("id,username,display_name")
+  .ilike("username",username)
+  .maybeSingle();
+
+ if(error||!target){
+  return toast(error?.message||"Username not found.");
+ }
+
+ if(target.id===user.id)return toast("That is your own account.");
+
+ const {data:existing}=await db.from("conversation_members")
+  .select("conversation_id")
+  .eq("user_id",user.id);
+
+ const ids=(existing||[]).map(x=>x.conversation_id);
+
+ if(ids.length){
+  const {data:shared}=await db.from("conversation_members")
+   .select("conversation_id")
+   .eq("user_id",target.id)
+   .in("conversation_id",ids);
+
+  if(shared?.length){
+   activeConversation=shared[0].conversation_id;
+   await loadConversations();
+   return openConversation(activeConversation);
+  }
+ }
+
+ const {data:conv,error:convError}=await db.from("conversations")
+  .insert({
+   conversation_type:"direct",
+   created_by:user.id
+  })
+  .select()
+  .single();
+
+ if(convError)return toast(convError.message);
+
+ const {error:memberError}=await db.from("conversation_members").insert([
+  {conversation_id:conv.id,user_id:user.id,role:"member"},
+  {conversation_id:conv.id,user_id:target.id,role:"member"}
+ ]);
+
+ if(memberError)return toast(memberError.message);
+
+ $("messageUsername").value="";
+ activeConversation=conv.id;
+
+ await loadConversations();
+ openConversation(conv.id);
+};
+
+$("sendMessageForm").onsubmit=async e=>{
+ e.preventDefault();
+
+ if(!activeConversation)return toast("Open a conversation first.");
+
+ const body=$("messageBody").value.trim();
+ if(!body)return;
+
+ const {error}=await db.from("conversation_messages").insert({
+  conversation_id:activeConversation,
+  sender_id:user.id,
+  body
+ });
+
+ if(error)return toast(error.message);
+
+ $("messageBody").value="";
+ openConversation(activeConversation);
+};
