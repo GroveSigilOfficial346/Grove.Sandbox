@@ -2,12 +2,31 @@
   "use strict";
 
   const SUPABASE_URL = "https://fpkrvgcpbnrusbfmhinj.supabase.co";
-  const SUPABASE_ANON_KEY =
-    "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
+  const SUPABASE_ANON_KEY = "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
+  const MEDIA_BUCKET = "grove-media";
+  const PRIVATE_BUCKET = "grove-private";
 
   const $ = (selector) => document.querySelector(selector);
+  let client;
+  let currentUser;
+  let profile;
+  let isOwner = false;
+  let isAcceptedFollower = false;
 
-  function isSafeWebUrl(value) {
+  function setActionStatus(message, isError = false) {
+    const el = $("#action-status");
+    if (!el) return;
+    el.textContent = message;
+    el.style.color = isError ? "#ff9caa" : "#45e5ff";
+  }
+
+  function showError(message) {
+    const status = $("#status");
+    status.textContent = message;
+    status.hidden = false;
+  }
+
+  function safeUrl(value) {
     try {
       const url = new URL(value);
       return ["https:", "http:"].includes(url.protocol) ? url : null;
@@ -16,89 +35,88 @@
     }
   }
 
-  function showError(message) {
-    const status = $("#status");
-    if (!status) return;
-    status.textContent = message;
-    status.hidden = false;
+  function initial(value) {
+    return (value || "G").trim().charAt(0).toUpperCase() || "G";
   }
 
-  function getInitial(name) {
-    return (name || "G").trim().charAt(0).toUpperCase() || "G";
+  async function resolveMedia(value) {
+    if (!value) return null;
+
+    if (value.startsWith("private:")) {
+      const path = value.slice("private:".length);
+      const { data, error } = await client.storage
+        .from(PRIVATE_BUCKET)
+        .createSignedUrl(path, 3600);
+      if (error) {
+        console.warn("Private media unavailable:", error.message);
+        return null;
+      }
+      return data?.signedUrl || null;
+    }
+
+    if (value.startsWith("public:")) {
+      const path = value.slice("public:".length);
+      const { data } = client.storage.from(MEDIA_BUCKET).getPublicUrl(path);
+      return data?.publicUrl || null;
+    }
+
+    return safeUrl(value)?.href || null;
   }
 
-  function renderProfile(profile) {
-    $("#display-name").textContent =
-      profile.display_name || "Grove Member";
+  async function renderProfile(data) {
+    $("#display-name").textContent = data.display_name || "Grove Member";
+    $("#username").textContent = data.username ? `@${data.username}` : "";
 
-    $("#username").textContent =
-      profile.username ? `@${profile.username}` : "";
-
-    const bio = $("#bio");
-
-    if (profile.bio?.trim()) {
-      bio.textContent = profile.bio;
-      bio.hidden = false;
+    if (data.bio?.trim()) {
+      $("#bio").textContent = data.bio;
+      $("#bio").hidden = false;
     } else {
-      bio.hidden = true;
+      $("#bio").hidden = true;
     }
 
     const avatar = $("#avatar");
     avatar.replaceChildren();
-
-    const avatarUrl = profile.avatar_url
-      ? isSafeWebUrl(profile.avatar_url)
-      : null;
+    const avatarUrl = await resolveMedia(data.avatar_url);
 
     if (avatarUrl) {
       const image = document.createElement("img");
-      image.src = avatarUrl.href;
-      image.alt = `${profile.display_name || "Member"}'s profile picture`;
+      image.src = avatarUrl;
+      image.alt = `${data.display_name || "Member"}'s profile picture`;
       image.loading = "lazy";
       avatar.appendChild(image);
     } else {
-      avatar.textContent = getInitial(profile.display_name);
+      avatar.textContent = initial(data.display_name);
     }
 
     const cover = $("#cover");
     cover.style.backgroundImage = "";
-
-    const coverUrl = profile.cover_url
-      ? isSafeWebUrl(profile.cover_url)
-      : null;
-
+    const coverUrl = await resolveMedia(data.cover_url);
     if (coverUrl) {
-      cover.style.backgroundImage =
-        `url("${coverUrl.href.replace(/["\\]/g, "\\$&")}")`;
+      cover.style.backgroundImage = `url("${coverUrl.replace(/["\\]/g, "\\$&")}")`;
     }
 
     const details = $("#details");
     details.replaceChildren();
 
-    if (profile.location) {
-      const location = document.createElement("span");
-      location.textContent = `📍 ${profile.location}`;
-      details.appendChild(location);
+    if (data.location) {
+      const item = document.createElement("span");
+      item.textContent = `📍 ${data.location}`;
+      details.appendChild(item);
     }
 
-    if (profile.pronouns) {
-      const pronouns = document.createElement("span");
-      pronouns.textContent = profile.pronouns;
-      details.appendChild(pronouns);
+    if (data.pronouns) {
+      const item = document.createElement("span");
+      item.textContent = data.pronouns;
+      details.appendChild(item);
     }
 
-    if (profile.website) {
-      let websiteValue = profile.website.trim();
-
-      if (!/^https?:\/\//i.test(websiteValue)) {
-        websiteValue = `https://${websiteValue}`;
-      }
-
-      const websiteUrl = isSafeWebUrl(websiteValue);
-
-      if (websiteUrl) {
+    if (data.website) {
+      let value = data.website.trim();
+      if (!/^https?:\/\//i.test(value)) value = `https://${value}`;
+      const url = safeUrl(value);
+      if (url) {
         const link = document.createElement("a");
-        link.href = websiteUrl.href;
+        link.href = url.href;
         link.target = "_blank";
         link.rel = "noopener noreferrer";
         link.textContent = "Website";
@@ -107,11 +125,264 @@
     }
   }
 
+  async function checkFollowState() {
+    if (!currentUser || isOwner) return;
+
+    const { data: follow } = await client
+      .from("follows")
+      .select("status")
+      .eq("follower_id", currentUser.id)
+      .eq("following_id", profile.id)
+      .maybeSingle();
+
+    isAcceptedFollower = follow?.status === "accepted";
+
+    if (isAcceptedFollower) {
+      $("#follow-button").textContent = "Following";
+      return;
+    }
+
+    if (profile.is_private) {
+      const { data: request } = await client
+        .from("follow_requests")
+        .select("id,status")
+        .eq("requester_id", currentUser.id)
+        .eq("target_id", profile.id)
+        .eq("status", "pending")
+        .maybeSingle();
+
+      $("#follow-button").textContent = request ? "Requested" : "Request to follow";
+      $("#follow-button").dataset.pending = request ? "true" : "false";
+    } else {
+      $("#follow-button").textContent = "Follow";
+    }
+  }
+
+  async function handleFollow() {
+    if (!currentUser || isOwner) return;
+
+    const button = $("#follow-button");
+    button.disabled = true;
+
+    try {
+      if (isAcceptedFollower) {
+        const { error } = await client
+          .from("follows")
+          .delete()
+          .eq("follower_id", currentUser.id)
+          .eq("following_id", profile.id);
+        if (error) throw error;
+        isAcceptedFollower = false;
+        button.textContent = profile.is_private ? "Request to follow" : "Follow";
+        setActionStatus("You unfollowed this member.");
+        return;
+      }
+
+      if (profile.is_private) {
+        if (button.dataset.pending === "true") {
+          setActionStatus("Your follow request is already pending.");
+          return;
+        }
+
+        const { error } = await client.from("follow_requests").insert({
+          requester_id: currentUser.id,
+          target_id: profile.id,
+          status: "pending"
+        });
+        if (error) throw error;
+
+        button.dataset.pending = "true";
+        button.textContent = "Requested";
+        setActionStatus("Follow request sent.");
+      } else {
+        const { error } = await client.from("follows").insert({
+          follower_id: currentUser.id,
+          following_id: profile.id,
+          status: "accepted"
+        });
+        if (error) throw error;
+
+        isAcceptedFollower = true;
+        button.textContent = "Following";
+        setActionStatus("You are now following this member.");
+      }
+    } catch (error) {
+      console.error("Follow action failed:", error);
+      setActionStatus(error.message || "Could not update follow status.", true);
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  async function uploadProfileImage(kind, file) {
+    if (!isOwner || !file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setActionStatus("Choose an image file.", true);
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      setActionStatus("Images must be 8 MB or smaller.", true);
+      return;
+    }
+
+    const button = kind === "avatar"
+      ? $("#avatar-upload-button")
+      : $("#cover-upload-button");
+
+    button.disabled = true;
+    setActionStatus("Uploading image…");
+
+    try {
+      const extension = (file.name.split(".").pop() || "jpg")
+        .toLowerCase()
+        .replace(/[^a-z0-9]/g, "") || "jpg";
+
+      const path = `${currentUser.id}/profile/${kind}-${crypto.randomUUID()}.${extension}`;
+      const bucket = profile.is_private ? PRIVATE_BUCKET : MEDIA_BUCKET;
+
+      const { error: uploadError } = await client.storage
+        .from(bucket)
+        .upload(path, file, {
+          cacheControl: "3600",
+          upsert: false,
+          contentType: file.type
+        });
+
+      if (uploadError) throw uploadError;
+
+      let storedValue;
+      if (bucket === PRIVATE_BUCKET) {
+        storedValue = `private:${path}`;
+      } else {
+        storedValue = `public:${path}`;
+      }
+
+      const column = kind === "avatar" ? "avatar_url" : "cover_url";
+      const { error: updateError } = await client
+        .from("profiles")
+        .update({ [column]: storedValue, updated_at: new Date().toISOString() })
+        .eq("id", currentUser.id);
+
+      if (updateError) {
+        await client.storage.from(bucket).remove([path]);
+        throw updateError;
+      }
+
+      profile[column] = storedValue;
+      await renderProfile(profile);
+      setActionStatus(kind === "avatar" ? "Profile photo updated." : "Cover photo updated.");
+    } catch (error) {
+      console.error("Profile image upload failed:", error);
+      setActionStatus(error.message || "Image upload failed.", true);
+    } finally {
+      button.disabled = false;
+    }
+  }
+
+  function bindImageButtons() {
+    $("#avatar-upload-button").addEventListener("click", () => $("#avatar-file").click());
+    $("#cover-upload-button").addEventListener("click", () => $("#cover-file").click());
+
+    $("#avatar-file").addEventListener("change", (event) => {
+      uploadProfileImage("avatar", event.target.files?.[0]);
+      event.target.value = "";
+    });
+
+    $("#cover-file").addEventListener("change", (event) => {
+      uploadProfileImage("cover", event.target.files?.[0]);
+      event.target.value = "";
+    });
+  }
+
+  async function loadMusic() {
+    const section = $("#music-section");
+    const content = $("#music-content");
+    content.replaceChildren();
+
+    if (!profile.profile_music_enabled) {
+      section.hidden = true;
+      return;
+    }
+
+    let track = null;
+
+    const { data: tracks, error } = await client
+      .from("audio_tracks")
+      .select("id,title,artist,storage_path,mime_type,allow_download")
+      .eq("owner_id", profile.id)
+      .eq("is_profile_track", true)
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    if (!error && tracks?.length) track = tracks[0];
+
+    let audioUrl = null;
+    let canDownload = false;
+
+    if (track?.storage_path) {
+      const { data: privateData } = await client.storage
+        .from(PRIVATE_BUCKET)
+        .createSignedUrl(track.storage_path, 3600);
+
+      audioUrl = privateData?.signedUrl || null;
+
+      if (!audioUrl) {
+        const { data: publicData } = client.storage
+          .from(MEDIA_BUCKET)
+          .getPublicUrl(track.storage_path);
+        audioUrl = publicData?.publicUrl || null;
+      }
+
+      canDownload = Boolean(
+        profile.allow_music_downloads && track.allow_download && audioUrl
+      );
+    } else if (profile.profile_music_url) {
+      audioUrl = await resolveMedia(profile.profile_music_url);
+      canDownload = Boolean(profile.allow_music_downloads && audioUrl);
+    }
+
+    if (!audioUrl) {
+      section.hidden = true;
+      return;
+    }
+
+    section.hidden = false;
+
+    const player = document.createElement("div");
+    player.className = "music-player";
+
+    const title = document.createElement("p");
+    title.className = "music-title";
+    title.textContent = track?.title || profile.profile_music_title || "Profile track";
+
+    const artist = document.createElement("p");
+    artist.className = "music-artist";
+    artist.textContent = track?.artist || profile.profile_music_artist || "";
+
+    const audio = document.createElement("audio");
+    audio.controls = true;
+    audio.preload = "none";
+    audio.src = audioUrl;
+
+    player.append(title, artist, audio);
+
+    if (canDownload) {
+      const download = document.createElement("a");
+      download.className = "music-download";
+      download.href = audioUrl;
+      download.download = `${title.textContent}.mp3`;
+      download.textContent = "Download track";
+      player.appendChild(download);
+    }
+
+    content.appendChild(player);
+  }
+
   function formatDate(value) {
     const date = new Date(value);
-
     if (Number.isNaN(date.getTime())) return "";
-
     return date.toLocaleDateString(undefined, {
       year: "numeric",
       month: "short",
@@ -119,283 +390,168 @@
     });
   }
 
-  function addStyles() {
+  function addPostStyles() {
     if ($("#grove-profile-post-styles")) return;
 
     const style = document.createElement("style");
     style.id = "grove-profile-post-styles";
     style.textContent = `
-      .grove-profile-post {
-        padding:20px;
-        margin-bottom:16px;
-        border:1px solid #851eff44;
-        border-radius:14px;
-        background:#08051a;
-        overflow-wrap:anywhere;
-      }
-      .grove-profile-post-date {
-        margin:0 0 12px;
-        color:#a99bc9;
-        font-size:12px;
-      }
-      .grove-profile-post-body {
-        margin:0;
-        color:#f7f5ff;
-        line-height:1.7;
-        white-space:pre-wrap;
-      }
-      .grove-profile-post-image {
-        display:block;
-        width:100%;
-        max-height:500px;
-        margin-top:14px;
-        border-radius:10px;
-        object-fit:contain;
-        background:#050019;
-      }
-      .grove-profile-comments {
-        display:grid;
-        gap:10px;
-        margin-top:18px;
-        padding-top:14px;
-        border-top:1px solid #851eff33;
-      }
-      .grove-profile-comments-title {
-        margin:0 0 2px;
-        color:#45e5ff;
-        font-size:13px;
-        font-weight:700;
-      }
-      .grove-profile-comment {
-        padding:10px 12px;
-        border-radius:9px;
-        background:#111025;
-        color:#d9d0ed;
-        font-size:13px;
-        line-height:1.5;
-        white-space:pre-wrap;
-        overflow-wrap:anywhere;
-      }
-      .grove-profile-comment-author {
-        display:block;
-        margin-bottom:3px;
-        color:#45e5ff;
-        font-weight:700;
-      }
-      .grove-profile-comment-date {
-        display:block;
-        margin-top:4px;
-        color:#a99bc9;
-        font-size:11px;
-      }
-      .grove-profile-no-comments {
-        color:#a99bc9;
-        font-size:13px;
-      }
+      .grove-profile-post{padding:20px;border:1px solid #851eff44;border-radius:14px;background:#08051a;overflow-wrap:anywhere}
+      .grove-profile-post-date{margin:0 0 12px;color:#a99bc9;font-size:12px}
+      .grove-profile-post-body{margin:0;color:#f7f5ff;line-height:1.7;white-space:pre-wrap}
+      .grove-profile-post-image{display:block;width:100%;max-height:500px;margin-top:14px;border-radius:10px;object-fit:contain;background:#050019}
+      .grove-profile-comments{display:grid;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid #851eff33}
+      .grove-profile-comments-title{margin:0 0 2px;color:#45e5ff;font-size:13px}
+      .grove-profile-comment{padding:10px 12px;border-radius:9px;background:#111025;color:#d9d0ed;font-size:13px;line-height:1.5;white-space:pre-wrap}
+      .grove-profile-comment-author{display:block;margin-bottom:3px;color:#45e5ff;font-weight:700}
+      .grove-profile-no-comments{color:#a99bc9;font-size:13px}
     `;
     document.head.appendChild(style);
   }
 
-  function createPostCard(post, comments, authorProfiles) {
-    const article = document.createElement("article");
-    article.className = "grove-profile-post";
-
-    const date = document.createElement("p");
-    date.className = "grove-profile-post-date";
-    date.textContent = formatDate(post.created_at);
-    article.appendChild(date);
-
-    if (post.body?.trim()) {
-      const body = document.createElement("p");
-      body.className = "grove-profile-post-body";
-      body.textContent = post.body;
-      article.appendChild(body);
-    }
-
-    const mediaUrls = Array.isArray(post.media_urls)
-      ? post.media_urls
-      : [];
-
-    mediaUrls.forEach((value) => {
-      const safeUrl = isSafeWebUrl(value);
-      if (!safeUrl) return;
-
-      const image = document.createElement("img");
-      image.className = "grove-profile-post-image";
-      image.src = safeUrl.href;
-      image.alt = "Post image";
-      image.loading = "lazy";
-      article.appendChild(image);
-    });
-
-    const commentsSection = document.createElement("section");
-    commentsSection.className = "grove-profile-comments";
-
-    const heading = document.createElement("h3");
-    heading.className = "grove-profile-comments-title";
-    heading.textContent = `Comments (${comments.length})`;
-    commentsSection.appendChild(heading);
-
-    if (!comments.length) {
-      const empty = document.createElement("p");
-      empty.className = "grove-profile-no-comments";
-      empty.textContent = "No comments yet.";
-      commentsSection.appendChild(empty);
-    } else {
-      comments.forEach((comment) => {
-        const row = document.createElement("div");
-        row.className = "grove-profile-comment";
-
-        const authorProfile = authorProfiles.get(comment.author_id);
-        const author = document.createElement("span");
-        author.className = "grove-profile-comment-author";
-        author.textContent =
-          authorProfile?.display_name ||
-          authorProfile?.username ||
-          "Grove Member";
-
-        const text = document.createElement("span");
-        text.textContent = comment.body;
-
-        row.append(author, text);
-
-        const commentDate = formatDate(comment.created_at);
-
-        if (commentDate) {
-          const dateLabel = document.createElement("span");
-          dateLabel.className = "grove-profile-comment-date";
-          dateLabel.textContent = commentDate;
-          row.appendChild(dateLabel);
-        }
-
-        commentsSection.appendChild(row);
-      });
-    }
-
-    article.appendChild(commentsSection);
-    return article;
-  }
-
-  async function loadPosts(client, profile) {
-    const postsSection = $("#posts-section");
-    const postsList = $("#posts-list");
-    const postsEmpty = $("#posts-empty");
-
-    postsSection.hidden = false;
-    postsList.replaceChildren();
+  async function loadPosts() {
+    const section = $("#posts-section");
+    const list = $("#posts-list");
+    section.hidden = false;
+    list.replaceChildren();
 
     const loading = document.createElement("div");
     loading.className = "empty-state";
     loading.textContent = "Loading posts and comments…";
-    postsList.appendChild(loading);
+    list.appendChild(loading);
 
     const { data: posts, error } = await client
       .from("posts")
-      .select("id, author_id, body, media_urls, visibility, created_at")
+      .select("id,author_id,body,media_urls,visibility,created_at")
       .eq("author_id", profile.id)
       .order("created_at", { ascending: false });
 
     if (error) {
-      console.error("Grove posts error:", error);
-      postsList.replaceChildren();
-
+      console.error("Posts could not load:", error);
+      list.replaceChildren();
       const message = document.createElement("div");
       message.className = "empty-state";
-      message.textContent = "Posts couldn't be loaded right now.";
-      postsList.appendChild(message);
+      message.textContent = "Posts couldn't be loaded. This may be a privacy restriction.";
+      list.appendChild(message);
       return;
     }
 
     if (!posts?.length) {
-      postsList.replaceChildren();
-      postsEmpty.hidden = false;
-      postsList.appendChild(postsEmpty);
+      list.replaceChildren();
+      const empty = document.createElement("div");
+      empty.className = "empty-state";
+      empty.textContent = "This member hasn't posted anything yet.";
+      list.appendChild(empty);
       return;
     }
 
-    postsEmpty.hidden = true;
-
-    // Load all comments for these posts in one query.
     const postIds = posts.map((post) => post.id);
-
-    const { data: comments, error: commentsError } = await client
+    const { data: comments, error: commentError } = await client
       .from("comments")
-      .select("id, post_id, author_id, body, created_at")
+      .select("id,post_id,author_id,body,created_at")
       .in("post_id", postIds)
       .order("created_at", { ascending: true });
 
-    if (commentsError) {
-      console.error("Grove profile comments error:", commentsError);
-    }
+    if (commentError) console.warn("Comments could not load:", commentError);
 
-    const safeComments = commentsError ? [] : (comments || []);
-    const authorIds = [
-      ...new Set(safeComments.map((comment) => comment.author_id))
-    ];
-
-    let authorProfiles = new Map();
+    const safeComments = commentError ? [] : (comments || []);
+    const authorIds = [...new Set(safeComments.map((comment) => comment.author_id))];
+    let authors = new Map();
 
     if (authorIds.length) {
-      const { data: profiles, error: profilesError } = await client
+      const { data } = await client
         .from("profiles")
-        .select("id, username, display_name")
+        .select("id,username,display_name")
         .in("id", authorIds);
 
-      if (profilesError) {
-        console.error("Grove comment authors error:", profilesError);
-      } else {
-        authorProfiles = new Map(
-          (profiles || []).map((author) => [author.id, author])
-        );
-      }
+      authors = new Map((data || []).map((item) => [item.id, item]));
     }
 
-    const commentsByPost = new Map();
-
+    const byPost = new Map();
     safeComments.forEach((comment) => {
-      if (!commentsByPost.has(comment.post_id)) {
-        commentsByPost.set(comment.post_id, []);
+      if (!byPost.has(comment.post_id)) byPost.set(comment.post_id, []);
+      byPost.get(comment.post_id).push(comment);
+    });
+
+    addPostStyles();
+    list.replaceChildren();
+
+    for (const post of posts) {
+      const article = document.createElement("article");
+      article.className = "grove-profile-post";
+
+      const date = document.createElement("p");
+      date.className = "grove-profile-post-date";
+      date.textContent = formatDate(post.created_at);
+      article.appendChild(date);
+
+      if (post.body?.trim()) {
+        const body = document.createElement("p");
+        body.className = "grove-profile-post-body";
+        body.textContent = post.body;
+        article.appendChild(body);
       }
 
-      commentsByPost.get(comment.post_id).push(comment);
-    });
+      for (const media of (Array.isArray(post.media_urls) ? post.media_urls : [])) {
+        const url = await resolveMedia(media);
+        if (!url) continue;
+        const image = document.createElement("img");
+        image.className = "grove-profile-post-image";
+        image.src = url;
+        image.alt = "Post image";
+        image.loading = "lazy";
+        article.appendChild(image);
+      }
 
-    addStyles();
-    postsList.replaceChildren();
+      const postComments = byPost.get(post.id) || [];
+      const commentsBox = document.createElement("section");
+      commentsBox.className = "grove-profile-comments";
 
-    posts.forEach((post) => {
-      postsList.appendChild(
-        createPostCard(
-          post,
-          commentsByPost.get(post.id) || [],
-          authorProfiles
-        )
-      );
-    });
+      const heading = document.createElement("h3");
+      heading.className = "grove-profile-comments-title";
+      heading.textContent = `Comments (${postComments.length})`;
+      commentsBox.appendChild(heading);
+
+      if (!postComments.length) {
+        const empty = document.createElement("p");
+        empty.className = "grove-profile-no-comments";
+        empty.textContent = "No comments yet.";
+        commentsBox.appendChild(empty);
+      } else {
+        postComments.forEach((comment) => {
+          const row = document.createElement("div");
+          row.className = "grove-profile-comment";
+
+          const author = document.createElement("span");
+          author.className = "grove-profile-comment-author";
+          const authorProfile = authors.get(comment.author_id);
+          author.textContent = authorProfile?.display_name ||
+            (authorProfile?.username ? `@${authorProfile.username}` : "Grove Member");
+
+          const text = document.createElement("span");
+          text.textContent = comment.body;
+          row.append(author, text);
+          commentsBox.appendChild(row);
+        });
+      }
+
+      article.appendChild(commentsBox);
+      list.appendChild(article);
+    }
   }
 
   async function initialize() {
-    const status = $("#status");
-
     if (!window.supabase?.createClient) {
       showError("Grove couldn't load. Please refresh.");
       return;
     }
 
-    const client = window.supabase.createClient(
-      SUPABASE_URL,
-      SUPABASE_ANON_KEY
-    );
+    client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     try {
-      const {
-        data: sessionData,
-        error: sessionError
-      } = await client.auth.getSession();
-
+      const { data: sessionData, error: sessionError } = await client.auth.getSession();
       if (sessionError) throw sessionError;
-
-      const currentUser = sessionData.session?.user || null;
+      currentUser = sessionData.session?.user || null;
 
       const params = new URLSearchParams(window.location.search);
       const requestedUsername = params.get("username")?.trim();
@@ -403,44 +559,43 @@
 
       let query = client
         .from("profiles")
-        .select(
-          "id, username, display_name, bio, avatar_url, cover_url, location, website, pronouns"
-        );
+        .select("id,username,display_name,bio,avatar_url,cover_url,location,website,pronouns,is_private,profile_music_url,profile_music_title,profile_music_artist,profile_music_enabled,allow_music_downloads");
 
-      if (requestedId) {
-        query = query.eq("id", requestedId);
-      } else if (requestedUsername) {
-        query = query.ilike("username", requestedUsername);
-      } else if (currentUser) {
-        query = query.eq("id", currentUser.id);
-      } else {
-        throw new Error(
-          "Choose a member profile to view, or sign in to see your own."
-        );
-      }
+      if (requestedId) query = query.eq("id", requestedId);
+      else if (requestedUsername) query = query.ilike("username", requestedUsername);
+      else if (currentUser) query = query.eq("id", currentUser.id);
+      else throw new Error("Choose a member profile to view, or sign in to see your own.");
 
-      const { data: profile, error } = await query.maybeSingle();
-
+      const { data, error } = await query.maybeSingle();
       if (error) throw error;
-      if (!profile) {
-        throw new Error("This Grove profile couldn't be found.");
-      }
+      if (!data) throw new Error("This Grove profile couldn't be found.");
 
-      const isOwner =
-        Boolean(currentUser) && currentUser.id === profile.id;
+      profile = data;
+      isOwner = Boolean(currentUser && currentUser.id === profile.id);
 
       $("#edit-profile-link").hidden = !isOwner;
       $("#settings-link").hidden = !isOwner;
+      $("#avatar-upload-button").hidden = !isOwner;
+      $("#cover-upload-button").hidden = !isOwner;
+      $("#follow-button").hidden = !currentUser || isOwner;
+      $("#message-button").hidden = !currentUser || isOwner;
 
-      renderProfile(profile);
+      if (isOwner) {
+        bindImageButtons();
+      } else if (currentUser) {
+        $("#follow-button").addEventListener("click", handleFollow);
+        await checkFollowState();
+      }
 
+      $("#private-note").hidden = !profile.is_private || isOwner;
+
+      await renderProfile(profile);
       $("#profile-card").hidden = false;
-      status.hidden = true;
+      $("#status").hidden = true;
 
-      await loadPosts(client, profile);
-
+      await Promise.all([loadMusic(), loadPosts()]);
     } catch (error) {
-      console.error("Grove profile display error:", error);
+      console.error("Grove profile error:", error);
       showError(error.message || "Couldn't load this profile.");
     }
   }
