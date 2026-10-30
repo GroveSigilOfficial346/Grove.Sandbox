@@ -47,16 +47,21 @@
       const { data, error } = await client.storage
         .from(PRIVATE_BUCKET)
         .createSignedUrl(path, 3600);
+
       if (error) {
         console.warn("Private media unavailable:", error.message);
         return null;
       }
+
       return data?.signedUrl || null;
     }
 
     if (value.startsWith("public:")) {
       const path = value.slice("public:".length);
-      const { data } = client.storage.from(MEDIA_BUCKET).getPublicUrl(path);
+      const { data } = client.storage
+        .from(MEDIA_BUCKET)
+        .getPublicUrl(path);
+
       return data?.publicUrl || null;
     }
 
@@ -76,6 +81,7 @@
 
     const avatar = $("#avatar");
     avatar.replaceChildren();
+
     const avatarUrl = await resolveMedia(data.avatar_url);
 
     if (avatarUrl) {
@@ -90,9 +96,12 @@
 
     const cover = $("#cover");
     cover.style.backgroundImage = "";
+
     const coverUrl = await resolveMedia(data.cover_url);
+
     if (coverUrl) {
-      cover.style.backgroundImage = `url("${coverUrl.replace(/["\\]/g, "\\$&")}")`;
+      cover.style.backgroundImage =
+        `url("${coverUrl.replace(/["\\]/g, "\\$&")}")`;
     }
 
     const details = $("#details");
@@ -112,8 +121,13 @@
 
     if (data.website) {
       let value = data.website.trim();
-      if (!/^https?:\/\//i.test(value)) value = `https://${value}`;
+
+      if (!/^https?:\/\//i.test(value)) {
+        value = `https://${value}`;
+      }
+
       const url = safeUrl(value);
+
       if (url) {
         const link = document.createElement("a");
         link.href = url.href;
@@ -128,22 +142,29 @@
   async function checkFollowState() {
     if (!currentUser || isOwner) return;
 
-    const { data: follow } = await client
+    const { data: follow, error } = await client
       .from("follows")
       .select("status")
       .eq("follower_id", currentUser.id)
       .eq("following_id", profile.id)
       .maybeSingle();
 
+    if (error) {
+      console.warn("Follow status unavailable:", error.message);
+    }
+
     isAcceptedFollower = follow?.status === "accepted";
 
+    const button = $("#follow-button");
+
     if (isAcceptedFollower) {
-      $("#follow-button").textContent = "Following";
+      button.textContent = "Following";
+      button.dataset.pending = "false";
       return;
     }
 
     if (profile.is_private) {
-      const { data: request } = await client
+      const { data: request, error: requestError } = await client
         .from("follow_requests")
         .select("id,status")
         .eq("requester_id", currentUser.id)
@@ -151,10 +172,15 @@
         .eq("status", "pending")
         .maybeSingle();
 
-      $("#follow-button").textContent = request ? "Requested" : "Request to follow";
-      $("#follow-button").dataset.pending = request ? "true" : "false";
+      if (requestError) {
+        console.warn("Follow request status unavailable:", requestError.message);
+      }
+
+      button.textContent = request ? "Requested" : "Request to follow";
+      button.dataset.pending = request ? "true" : "false";
     } else {
-      $("#follow-button").textContent = "Follow";
+      button.textContent = "Follow";
+      button.dataset.pending = "false";
     }
   }
 
@@ -171,9 +197,15 @@
           .delete()
           .eq("follower_id", currentUser.id)
           .eq("following_id", profile.id);
+
         if (error) throw error;
+
         isAcceptedFollower = false;
-        button.textContent = profile.is_private ? "Request to follow" : "Follow";
+        button.dataset.pending = "false";
+        button.textContent = profile.is_private
+          ? "Request to follow"
+          : "Follow";
+
         setActionStatus("You unfollowed this member.");
         return;
       }
@@ -184,22 +216,28 @@
           return;
         }
 
-        const { error } = await client.from("follow_requests").insert({
-          requester_id: currentUser.id,
-          target_id: profile.id,
-          status: "pending"
-        });
+        const { error } = await client
+          .from("follow_requests")
+          .insert({
+            requester_id: currentUser.id,
+            target_id: profile.id,
+            status: "pending"
+          });
+
         if (error) throw error;
 
         button.dataset.pending = "true";
         button.textContent = "Requested";
         setActionStatus("Follow request sent.");
       } else {
-        const { error } = await client.from("follows").insert({
-          follower_id: currentUser.id,
-          following_id: profile.id,
-          status: "accepted"
-        });
+        const { error } = await client
+          .from("follows")
+          .insert({
+            follower_id: currentUser.id,
+            following_id: profile.id,
+            status: "accepted"
+          });
+
         if (error) throw error;
 
         isAcceptedFollower = true;
@@ -239,8 +277,12 @@
         .toLowerCase()
         .replace(/[^a-z0-9]/g, "") || "jpg";
 
-      const path = `${currentUser.id}/profile/${kind}-${crypto.randomUUID()}.${extension}`;
-      const bucket = profile.is_private ? PRIVATE_BUCKET : MEDIA_BUCKET;
+      const path =
+        `${currentUser.id}/profile/${kind}-${crypto.randomUUID()}.${extension}`;
+
+      const bucket = profile.is_private
+        ? PRIVATE_BUCKET
+        : MEDIA_BUCKET;
 
       const { error: uploadError } = await client.storage
         .from(bucket)
@@ -252,17 +294,20 @@
 
       if (uploadError) throw uploadError;
 
-      let storedValue;
-      if (bucket === PRIVATE_BUCKET) {
-        storedValue = `private:${path}`;
-      } else {
-        storedValue = `public:${path}`;
-      }
+      const storedValue = bucket === PRIVATE_BUCKET
+        ? `private:${path}`
+        : `public:${path}`;
 
-      const column = kind === "avatar" ? "avatar_url" : "cover_url";
+      const column = kind === "avatar"
+        ? "avatar_url"
+        : "cover_url";
+
       const { error: updateError } = await client
         .from("profiles")
-        .update({ [column]: storedValue, updated_at: new Date().toISOString() })
+        .update({
+          [column]: storedValue,
+          updated_at: new Date().toISOString()
+        })
         .eq("id", currentUser.id);
 
       if (updateError) {
@@ -272,7 +317,12 @@
 
       profile[column] = storedValue;
       await renderProfile(profile);
-      setActionStatus(kind === "avatar" ? "Profile photo updated." : "Cover photo updated.");
+
+      setActionStatus(
+        kind === "avatar"
+          ? "Profile photo updated."
+          : "Cover photo updated."
+      );
     } catch (error) {
       console.error("Profile image upload failed:", error);
       setActionStatus(error.message || "Image upload failed.", true);
@@ -282,8 +332,13 @@
   }
 
   function bindImageButtons() {
-    $("#avatar-upload-button").addEventListener("click", () => $("#avatar-file").click());
-    $("#cover-upload-button").addEventListener("click", () => $("#cover-file").click());
+    $("#avatar-upload-button").addEventListener("click", () => {
+      $("#avatar-file").click();
+    });
+
+    $("#cover-upload-button").addEventListener("click", () => {
+      $("#cover-file").click();
+    });
 
     $("#avatar-file").addEventListener("change", (event) => {
       uploadProfileImage("avatar", event.target.files?.[0]);
@@ -299,6 +354,7 @@
   async function loadMusic() {
     const section = $("#music-section");
     const content = $("#music-content");
+
     content.replaceChildren();
 
     if (!profile.profile_music_enabled) {
@@ -316,35 +372,54 @@
       .order("created_at", { ascending: false })
       .limit(1);
 
-    if (!error && tracks?.length) track = tracks[0];
+    if (error) {
+      console.warn("Profile track lookup failed:", error.message);
+    }
+
+    if (tracks?.length) {
+      track = tracks[0];
+    }
 
     let audioUrl = null;
     let canDownload = false;
 
-    if (track?.storage_path) {
-      const { data: privateData } = await client.storage
+    // First use the URL saved by Profile Settings.
+    // This works even if the audio_tracks flag is missing or outdated.
+    if (profile.profile_music_url) {
+      audioUrl = await resolveMedia(profile.profile_music_url);
+      canDownload = Boolean(
+        profile.allow_music_downloads && audioUrl
+      );
+    }
+
+    // If the saved URL could not be resolved, fall back to the selected track.
+    if (!audioUrl && track?.storage_path) {
+      const { data: privateData, error: privateError } = await client.storage
         .from(PRIVATE_BUCKET)
         .createSignedUrl(track.storage_path, 3600);
 
-      audioUrl = privateData?.signedUrl || null;
+      if (!privateError) {
+        audioUrl = privateData?.signedUrl || null;
+      }
 
       if (!audioUrl) {
         const { data: publicData } = client.storage
           .from(MEDIA_BUCKET)
           .getPublicUrl(track.storage_path);
+
         audioUrl = publicData?.publicUrl || null;
       }
 
       canDownload = Boolean(
-        profile.allow_music_downloads && track.allow_download && audioUrl
+        profile.allow_music_downloads &&
+        track.allow_download &&
+        audioUrl
       );
-    } else if (profile.profile_music_url) {
-      audioUrl = await resolveMedia(profile.profile_music_url);
-      canDownload = Boolean(profile.allow_music_downloads && audioUrl);
     }
 
     if (!audioUrl) {
       section.hidden = true;
+      console.warn("Profile music is enabled, but no playable URL resolved.");
       return;
     }
 
@@ -355,16 +430,31 @@
 
     const title = document.createElement("p");
     title.className = "music-title";
-    title.textContent = track?.title || profile.profile_music_title || "Profile track";
+    title.textContent =
+      track?.title ||
+      profile.profile_music_title ||
+      "Profile track";
 
     const artist = document.createElement("p");
     artist.className = "music-artist";
-    artist.textContent = track?.artist || profile.profile_music_artist || "";
+    artist.textContent =
+      track?.artist ||
+      profile.profile_music_artist ||
+      "";
 
     const audio = document.createElement("audio");
     audio.controls = true;
     audio.preload = "none";
     audio.src = audioUrl;
+    audio.setAttribute("aria-label", `Play ${title.textContent}`);
+
+    audio.addEventListener("error", () => {
+      console.warn("The browser could not play the saved profile music URL.");
+      setActionStatus(
+        "Music is saved, but the audio file could not be played. Check its storage access and format.",
+        true
+      );
+    });
 
     player.append(title, artist, audio);
 
@@ -382,7 +472,9 @@
 
   function formatDate(value) {
     const date = new Date(value);
+
     if (Number.isNaN(date.getTime())) return "";
+
     return date.toLocaleDateString(undefined, {
       year: "numeric",
       month: "short",
@@ -396,22 +488,73 @@
     const style = document.createElement("style");
     style.id = "grove-profile-post-styles";
     style.textContent = `
-      .grove-profile-post{padding:20px;border:1px solid #851eff44;border-radius:14px;background:#08051a;overflow-wrap:anywhere}
-      .grove-profile-post-date{margin:0 0 12px;color:#a99bc9;font-size:12px}
-      .grove-profile-post-body{margin:0;color:#f7f5ff;line-height:1.7;white-space:pre-wrap}
-      .grove-profile-post-image{display:block;width:100%;max-height:500px;margin-top:14px;border-radius:10px;object-fit:contain;background:#050019}
-      .grove-profile-comments{display:grid;gap:10px;margin-top:18px;padding-top:14px;border-top:1px solid #851eff33}
-      .grove-profile-comments-title{margin:0 0 2px;color:#45e5ff;font-size:13px}
-      .grove-profile-comment{padding:10px 12px;border-radius:9px;background:#111025;color:#d9d0ed;font-size:13px;line-height:1.5;white-space:pre-wrap}
-      .grove-profile-comment-author{display:block;margin-bottom:3px;color:#45e5ff;font-weight:700}
-      .grove-profile-no-comments{color:#a99bc9;font-size:13px}
+      .grove-profile-post {
+        padding: 20px;
+        border: 1px solid #851eff44;
+        border-radius: 14px;
+        background: #08051a;
+        overflow-wrap: anywhere;
+      }
+      .grove-profile-post-date {
+        margin: 0 0 12px;
+        color: #a99bc9;
+        font-size: 12px;
+      }
+      .grove-profile-post-body {
+        margin: 0;
+        color: #f7f5ff;
+        line-height: 1.7;
+        white-space: pre-wrap;
+      }
+      .grove-profile-post-image {
+        display: block;
+        width: 100%;
+        max-height: 500px;
+        margin-top: 14px;
+        border-radius: 10px;
+        object-fit: contain;
+        background: #050019;
+      }
+      .grove-profile-comments {
+        display: grid;
+        gap: 10px;
+        margin-top: 18px;
+        padding-top: 14px;
+        border-top: 1px solid #851eff33;
+      }
+      .grove-profile-comments-title {
+        margin: 0 0 2px;
+        color: #45e5ff;
+        font-size: 13px;
+      }
+      .grove-profile-comment {
+        padding: 10px 12px;
+        border-radius: 9px;
+        background: #111025;
+        color: #d9d0ed;
+        font-size: 13px;
+        line-height: 1.5;
+        white-space: pre-wrap;
+      }
+      .grove-profile-comment-author {
+        display: block;
+        margin-bottom: 3px;
+        color: #45e5ff;
+        font-weight: 700;
+      }
+      .grove-profile-no-comments {
+        color: #a99bc9;
+        font-size: 13px;
+      }
     `;
+
     document.head.appendChild(style);
   }
 
   async function loadPosts() {
     const section = $("#posts-section");
     const list = $("#posts-list");
+
     section.hidden = false;
     list.replaceChildren();
 
@@ -428,34 +571,46 @@
 
     if (error) {
       console.error("Posts could not load:", error);
+
       list.replaceChildren();
+
       const message = document.createElement("div");
       message.className = "empty-state";
-      message.textContent = "Posts couldn't be loaded. This may be a privacy restriction.";
+      message.textContent =
+        "Posts couldn't be loaded. This may be a privacy restriction.";
+
       list.appendChild(message);
       return;
     }
 
     if (!posts?.length) {
       list.replaceChildren();
+
       const empty = document.createElement("div");
       empty.className = "empty-state";
       empty.textContent = "This member hasn't posted anything yet.";
+
       list.appendChild(empty);
       return;
     }
 
     const postIds = posts.map((post) => post.id);
+
     const { data: comments, error: commentError } = await client
       .from("comments")
       .select("id,post_id,author_id,body,created_at")
       .in("post_id", postIds)
       .order("created_at", { ascending: true });
 
-    if (commentError) console.warn("Comments could not load:", commentError);
+    if (commentError) {
+      console.warn("Comments could not load:", commentError);
+    }
 
     const safeComments = commentError ? [] : (comments || []);
-    const authorIds = [...new Set(safeComments.map((comment) => comment.author_id))];
+    const authorIds = [
+      ...new Set(safeComments.map((comment) => comment.author_id))
+    ];
+
     let authors = new Map();
 
     if (authorIds.length) {
@@ -464,12 +619,18 @@
         .select("id,username,display_name")
         .in("id", authorIds);
 
-      authors = new Map((data || []).map((item) => [item.id, item]));
+      authors = new Map(
+        (data || []).map((item) => [item.id, item])
+      );
     }
 
     const byPost = new Map();
+
     safeComments.forEach((comment) => {
-      if (!byPost.has(comment.post_id)) byPost.set(comment.post_id, []);
+      if (!byPost.has(comment.post_id)) {
+        byPost.set(comment.post_id, []);
+      }
+
       byPost.get(comment.post_id).push(comment);
     });
 
@@ -492,9 +653,13 @@
         article.appendChild(body);
       }
 
-      for (const media of (Array.isArray(post.media_urls) ? post.media_urls : [])) {
+      for (const media of (
+        Array.isArray(post.media_urls) ? post.media_urls : []
+      )) {
         const url = await resolveMedia(media);
+
         if (!url) continue;
+
         const image = document.createElement("img");
         image.className = "grove-profile-post-image";
         image.src = url;
@@ -524,12 +689,18 @@
 
           const author = document.createElement("span");
           author.className = "grove-profile-comment-author";
+
           const authorProfile = authors.get(comment.author_id);
-          author.textContent = authorProfile?.display_name ||
-            (authorProfile?.username ? `@${authorProfile.username}` : "Grove Member");
+
+          author.textContent =
+            authorProfile?.display_name ||
+            (authorProfile?.username
+              ? `@${authorProfile.username}`
+              : "Grove Member");
 
           const text = document.createElement("span");
           text.textContent = comment.body;
+
           row.append(author, text);
           commentsBox.appendChild(row);
         });
@@ -546,11 +717,17 @@
       return;
     }
 
-    client = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    client = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_ANON_KEY
+    );
 
     try {
-      const { data: sessionData, error: sessionError } = await client.auth.getSession();
+      const { data: sessionData, error: sessionError } =
+        await client.auth.getSession();
+
       if (sessionError) throw sessionError;
+
       currentUser = sessionData.session?.user || null;
 
       const params = new URLSearchParams(window.location.search);
@@ -559,46 +736,5 @@
 
       let query = client
         .from("profiles")
-        .select("id,username,display_name,bio,avatar_url,cover_url,location,website,pronouns,is_private,profile_music_url,profile_music_title,profile_music_artist,profile_music_enabled,allow_music_downloads");
-
-      if (requestedId) query = query.eq("id", requestedId);
-      else if (requestedUsername) query = query.ilike("username", requestedUsername);
-      else if (currentUser) query = query.eq("id", currentUser.id);
-      else throw new Error("Choose a member profile to view, or sign in to see your own.");
-
-      const { data, error } = await query.maybeSingle();
-      if (error) throw error;
-      if (!data) throw new Error("This Grove profile couldn't be found.");
-
-      profile = data;
-      isOwner = Boolean(currentUser && currentUser.id === profile.id);
-
-      $("#edit-profile-link").hidden = !isOwner;
-      $("#settings-link").hidden = !isOwner;
-      $("#avatar-upload-button").hidden = !isOwner;
-      $("#cover-upload-button").hidden = !isOwner;
-      $("#follow-button").hidden = !currentUser || isOwner;
-      $("#message-button").hidden = !currentUser || isOwner;
-
-      if (isOwner) {
-        bindImageButtons();
-      } else if (currentUser) {
-        $("#follow-button").addEventListener("click", handleFollow);
-        await checkFollowState();
-      }
-
-      $("#private-note").hidden = !profile.is_private || isOwner;
-
-      await renderProfile(profile);
-      $("#profile-card").hidden = false;
-      $("#status").hidden = true;
-
-      await Promise.all([loadMusic(), loadPosts()]);
-    } catch (error) {
-      console.error("Grove profile error:", error);
-      showError(error.message || "Couldn't load this profile.");
-    }
-  }
-
-  initialize();
-})();
+        .select(
+          "id,username,display_name,bio,avatar_url,cover_url,location,website,pronouns,is_private,pr
