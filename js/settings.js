@@ -17,89 +17,164 @@
   const status = $("status");
 
   const say = (message, kind = "") => {
+    if (!status) return;
     status.textContent = message;
     status.dataset.kind = kind;
   };
 
   function setTheme(theme) {
     selectedTheme = theme;
+
     document.querySelectorAll(".theme-choice").forEach(button => {
-      button.setAttribute("aria-pressed", String(button.dataset.theme === theme));
+      button.setAttribute(
+        "aria-pressed",
+        String(button.dataset.theme === theme)
+      );
     });
+
     document.documentElement.dataset.groveTheme = theme;
   }
 
   function applyPreview(url) {
-    $("background-preview").style.backgroundImage = url
+    const preview = $("background-preview");
+    if (!preview) return;
+
+    preview.style.backgroundImage = url
       ? `url("${url.replaceAll('"', "%22")}")`
       : "radial-gradient(ellipse at 50% 40%,#35165f,#08051a 70%)";
   }
 
-  function escapeHtml(value) {
-    return String(value ?? "").replace(/[&<>"']/g, char => ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#39;"
-    })[char]);
+  function updateVolumeLabel() {
+    const value = $("music-volume");
+    const label = $("volume-value");
+
+    if (value && label) {
+      label.textContent = `${Math.round(Number(value.value) * 100)}%`;
+    }
+  }
+
+  function publicUrl(path) {
+    const { data } = db.storage.from(BUCKET).getPublicUrl(path);
+    return data?.publicUrl || null;
+  }
+
+  async function savePreferences(values) {
+    const preferences = {
+      user_id: user.id,
+      ...values,
+      updated_at: new Date().toISOString()
+    };
+
+    const { error } = await db
+      .from("user_preferences")
+      .upsert(preferences, { onConflict: "user_id" });
+
+    if (error) throw error;
   }
 
   async function loadSettings() {
     const [profileResult, prefResult] = await Promise.all([
       db.from("profiles")
-        .select("is_private,comment_privacy,allow_image_saves,allow_image_downloads")
-        .eq("id", user.id).maybeSingle(),
+        .select(`
+          is_private,
+          comment_privacy,
+          allow_image_saves,
+          allow_image_downloads,
+          profile_music_url,
+          profile_music_title,
+          profile_music_artist,
+          profile_music_enabled
+        `)
+        .eq("id", user.id)
+        .maybeSingle(),
+
       db.from("user_preferences")
-        .select("*").eq("user_id", user.id).maybeSingle()
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle()
     ]);
 
     if (profileResult.error) throw profileResult.error;
     if (prefResult.error) throw prefResult.error;
 
-    const p = profileResult.data || {};
-    const v = prefResult.data || {};
+    const profile = profileResult.data || {};
+    const prefs = prefResult.data || {};
 
     $("email").value = user.email || "";
-    $("is-private").checked = !!p.is_private;
-    $("comment-privacy").value = p.comment_privacy || "everyone";
-    $("allow-image-saves").checked = p.allow_image_saves !== false;
-    $("allow-image-downloads").checked = p.allow_image_downloads !== false;
 
-    $("saved-gallery-enabled").checked = v.saved_gallery_enabled !== false;
-    $("notify-messages").checked = v.notify_messages !== false;
-    $("notify-follows").checked = v.notify_follows !== false;
-    $("notify-likes").checked = v.notify_likes !== false;
-    $("notify-comments").checked = v.notify_comments !== false;
-    $("notify-nudges").checked = v.notify_nudges !== false;
-    $("notify-mentions").checked = v.notify_mentions !== false;
+    $("is-private").checked = !!profile.is_private;
+    $("comment-privacy").value =
+      profile.comment_privacy || "everyone";
 
-    setTheme(v.theme_id || "midnight-violet");
-    $("featured-space").value = v.featured_space_background || "";
-    customBackgroundUrl = v.custom_background_url || null;
+    $("allow-image-saves").checked =
+      profile.allow_image_saves !== false;
+
+    $("allow-image-downloads").checked =
+      profile.allow_image_downloads !== false;
+
+    $("saved-gallery-enabled").checked =
+      prefs.saved_gallery_enabled !== false;
+
+    $("notify-messages").checked =
+      prefs.notify_messages !== false;
+
+    $("notify-follows").checked =
+      prefs.notify_follows !== false;
+
+    $("notify-likes").checked =
+      prefs.notify_likes !== false;
+
+    $("notify-comments").checked =
+      prefs.notify_comments !== false;
+
+    $("notify-nudges").checked =
+      prefs.notify_nudges !== false;
+
+    $("notify-mentions").checked =
+      prefs.notify_mentions !== false;
+
+    setTheme(prefs.theme_id || "midnight-violet");
+
+    $("featured-space").value =
+      prefs.featured_space_background || "";
+
+    customBackgroundUrl = prefs.custom_background_url || null;
     applyPreview(customBackgroundUrl);
 
-    $("music-enabled").checked = v.app_music_enabled === true;
+    $("music-enabled").checked =
+      prefs.app_music_enabled === true;
+
     $("music-volume").value = String(
-      Number.isFinite(Number(v.app_music_volume))
-        ? Math.max(0, Math.min(1, Number(v.app_music_volume)))
+      Number.isFinite(Number(prefs.app_music_volume))
+        ? Math.max(0, Math.min(1, Number(prefs.app_music_volume)))
         : 0.7
     );
+
     updateVolumeLabel();
 
-    if (v.app_music_url) {
+    const savedMusicUrl =
+      profile.profile_music_url ||
+      prefs.app_music_url ||
+      null;
+
+    if (savedMusicUrl) {
       selectedTrack = {
-        url: v.app_music_url,
-        title: v.app_music_title || "Grove Music",
-        artist: v.app_music_artist || "Grove"
+        url: savedMusicUrl,
+        title:
+          profile.profile_music_title ||
+          prefs.app_music_title ||
+          "Grove Music",
+        artist:
+          profile.profile_music_artist ||
+          prefs.app_music_artist ||
+          "Grove"
       };
+
+      showSelectedTrack();
+    } else {
+      selectedTrack = null;
       showSelectedTrack(false);
     }
-  }
-
-  function updateVolumeLabel() {
-    $("volume-value").textContent =
-      `${Math.round(Number($("music-volume").value) * 100)}%`;
   }
 
   function publishMediaSession(track) {
@@ -116,29 +191,32 @@
     const safeAction = (name, handler) => {
       try {
         navigator.mediaSession.setActionHandler(name, handler);
-      } catch (_) {
-        // Unsupported action on this browser.
-      }
+      } catch (_) {}
     };
 
-    safeAction("play", () => audio.play().catch(error => {
-      say(error.message || "Playback could not start.", "error");
-    }));
+    safeAction("play", () => {
+      audio.play().catch(error => {
+        say(error.message || "Playback could not start.", "error");
+      });
+    });
 
     safeAction("pause", () => audio.pause());
     safeAction("stop", () => audio.pause());
+
     safeAction("seekbackward", details => {
       audio.currentTime = Math.max(
         0,
         audio.currentTime - (details.seekOffset || 10)
       );
     });
+
     safeAction("seekforward", details => {
       audio.currentTime = Math.min(
         audio.duration || Infinity,
         audio.currentTime + (details.seekOffset || 10)
       );
     });
+
     safeAction("seekto", details => {
       if (Number.isFinite(details.seekTime)) {
         audio.currentTime = details.seekTime;
@@ -148,6 +226,7 @@
 
   function updatePlaybackState() {
     if (!("mediaSession" in navigator)) return;
+
     navigator.mediaSession.playbackState =
       audio.paused ? "paused" : "playing";
   }
@@ -155,14 +234,18 @@
   function showSelectedTrack(loadAudio = true) {
     if (!selectedTrack) {
       $("now-title").textContent = "No track selected";
-      $("now-artist").textContent = "Choose a track from your library.";
+      $("now-artist").textContent =
+        "Choose a track from your library.";
+
+      audio.pause();
       audio.removeAttribute("src");
       audio.load();
       return;
     }
 
     $("now-title").textContent = selectedTrack.title;
-    $("now-artist").textContent = selectedTrack.artist || "Unknown artist";
+    $("now-artist").textContent =
+      selectedTrack.artist || "Unknown artist";
 
     if (loadAudio) {
       audio.src = selectedTrack.url;
@@ -175,10 +258,21 @@
 
   async function loadTracks() {
     const list = $("track-list");
-    list.innerHTML = '<p class="muted">Loading your tracks…</p>';
+    list.innerHTML =
+      '<p class="muted">Loading your tracks…</p>';
 
-    const { data, error } = await db.from("audio_tracks")
-      .select("id,owner_id,title,artist,storage_path,mime_type,duration_seconds,created_at")
+    const { data, error } = await db
+      .from("audio_tracks")
+      .select(`
+        id,
+        owner_id,
+        title,
+        artist,
+        storage_path,
+        mime_type,
+        duration_seconds,
+        created_at
+      `)
       .eq("owner_id", user.id)
       .order("created_at", { ascending: false })
       .limit(100);
@@ -189,23 +283,25 @@
     list.replaceChildren();
 
     if (!tracks.length) {
-      list.innerHTML = '<p class="muted">Your library is empty. Upload your first track above.</p>';
+      list.innerHTML =
+        '<p class="muted">Your library is empty. Upload your first track above.</p>';
       return;
     }
 
     tracks.forEach(track => {
-      const { data: publicData } = db.storage.from(BUCKET)
-        .getPublicUrl(track.storage_path);
+      const url = publicUrl(track.storage_path);
 
-      const url = publicData?.publicUrl;
       const row = document.createElement("article");
       row.className = "track";
 
       const info = document.createElement("div");
+
       const title = document.createElement("strong");
       title.textContent = track.title;
+
       const artist = document.createElement("small");
       artist.textContent = track.artist || "Unknown artist";
+
       info.append(title, artist);
 
       const actions = document.createElement("div");
@@ -214,23 +310,34 @@
       const play = document.createElement("button");
       play.type = "button";
       play.textContent = "Play";
-      play.addEventListener("click", () => {
+
+      play.addEventListener("click", async () => {
         selectedTrack = {
           id: track.id,
           url,
           title: track.title,
           artist: track.artist || ""
         };
+
         $("music-enabled").checked = true;
         showSelectedTrack();
-        audio.play().then(updatePlaybackState).catch(error => {
-          say(error.message || "Press Play again to start audio.", "error");
-        });
+
+        try {
+          await audio.play();
+          updatePlaybackState();
+          say("Playing your selected track.", "success");
+        } catch (error) {
+          say(
+            error.message || "Press Play again to start audio.",
+            "error"
+          );
+        }
       });
 
       const choose = document.createElement("button");
       choose.type = "button";
       choose.textContent = "Select";
+
       choose.addEventListener("click", () => {
         selectedTrack = {
           id: track.id,
@@ -238,9 +345,14 @@
           title: track.title,
           artist: track.artist || ""
         };
+
         $("music-enabled").checked = true;
         showSelectedTrack();
-        say("Track selected. Save your music selection to keep it.", "success");
+
+        say(
+          "Track selected. Save music to apply it to your profile.",
+          "success"
+        );
       });
 
       actions.append(play, choose);
@@ -259,7 +371,11 @@
       return;
     }
 
-    if (!file.type.startsWith("audio/")) {
+    const validAudio =
+      file.type.startsWith("audio/") ||
+      /\.(mp3|wav|ogg|m4a|aac|flac|webm)$/i.test(file.name);
+
+    if (!validAudio) {
       say("Choose a supported audio file.", "error");
       return;
     }
@@ -278,41 +394,66 @@
     button.disabled = true;
     say("Uploading your track…");
 
+    let uploadedPath = null;
+
     try {
-      const extension = (file.name.split(".").pop() || "audio")
-        .toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8);
+      const extension = (
+        file.name.split(".").pop() || "audio"
+      ).toLowerCase().replace(/[^a-z0-9]/g, "").slice(0, 8);
 
-      const path = `${user.id}/music/${crypto.randomUUID()}.${extension}`;
+      uploadedPath =
+        `${user.id}/music/${crypto.randomUUID()}.${extension}`;
 
-      const { error: storageError } = await db.storage.from(BUCKET)
-        .upload(path, file, {
-          contentType: file.type,
+      const { error: storageError } = await db.storage
+        .from(BUCKET)
+        .upload(uploadedPath, file, {
+          contentType: file.type || "application/octet-stream",
           upsert: false
         });
 
       if (storageError) throw storageError;
 
-      const { error: insertError } = await db.from("audio_tracks").insert({
-        owner_id: user.id,
-        title,
-        artist,
-        storage_path: path,
-        mime_type: file.type
-      });
+      const { data: inserted, error: insertError } = await db
+        .from("audio_tracks")
+        .insert({
+          owner_id: user.id,
+          title,
+          artist,
+          storage_path: uploadedPath,
+          mime_type: file.type || null
+        })
+        .select()
+        .single();
 
-      if (insertError) {
-        await db.storage.from(BUCKET).remove([path]);
-        throw insertError;
-      }
+      if (insertError) throw insertError;
+
+      selectedTrack = {
+        id: inserted.id,
+        url: publicUrl(uploadedPath),
+        title,
+        artist
+      };
 
       $("music-file").value = "";
       $("music-title").value = "";
       $("music-artist").value = "";
 
+      showSelectedTrack();
+      $("music-enabled").checked = true;
+
       await loadTracks();
-      say("Track uploaded to your Grove library.", "success");
+
+      say(
+        "Track uploaded and added to your library. Save music to publish it on your profile.",
+        "success"
+      );
     } catch (error) {
       console.error("Grove music upload:", error);
+
+      if (uploadedPath) {
+        await db.storage.from(BUCKET).remove([uploadedPath]);
+      }
+
       say(error.message || "Could not upload the track.", "error");
     } finally {
       button.disabled = false;
@@ -324,27 +465,48 @@
     button.disabled = true;
 
     try {
-      if ($("music-enabled").checked && !selectedTrack?.url) {
-        throw new Error("Select a track before enabling account music.");
+      const enabled = $("music-enabled").checked;
+
+      if (enabled && !selectedTrack?.url) {
+        throw new Error(
+          "Select a track before enabling account music."
+        );
       }
 
-      const preferences = {
-        user_id: user.id,
-        app_music_enabled: $("music-enabled").checked,
-        app_music_url: selectedTrack?.url || null,
-        app_music_title: selectedTrack?.title || null,
-        app_music_artist: selectedTrack?.artist || null,
-        app_music_volume: Number($("music-volume").value),
-        updated_at: new Date().toISOString()
+      const url = enabled ? selectedTrack.url : null;
+      const title = enabled ? selectedTrack.title : null;
+      const artist = enabled ? selectedTrack.artist : null;
+
+      const profileUpdate = {
+        profile_music_url: url,
+        profile_music_title: title,
+        profile_music_artist: artist,
+        profile_music_enabled: enabled
       };
 
-      const { error } = await db.from("user_preferences")
-        .upsert(preferences, { onConflict: "user_id" });
+      const { error: profileError } = await db
+        .from("profiles")
+        .update(profileUpdate)
+        .eq("id", user.id);
 
-      if (error) throw error;
+      if (profileError) throw profileError;
 
-      say("Your account music selection has been saved.", "success");
+      await savePreferences({
+        app_music_enabled: enabled,
+        app_music_url: url,
+        app_music_title: title,
+        app_music_artist: artist,
+        app_music_volume: Number($("music-volume").value)
+      });
+
+      say(
+        enabled
+          ? "Music saved to your account and profile."
+          : "Profile music disabled and saved.",
+        "success"
+      );
     } catch (error) {
+      console.error("Grove music save:", error);
       say(error.message || "Could not save music settings.", "error");
     } finally {
       button.disabled = false;
@@ -364,31 +526,32 @@
         allow_image_downloads: $("allow-image-downloads").checked
       };
 
-      const preferences = {
-        user_id: user.id,
+      const { error: profileError } = await db
+        .from("profiles")
+        .update(profile)
+        .eq("id", user.id);
+
+      if (profileError) throw profileError;
+
+      await savePreferences({
         theme_id: selectedTheme,
-        featured_space_background: $("featured-space").value || null,
+        featured_space_background:
+          $("featured-space").value || null,
         custom_background_url: customBackgroundUrl,
-        background_mode: customBackgroundUrl ? "custom" : "preset",
-        saved_gallery_enabled: $("saved-gallery-enabled").checked,
+        background_mode:
+          customBackgroundUrl ? "custom" : "preset",
+        saved_gallery_enabled:
+          $("saved-gallery-enabled").checked,
         notify_messages: $("notify-messages").checked,
         notify_follows: $("notify-follows").checked,
         notify_likes: $("notify-likes").checked,
         notify_comments: $("notify-comments").checked,
         notify_nudges: $("notify-nudges").checked,
-        notify_mentions: $("notify-mentions").checked,
-        updated_at: new Date().toISOString()
-      };
-
-      const { error: profileError } = await db.from("profiles")
-        .update(profile).eq("id", user.id);
-      if (profileError) throw profileError;
-
-      const { error: prefError } = await db.from("user_preferences")
-        .upsert(preferences, { onConflict: "user_id" });
-      if (prefError) throw prefError;
+        notify_mentions: $("notify-mentions").checked
+      });
 
       localStorage.setItem("grove-theme", selectedTheme);
+
       say("Settings saved successfully.", "success");
     } catch (error) {
       console.error("Grove settings save:", error);
@@ -420,27 +583,76 @@
     button.disabled = true;
     say("Uploading background…");
 
+    let uploadedPath = null;
+
     try {
-      const extension = file.type === "image/png" ? "png" :
+      const extension =
+        file.type === "image/png" ? "png" :
         file.type === "image/webp" ? "webp" : "jpg";
 
-      const path = `${user.id}/backgrounds/${crypto.randomUUID()}.${extension}`;
+      uploadedPath =
+        `${user.id}/backgrounds/${crypto.randomUUID()}.${extension}`;
 
-      const { error } = await db.storage.from(BUCKET).upload(path, file, {
-        contentType: file.type,
-        upsert: false
+      const { error: uploadError } = await db.storage
+        .from(BUCKET)
+        .upload(uploadedPath, file, {
+          contentType: file.type,
+          upsert: false
+        });
+
+      if (uploadError) throw uploadError;
+
+      const url = publicUrl(uploadedPath);
+
+      if (!url) {
+        throw new Error("Could not create the background image URL.");
+      }
+
+      // Persist the URL immediately, not only in the page preview.
+      await savePreferences({
+        custom_background_url: url,
+        background_mode: "custom"
       });
 
-      if (error) throw error;
+      customBackgroundUrl = url;
+      applyPreview(url);
 
-      const { data } = db.storage.from(BUCKET).getPublicUrl(path);
-      customBackgroundUrl = data.publicUrl;
-      applyPreview(customBackgroundUrl);
-      say("Background uploaded. Save all settings to keep it.", "success");
+      $("custom-background").value = "";
+
+      say(
+        "Background uploaded, saved, and previewed.",
+        "success"
+      );
     } catch (error) {
+      console.error("Grove background upload:", error);
+
+      if (uploadedPath) {
+        await db.storage.from(BUCKET).remove([uploadedPath]);
+      }
+
       say(error.message || "Background upload failed.", "error");
     } finally {
       button.disabled = false;
+    }
+  }
+
+  async function removeBackground() {
+    customBackgroundUrl = null;
+    $("custom-background").value = "";
+    applyPreview(null);
+
+    try {
+      await savePreferences({
+        custom_background_url: null,
+        background_mode: "preset"
+      });
+
+      say("Custom background removed and saved.", "success");
+    } catch (error) {
+      say(
+        error.message || "Could not save background removal.",
+        "error"
+      );
     }
   }
 
@@ -454,7 +666,10 @@
     const { error } = await db.auth.updateUser({ email });
     if (error) throw error;
 
-    say("Email change requested. Check your inbox to confirm.", "success");
+    say(
+      "Email change requested. Check your inbox to confirm.",
+      "success"
+    );
   }
 
   async function updatePassword() {
@@ -482,22 +697,33 @@
 
   function attachEvents() {
     document.querySelectorAll(".theme-choice").forEach(button => {
-      button.addEventListener("click", () => setTheme(button.dataset.theme));
+      button.addEventListener("click", () => {
+        setTheme(button.dataset.theme);
+      });
     });
 
     $("save-settings").addEventListener("click", saveSettings);
     $("save-music").addEventListener("click", saveMusic);
-    $("upload-track").addEventListener("click", () => runAction(uploadTrack));
-    $("upload-background").addEventListener("click", () => runAction(uploadBackground));
-    $("remove-background").addEventListener("click", () => {
-      customBackgroundUrl = null;
-      $("custom-background").value = "";
-      applyPreview(null);
-      say("Custom background cleared. Save all settings to apply it.", "success");
+
+    $("upload-track").addEventListener("click", () => {
+      runAction(uploadTrack);
     });
 
-    $("change-email").addEventListener("click", () => runAction(updateEmail));
-    $("change-password").addEventListener("click", () => runAction(updatePassword));
+    $("upload-background").addEventListener("click", () => {
+      runAction(uploadBackground);
+    });
+
+    $("remove-background").addEventListener("click", () => {
+      runAction(removeBackground);
+    });
+
+    $("change-email").addEventListener("click", () => {
+      runAction(updateEmail);
+    });
+
+    $("change-password").addEventListener("click", () => {
+      runAction(updatePassword);
+    });
 
     $("music-volume").addEventListener("input", () => {
       audio.volume = Number($("music-volume").value);
@@ -509,7 +735,10 @@
     audio.addEventListener("ended", updatePlaybackState);
 
     audio.addEventListener("timeupdate", () => {
-      if (!("mediaSession" in navigator) || !Number.isFinite(audio.duration)) return;
+      if (
+        !("mediaSession" in navigator) ||
+        !Number.isFinite(audio.duration)
+      ) return;
 
       try {
         navigator.mediaSession.setPositionState({
@@ -523,7 +752,9 @@
     $("logout").addEventListener("click", async () => {
       $("logout").disabled = true;
 
-      const { error } = await db.auth.signOut({ scope: "local" });
+      const { error } = await db.auth.signOut({
+        scope: "local"
+      });
 
       if (error) {
         $("logout").disabled = false;
@@ -537,11 +768,17 @@
 
   async function start() {
     if (!window.supabase) {
-      say("Supabase could not load. Check your connection and reload.", "error");
+      say(
+        "Supabase could not load. Check your connection and reload.",
+        "error"
+      );
       return;
     }
 
-    db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    db = window.supabase.createClient(
+      SUPABASE_URL,
+      SUPABASE_KEY
+    );
 
     const { data, error } = await db.auth.getSession();
     if (error) throw error;
@@ -554,6 +791,7 @@
     }
 
     attachEvents();
+
     await loadSettings();
     await loadTracks();
 
@@ -562,6 +800,9 @@
 
   start().catch(error => {
     console.error("Grove settings initialization:", error);
-    say(error.message || "Could not load Grove settings.", "error");
+    say(
+      error.message || "Could not load Grove settings.",
+      "error"
+    );
   });
 })();
