@@ -4,202 +4,160 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#050019">
+  <meta name="description" content="Manage your Grove account settings.">
   <title>Settings — Grove</title>
+
   <link rel="stylesheet" href="css/global.css">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="icon" href="/assets/grove-logo.svg" type="image/svg+xml">
 
   <style>
     body {
-      display: block;
-      min-height: 100vh;
-      overflow-x: hidden;
-      padding: 24px 16px 48px;
-      color: #f7f5ff;
+      display:block;
+      min-height:100vh;
+      overflow-x:hidden;
+      padding:24px 16px 48px;
+      color:#f7f5ff;
     }
-
     .settings-app {
-      width: min(100%, 760px);
-      margin: auto;
+      width:min(100%,760px);
+      margin:auto;
     }
-
     .topbar {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 28px;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:14px;
+      margin-bottom:28px;
     }
-
     .brand {
-      color: #f7f5ff;
-      font-size: 19px;
-      letter-spacing: 5px;
-      text-decoration: none;
+      color:#f7f5ff;
+      font-size:19px;
+      letter-spacing:5px;
+      text-decoration:none;
     }
-
     .top-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 9px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:9px;
     }
-
     .top-actions a {
-      padding: 10px 14px;
-      border: 1px solid #851eff66;
-      border-radius: 9px;
-      background: #100b25;
-      color: #eee5ff;
-      font-size: 13px;
-      text-decoration: none;
+      padding:10px 14px;
+      border:1px solid #851eff66;
+      border-radius:9px;
+      background:#100b25;
+      color:#eee5ff;
+      font-size:13px;
+      text-decoration:none;
     }
-
-    .heading {
-      margin-bottom: 24px;
-    }
-
+    .heading { margin-bottom:24px; }
     h1 {
-      margin: 0 0 8px;
-      color: #f7f5ff;
-      font-size: clamp(26px, 5vw, 34px);
+      margin:0 0 8px;
+      color:#f7f5ff;
+      font-size:clamp(26px,5vw,34px);
     }
-
     .intro {
-      margin: 0;
-      color: #bdb3dc;
-      font-size: 14px;
-      line-height: 1.7;
+      margin:0;
+      color:#bdb3dc;
+      font-size:14px;
+      line-height:1.7;
     }
-
     .settings-section {
-      margin-top: 18px;
-      padding: 24px;
-      border: 1px solid #851eff55;
-      border-radius: 16px;
-      background: #100b25ef;
-      box-shadow: 0 12px 40px #0004;
+      margin-top:18px;
+      padding:24px;
+      border:1px solid #851eff55;
+      border-radius:16px;
+      background:#100b25ef;
+      box-shadow:0 12px 40px #0004;
     }
-
     .settings-section h2 {
-      margin: 0 0 8px;
-      color: #f7f5ff;
-      font-size: 18px;
+      margin:0 0 8px;
+      color:#f7f5ff;
+      font-size:18px;
     }
-
     .section-description {
-      margin: 0 0 18px;
-      color: #a99bc9;
-      font-size: 13px;
-      line-height: 1.6;
+      margin:0 0 18px;
+      color:#a99bc9;
+      font-size:13px;
+      line-height:1.6;
     }
-
     .setting-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      gap: 16px;
-      padding: 16px 0;
-      border-top: 1px solid #ffffff12;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:16px;
+      padding:16px 0;
+      border-top:1px solid #ffffff12;
     }
-
-    .setting-item:first-of-type {
-      border-top: 0;
-    }
-
+    .setting-item:first-of-type { border-top:0; }
     .setting-item h3 {
-      margin: 0 0 5px;
-      color: #e9e1fa;
-      font-size: 14px;
+      margin:0 0 5px;
+      color:#e9e1fa;
+      font-size:14px;
     }
-
     .setting-item p {
-      margin: 0;
-      color: #a99bc9;
-      font-size: 12px;
-      line-height: 1.5;
+      margin:0;
+      color:#a99bc9;
+      font-size:12px;
+      line-height:1.5;
     }
-
     .setting-status {
-      flex-shrink: 0;
-      color: #a99bc9;
-      font-size: 12px;
+      flex-shrink:0;
+      color:#a99bc9;
+      font-size:12px;
     }
-
     .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 22px;
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px;
+      margin-top:22px;
     }
-
     button {
-      padding: 12px 18px;
-      border: 1px solid #851eff88;
-      border-radius: 9px;
-      background: linear-gradient(110deg, #851eff, #5965ff);
-      color: white;
-      font: inherit;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
+      padding:12px 18px;
+      border:1px solid #851eff88;
+      border-radius:9px;
+      background:linear-gradient(110deg,#851eff,#5965ff);
+      color:white;
+      font:inherit;
+      font-size:13px;
+      font-weight:600;
+      cursor:pointer;
     }
-
-    button.secondary {
-      border-color: #05c9f466;
-      background: #10082d;
-      color: #c9f8ff;
-    }
-
     button.danger {
-      border-color: #ff858566;
-      background: #29101f;
-      color: #ffb5c0;
+      border-color:#ff858566;
+      background:#29101f;
+      color:#ffb5c0;
     }
-
     button:disabled {
-      opacity: .6;
-      cursor: wait;
+      opacity:.6;
+      cursor:wait;
     }
-
     #status {
-      min-height: 22px;
-      margin-top: 16px;
-      font-size: 13px;
-      line-height: 1.6;
-      overflow-wrap: anywhere;
+      min-height:22px;
+      margin-top:16px;
+      font-size:13px;
+      line-height:1.6;
+      overflow-wrap:anywhere;
     }
+    #status[data-kind="error"] { color:#ff9caa; }
+    #status[data-kind="success"] { color:#7bd7a2; }
+    [hidden] { display:none !important; }
 
-    #status[data-kind="error"] {
-      color: #ff9caa;
-    }
-
-    #status[data-kind="success"] {
-      color: #7bd7a2;
-    }
-
-    [hidden] {
-      display: none !important;
-    }
-
-    @media (max-width: 600px) {
-      .settings-section {
-        padding: 19px;
-      }
-
-      .setting-item {
-        align-items: flex-start;
-      }
+    @media(max-width:600px) {
+      .settings-section { padding:19px; }
+      .setting-item { align-items:flex-start; }
     }
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="js/settings.js" defer></script>
 </head>
 
 <body>
   <main class="settings-app">
-
     <header class="topbar">
       <a class="brand" href="index.html">GROVE</a>
-
-      <nav class="top-actions">
+      <nav class="top-actions" aria-label="Settings navigation">
         <a href="profile.html">View Profile</a>
         <a href="edit-profile.html">Edit Profile</a>
         <a href="index.html">Home</a>
@@ -219,7 +177,6 @@
       <p class="section-description">
         Manage your login credentials and protect access to your account.
       </p>
-
       <div class="setting-item">
         <div>
           <h3>Email Address</h3>
@@ -227,7 +184,6 @@
         </div>
         <span class="setting-status">Coming soon</span>
       </div>
-
       <div class="setting-item">
         <div>
           <h3>Password</h3>
@@ -242,7 +198,6 @@
       <p class="section-description">
         Control how other members interact with and discover your account.
       </p>
-
       <div class="setting-item">
         <div>
           <h3>Profile Visibility</h3>
@@ -250,7 +205,6 @@
         </div>
         <span class="setting-status">Coming soon</span>
       </div>
-
       <div class="setting-item">
         <div>
           <h3>Interactions</h3>
@@ -265,7 +219,6 @@
       <p class="section-description">
         Manage future alerts for messages, follows, comments, and Grove updates.
       </p>
-
       <div class="setting-item">
         <div>
           <h3>Notification Preferences</h3>
@@ -280,7 +233,6 @@
       <p class="section-description">
         Personalize the way Grove looks and feels.
       </p>
-
       <div class="setting-item">
         <div>
           <h3>Display Preferences</h3>
@@ -295,16 +247,11 @@
       <p class="section-description">
         Manage your current login session.
       </p>
-
       <div class="actions">
-        <button id="logout" class="danger" type="button">
-          Log Out
-        </button>
+        <button id="logout" class="danger" type="button">Log Out</button>
       </div>
-
       <p id="status" role="status" aria-live="polite"></p>
     </section>
-
   </main>
 </body>
 </html>
