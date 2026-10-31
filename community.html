@@ -356,7 +356,7 @@ input:focus,textarea:focus,select:focus{border-color:var(--cyan)}
 ------------------------------------------------------- */
 
 const SUPABASE_URL = "https://fpkrvgcpbnrusbfmhinj.supabase.co";
-const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwa3J2Z2NwYm5ydXNiZm1oaW5qIiwicm9sZSI6IkFub24iLCJpYXQiOjE3OTI1MTc2OTYsImV4cCI6MjEwODA5MzY5Nn0.3CI1pHaEnpcQjnweA_g4Cmsscqp3eltMXWbPj2owHfo";
+const SUPABASE_ANON_KEY = "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
 
 const db = window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
@@ -1001,13 +1001,12 @@ $("membersList").addEventListener("click",async e=>{
         follower_id:user.id,following_id:id,status:"accepted"
       });
       if(error)throw error;
-      toast("You are now following this member.");
+      toast("Following member.");
     }
 
     await loadMembers(currentMemberMode);
   }catch(error){
-    toast(safeError(error,"Could not follow member"));
-  }finally{
+    toast(safeError(error,"Unable to follow member"));
     f.disabled=false;
   }
 });
