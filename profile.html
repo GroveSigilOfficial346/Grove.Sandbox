@@ -55,56 +55,9 @@
     }
   </style>
 
+  <!-- Load Supabase first, then the profile script. -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="js/profile-view.js" defer></script>
-  <script src="js/app-shell.js" defer></script>
-
-  <script>
-    /*
-     * Message-button routing:
-     * profile-view.js can load the target profile asynchronously.
-     * This watches for the profile ID in the page URL and updates
-     * the Message link once the profile is identified.
-     */
-    document.addEventListener("DOMContentLoaded", () => {
-      const messageButton = document.getElementById("message-button");
-      if (!messageButton) return;
-
-      const params = new URLSearchParams(window.location.search);
-      const profileId = params.get("id");
-
-      if (profileId) {
-        messageButton.href =
-          "community.html?to=" + encodeURIComponent(profileId) + "#messages";
-      }
-
-      /*
-       * Also watch the rendered profile in case profile-view.js
-       * displays a different target based on its own loading logic.
-       */
-      const usernameElement = document.getElementById("username");
-
-      const updateMessageLink = () => {
-        const currentParams = new URLSearchParams(window.location.search);
-        const targetId = currentParams.get("id");
-
-        if (targetId) {
-          messageButton.href =
-            "community.html?to=" + encodeURIComponent(targetId) + "#messages";
-        }
-      };
-
-      updateMessageLink();
-
-      if (usernameElement) {
-        new MutationObserver(updateMessageLink).observe(usernameElement, {
-          childList: true,
-          characterData: true,
-          subtree: true
-        });
-      }
-    });
-  </script>
+  <script src="js/profile-view.js?v=20261031" defer></script>
 </head>
 <body>
   <main class="profile-app">
