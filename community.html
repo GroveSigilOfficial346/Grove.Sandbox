@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -193,6 +194,32 @@ button:disabled{opacity:.55;cursor:not-allowed}
 }
 .bubble.mine{margin-left:auto;background:#49318b}
 .bubble small{display:block;color:#c4badf;font-size:10px;margin-top:5px}
+.chat-image{
+  display:block;
+  max-width:100%;
+  max-height:320px;
+  width:auto;
+  height:auto;
+  object-fit:contain;
+  border-radius:10px;
+  margin-top:9px;
+}
+.message-attachment-controls{
+  display:flex;
+  flex-wrap:wrap;
+  align-items:center;
+  gap:8px;
+  margin-top:10px;
+}
+.message-attachment-controls label{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  white-space:nowrap;
+}
+#messageImageStatus{
+  overflow-wrap:anywhere;
+}
 #toast{
   position:fixed;
   bottom:20px;
@@ -242,6 +269,15 @@ button:disabled{opacity:.55;cursor:not-allowed}
   }
   header{padding:12px}
   header .muted{display:none}
+  #sendMessageForm{
+    flex-wrap:wrap;
+  }
+  #sendMessageForm #messageBody{
+    flex-basis:100%;
+  }
+  #messageImageStatus{
+    flex-basis:100%;
+  }
 }
 </style>
 </head>
@@ -316,10 +352,27 @@ button:disabled{opacity:.55;cursor:not-allowed}
       <div class="chat-window">
         <div id="chatTitle" class="muted">Choose a conversation</div>
         <div class="messages" id="chatMessages"></div>
+
         <form id="sendMessageForm" class="row">
           <input id="messageBody" class="grow" maxlength="4000"
             placeholder="Write a message…" disabled>
-          <button class="primary" id="sendMessage" disabled>Send</button>
+
+          <label class="secondary" for="messageImageFile">
+            📷 Image
+          </label>
+
+          <input id="messageImageFile" type="file"
+            accept="image/jpeg,image/png,image/webp,image/gif"
+            hidden disabled>
+
+          <button type="button" class="secondary"
+            id="clearMessageImage" hidden>×</button>
+
+          <span id="messageImageStatus" class="muted"></span>
+
+          <button class="primary" id="sendMessage" disabled>
+            Send
+          </button>
         </form>
       </div>
     </div>
@@ -421,6 +474,28 @@ let conversationCache = [];
 let memberCache = [];
 
 const $ = id => document.getElementById(id);
+
+/* BRIDGE FOR PRIVATE MESSAGE ATTACHMENTS */
+
+window.GroveChatBridge = {
+  get db(){
+    return db;
+  },
+
+  get user(){
+    return user;
+  },
+
+  get conversationId(){
+    return activeConversation;
+  },
+
+  refresh(){
+    return activeConversation
+      ? openConversation(activeConversation)
+      : Promise.resolve();
+  }
+};
 
 const esc = value => String(value ?? "").replace(/[&<>"']/g,c=>({
   "&":"&amp;",
@@ -1048,6 +1123,7 @@ async function openConversation(id){
 
   $("chatTitle").textContent=conv?.title||"Direct conversation";
   $("messageBody").disabled=false;
+  $("messageImageFile").disabled=false;
   $("sendMessage").disabled=false;
 
   const host=$("chatMessages");
@@ -1064,12 +1140,14 @@ async function openConversation(id){
     return;
   }
 
-  host.innerHTML=(data||[]).map(m=>`
-    <div class="bubble ${m.sender_id===user.id?"mine":""}">
-      ${esc(m.deleted_for_everyone_at?"Message deleted":m.body)}
-      <small>${new Date(m.created_at).toLocaleString()}</small>
-    </div>
-  `).join("");
+  host.innerHTML=window.GroveChatAttachments
+    ?await window.GroveChatAttachments.render(data||[],id)
+    :(data||[]).map(m=>`
+      <div class="bubble ${m.sender_id===user.id?"mine":""}">
+        ${esc(m.deleted_for_everyone_at?"Message deleted":m.body)}
+        <small>${new Date(m.created_at).toLocaleString()}</small>
+      </div>
+    `).join("");
 
   host.scrollTop=host.scrollHeight;
 
@@ -1539,12 +1617,14 @@ setInterval(async()=>{
       const atBottom=
         host.scrollHeight-host.scrollTop-host.clientHeight<80;
 
-      host.innerHTML=(data||[]).map(m=>`
-        <div class="bubble ${m.sender_id===user.id?"mine":""}">
-          ${esc(m.deleted_for_everyone_at?"Message deleted":m.body)}
-          <small>${new Date(m.created_at).toLocaleString()}</small>
-        </div>
-      `).join("");
+      host.innerHTML=window.GroveChatAttachments
+        ?await window.GroveChatAttachments.render(data||[],id)
+        :(data||[]).map(m=>`
+          <div class="bubble ${m.sender_id===user.id?"mine":""}">
+            ${esc(m.deleted_for_everyone_at?"Message deleted":m.body)}
+            <small>${new Date(m.created_at).toLocaleString()}</small>
+          </div>
+        `).join("");
 
       if(atBottom)host.scrollTop=host.scrollHeight;
     }
@@ -1657,5 +1737,7 @@ setInterval(async()=>{
 init();
 
 </script>
+
+<script src="js/message-attachments.js"></script>
 </body>
 </html>
