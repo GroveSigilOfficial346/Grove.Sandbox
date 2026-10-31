@@ -7,6 +7,7 @@
   const PRIVATE_BUCKET = "grove-private";
 
   const $ = (selector) => document.querySelector(selector);
+
   let client;
   let currentUser;
   let profile;
@@ -271,7 +272,7 @@
       ? $("#avatar-upload-button")
       : $("#cover-upload-button");
 
-    button.disabled = true;
+    if (button) button.disabled = true;
     setActionStatus("Uploading image…");
 
     try {
@@ -329,28 +330,47 @@
       console.error("Profile image upload failed:", error);
       setActionStatus(error.message || "Image upload failed.", true);
     } finally {
-      button.disabled = false;
+      if (button) button.disabled = false;
     }
   }
 
+  // Both upload buttons are bound independently.
+  // The cover button uses its own input and reports missing elements.
   function bindImageButtons() {
-    $("#avatar-upload-button").addEventListener("click", () => {
-      $("#avatar-file").click();
-    });
+    const avatarButton = $("#avatar-upload-button");
+    const coverButton = $("#cover-upload-button");
+    const avatarInput = $("#avatar-file");
+    const coverInput = $("#cover-file");
 
-    $("#cover-upload-button").addEventListener("click", () => {
-      $("#cover-file").click();
-    });
+    if (avatarButton && avatarInput) {
+      avatarButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        avatarInput.click();
+      });
+    }
 
-    $("#avatar-file").addEventListener("change", (event) => {
-      uploadProfileImage("avatar", event.target.files?.[0]);
-      event.target.value = "";
-    });
+    if (coverButton && coverInput) {
+      coverButton.addEventListener("click", (event) => {
+        event.preventDefault();
+        coverInput.click();
+      });
+    } else {
+      console.error("Grove cover upload button or input is missing.");
+    }
 
-    $("#cover-file").addEventListener("change", (event) => {
-      uploadProfileImage("cover", event.target.files?.[0]);
-      event.target.value = "";
-    });
+    if (avatarInput) {
+      avatarInput.addEventListener("change", (event) => {
+        uploadProfileImage("avatar", event.target.files?.[0]);
+        event.target.value = "";
+      });
+    }
+
+    if (coverInput) {
+      coverInput.addEventListener("change", (event) => {
+        uploadProfileImage("cover", event.target.files?.[0]);
+        event.target.value = "";
+      });
+    }
   }
 
   async function loadMusic() {
