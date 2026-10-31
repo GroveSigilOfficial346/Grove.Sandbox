@@ -6,141 +6,61 @@
 <title>Grove — Community</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-:root {
-  --bg:#050019;
-  --panel:#111225;
-  --panel2:#191936;
-  --purple:#a855f7;
-  --blue:#5965ff;
-  --cyan:#45e5ff;
-  --text:#f7f5ff;
-  --muted:#aaa8c4;
-  --line:#302b50;
-}
+:root{--bg:#050019;--panel:#111225;--panel2:#191936;--purple:#a855f7;--blue:#5965ff;--cyan:#45e5ff;--text:#f7f5ff;--muted:#aaa8c4;--line:#302b50}
 *{box-sizing:border-box}
-body{
-  margin:0;background:radial-gradient(circle at top,#17103c,var(--bg) 55%);
-  color:var(--text);font:15px Inter,system-ui,sans-serif
-}
+body{margin:0;background:radial-gradient(circle at top,#17103c,var(--bg) 55%);color:var(--text);font:15px Inter,system-ui,sans-serif}
 button,input,textarea,select{font:inherit}
 button{cursor:pointer}
 a{color:var(--cyan);text-decoration:none}
-header{
-  position:sticky;top:0;z-index:20;background:#08051bf2;
-  border-bottom:1px solid var(--line);padding:13px 4%;
-  display:flex;align-items:center;justify-content:space-between;gap:12px
-}
-.logo{font-weight:900;letter-spacing:3px}
-.logo span{color:var(--purple)}
-.layout{
-  max-width:1400px;margin:auto;padding:22px;
-  display:grid;grid-template-columns:210px minmax(0,1fr) 230px;gap:20px
-}
-nav,.panel,.post{
-  background:#111225ef;border:1px solid var(--line);border-radius:16px
-}
+header{position:sticky;top:0;z-index:20;background:#08051bf2;border-bottom:1px solid var(--line);padding:13px 4%;display:flex;align-items:center;justify-content:space-between;gap:12px}
+.logo{font-weight:900;letter-spacing:3px}.logo span{color:var(--purple)}
+.layout{max-width:1400px;margin:auto;padding:22px;display:grid;grid-template-columns:210px minmax(0,1fr) 230px;gap:20px}
+nav,.panel,.post{background:#111225ef;border:1px solid var(--line);border-radius:16px}
 nav{padding:12px;height:max-content;position:sticky;top:78px}
-.navbtn{
-  display:block;width:100%;text-align:left;padding:13px;border:0;
-  border-radius:9px;background:transparent;color:var(--muted);margin:3px 0
-}
+.navbtn{display:block;width:100%;text-align:left;padding:13px;border:0;border-radius:9px;background:transparent;color:var(--muted);margin:3px 0}
 .navbtn.active,.navbtn:hover{background:#29204b;color:white}
-main{min-width:0}
-.panel{padding:18px;margin-bottom:16px}
+main{min-width:0}.panel{padding:18px;margin-bottom:16px}
 h2,h3{margin:0 0 13px}
 .muted{color:var(--muted);font-size:13px}
-input,textarea,select{
-  width:100%;padding:12px;background:#09091b;color:white;
-  border:1px solid var(--line);border-radius:10px;outline:none
-}
+input,textarea,select{width:100%;padding:12px;background:#09091b;color:white;border:1px solid var(--line);border-radius:10px;outline:none}
 textarea{resize:vertical;min-height:90px}
 input:focus,textarea:focus,select:focus{border-color:var(--cyan)}
-.row{display:flex;gap:9px;align-items:center}
-.row>*{min-width:0}
-.row .grow{flex:1}
-.primary{
-  background:linear-gradient(110deg,#772be4,#424ce9);
-  border:0;color:white;padding:11px 16px;border-radius:10px
-}
-.secondary{
-  background:#211743;color:white;border:1px solid var(--line);
-  padding:9px 12px;border-radius:9px
-}
+.row{display:flex;gap:9px;align-items:center}.row>*{min-width:0}.row .grow{flex:1}
+.primary{background:linear-gradient(110deg,#772be4,#424ce9);border:0;color:white;padding:11px 16px;border-radius:10px}
+.secondary{background:#211743;color:white;border:1px solid var(--line);padding:9px 12px;border-radius:9px}
 .danger{color:#ff9baf;border-color:#74364c}
 button:disabled{opacity:.5;cursor:wait}
-.view{display:none}
-.view.active{display:block}
+.view{display:none}.view.active{display:block}
 .post{padding:17px;margin-bottom:14px}
 .posthead{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-.avatar{
-  width:42px;height:42px;border-radius:50%;object-fit:cover;
-  background:#29204b;display:grid;place-items:center;flex-shrink:0
-}
+.avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#29204b;display:grid;place-items:center;flex-shrink:0}
 .postbody{white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.55}
 .postmedia{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
-.postmedia img,.postmedia video{
-  max-width:100%;max-height:380px;border-radius:12px
-}
+.postmedia img,.postmedia video{max-width:100%;max-height:380px;border-radius:12px}
 .actions{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
-.actions button{
-  background:#1b1935;border:1px solid var(--line);color:#ddd9f4;
-  padding:8px 11px;border-radius:9px
-}
+.actions button{background:#1b1935;border:1px solid var(--line);color:#ddd9f4;padding:8px 11px;border-radius:9px}
 .actions button.liked{color:#ff8db3;border-color:#a94c75}
 .comment{border-top:1px solid var(--line);padding:10px 0}
-.member{
-  display:flex;align-items:center;gap:11px;padding:12px 0;
-  border-bottom:1px solid var(--line)
-}
+.member{display:flex;align-items:center;gap:11px;padding:12px 0;border-bottom:1px solid var(--line)}
 .member:last-child{border:0}
 .member-info{flex:1;min-width:0}
-.member-info strong,.member-info small{
-  display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap
-}
+.member-info strong,.member-info small{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .member-info small{color:var(--muted);margin-top:4px}
-.chat-layout{
-  display:grid;grid-template-columns:220px minmax(0,1fr);
-  gap:12px;min-height:420px
-}
+.chat-layout{display:grid;grid-template-columns:220px minmax(0,1fr);gap:12px;min-height:420px}
 .chat-list{border-right:1px solid var(--line);padding-right:10px}
-.chat-item{
-  width:100%;text-align:left;background:transparent;color:white;
-  border:0;border-radius:9px;padding:11px
-}
+.chat-item{width:100%;text-align:left;background:transparent;color:white;border:0;border-radius:9px;padding:11px}
 .chat-item.active,.chat-item:hover{background:#29204b}
 .chat-window{display:flex;flex-direction:column;min-height:400px}
 .messages{flex:1;overflow:auto;max-height:430px;padding:10px}
-.bubble{
-  max-width:82%;width:max-content;background:#252044;border-radius:14px;
-  padding:10px 13px;margin:8px 0;white-space:pre-wrap;overflow-wrap:anywhere
-}
+.bubble{max-width:82%;width:max-content;background:#252044;border-radius:14px;padding:10px 13px;margin:8px 0;white-space:pre-wrap;overflow-wrap:anywhere}
 .bubble.mine{margin-left:auto;background:#49318b}
 .bubble small{display:block;color:#c4badf;font-size:10px;margin-top:5px}
-#toast{
-  position:fixed;bottom:20px;left:50%;transform:translateX(-50%);
-  background:#27204a;border:1px solid var(--cyan);padding:12px 18px;
-  border-radius:10px;display:none;z-index:99;max-width:90%;text-align:center
-}
+#toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:#27204a;border:1px solid var(--cyan);padding:12px 18px;border-radius:10px;display:none;z-index:99;max-width:90%;text-align:center}
 .quick-nav{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
-.quick-nav a{
-  display:inline-block;background:#211743;border:1px solid var(--line);
-  border-radius:9px;padding:9px 12px
-}
+.quick-nav a{display:inline-block;background:#211743;border:1px solid var(--line);border-radius:9px;padding:9px 12px}
 #messageSearchResults{margin-top:10px}
-@media(max-width:950px){
-  .layout{grid-template-columns:1fr}
-  nav{
-    position:sticky;top:65px;display:flex;overflow-x:auto;gap:5px;z-index:8
-  }
-  .navbtn{white-space:nowrap;width:auto}
-}
-@media(max-width:600px){
-  .layout{padding:12px}
-  .chat-layout{grid-template-columns:1fr}
-  .chat-list{border:0;border-bottom:1px solid var(--line);padding:0 0 10px}
-  header{padding:12px}
-  header .muted{display:none}
-}
+@media(max-width:950px){.layout{grid-template-columns:1fr}nav{position:sticky;top:65px;display:flex;overflow-x:auto;gap:5px;z-index:8}.navbtn{white-space:nowrap;width:auto}}
+@media(max-width:600px){.layout{padding:12px}.chat-layout{grid-template-columns:1fr}.chat-list{border:0;border-bottom:1px solid var(--line);padding:0 0 10px}header{padding:12px}header .muted{display:none}}
 </style>
 </head>
 <body>
@@ -168,9 +88,7 @@ button:disabled{opacity:.5;cursor:wait}
   <div class="panel">
     <h2>Community feed</h2>
     <textarea id="postBody" maxlength="5000" placeholder="Share something with Grove…"></textarea>
-    <input id="postMediaFiles" type="file"
-      accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
-      multiple style="margin-top:10px">
+    <input id="postMediaFiles" type="file" accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime" multiple style="margin-top:10px">
     <p class="muted">Images and videos, up to 50 MB each.</p>
     <div class="row" style="margin-top:10px">
       <select id="postVisibility" style="max-width:180px">
@@ -198,8 +116,7 @@ button:disabled{opacity:.5;cursor:wait}
 <section id="messages" class="view">
   <div class="panel">
     <h2>Messages</h2>
-    <input id="messageUsername" placeholder="Find someone by first name, full name, or username…"
-      autocomplete="off">
+    <input id="messageUsername" placeholder="Find someone by first name, full name, or username…" autocomplete="off">
     <div id="messageSearchResults"></div>
     <p class="muted">Choose a member to open a private conversation.</p>
     <div class="chat-layout">
@@ -208,8 +125,7 @@ button:disabled{opacity:.5;cursor:wait}
         <div id="chatTitle" class="muted">Choose a conversation</div>
         <div class="messages" id="chatMessages"></div>
         <form id="sendMessageForm" class="row">
-          <input id="messageBody" class="grow" maxlength="4000"
-            placeholder="Write a message…" disabled>
+          <input id="messageBody" class="grow" maxlength="4000" placeholder="Write a message…" disabled>
           <button class="primary" id="sendMessage" disabled>Send</button>
         </form>
       </div>
@@ -247,10 +163,8 @@ button:disabled{opacity:.5;cursor:wait}
   <div class="panel">
     <h2>Moderator application</h2>
     <p class="muted">Tell the Grove team about your experience and availability.</p>
-    <textarea id="staffExperience" maxlength="5000"
-      placeholder="Your experience and why you want to help…"></textarea>
-    <input id="staffAvailability" maxlength="500"
-      placeholder="Availability" style="margin-top:10px">
+    <textarea id="staffExperience" maxlength="5000" placeholder="Your experience and why you want to help…"></textarea>
+    <input id="staffAvailability" maxlength="500" placeholder="Availability" style="margin-top:10px">
     <button class="primary" id="submitApplication" style="margin-top:10px">Submit application</button>
     <div id="applicationStatus" class="muted" style="margin-top:12px"></div>
   </div>
@@ -279,91 +193,64 @@ button:disabled{opacity:.5;cursor:wait}
 <script>
 "use strict";
 
-/* SUPABASE CONFIGURATION */
-const SUPABASE_URL = "https://fpkrvgcpbnrusbfmhinj.supabase.co";
-const SUPABASE_ANON_KEY = "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
-const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const SUPABASE_URL="https://fpkrvgcpbnrusbfmhinj.supabase.co";
+const SUPABASE_ANON_KEY="sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
 
-let user = null;
-let myProfile = null;
-let activeConversation = null;
-let activeChannel = null;
-let messageSearchTimer = null;
-let messageSearchRequest = 0;
-let feedBusy = false;
+let user=null,myProfile=null,activeConversation=null,activeChannel=null;
+let messageSearchTimer=null,messageSearchRequest=0,feedBusy=false;
+let discoverTimer=null;
 
-const $ = id => document.getElementById(id);
+const $=id=>document.getElementById(id);
 
 function esc(value){
-  return String(value ?? "").replace(/[&<>"']/g, ch => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
-  })[ch]);
+  return String(value??"").replace(/[&<>"']/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[ch]));
 }
-
 function toast(message){
-  const el = $("toast");
-  el.textContent = message;
-  el.style.display = "block";
+  const el=$("toast");
+  el.textContent=message;
+  el.style.display="block";
   clearTimeout(toast.timer);
-  toast.timer = setTimeout(() => el.style.display = "none", 3500);
+  toast.timer=setTimeout(()=>el.style.display="none",3500);
 }
-
 function displayName(profile){
-  return profile?.display_name?.trim() ||
-    profile?.username?.trim() ||
-    "Grove member";
+  return profile?.display_name?.trim()||profile?.username?.trim()||"Grove member";
 }
-
 function avatar(profile){
-  if(profile?.avatar_url){
-    return `<img class="avatar" src="${esc(profile.avatar_url)}" alt="">`;
-  }
+  if(profile?.avatar_url)return `<img class="avatar" src="${esc(profile.avatar_url)}" alt="">`;
   return `<div class="avatar">${esc(displayName(profile).slice(0,1).toUpperCase())}</div>`;
 }
-
-function showView(name){
-  document.querySelectorAll(".view").forEach(v =>
-    v.classList.toggle("active",v.id===name)
-  );
-  document.querySelectorAll(".navbtn").forEach(b =>
-    b.classList.toggle("active",b.dataset.view===name)
-  );
-  if(name==="feed") loadFeed();
-  if(name==="discover") loadMembers();
-  if(name==="messages") loadConversations();
-  if(name==="broadcast") loadChannels();
-  if(name==="notifications") loadNotifications();
+function requireUser(){
+  if(!user?.id){toast("Your account is still loading. Try again in a moment.");return false;}
+  return true;
 }
-
-document.querySelectorAll(".navbtn").forEach(b =>
-  b.addEventListener("click",()=>showView(b.dataset.view))
-);
+function showView(name){
+  document.querySelectorAll(".view").forEach(v=>v.classList.toggle("active",v.id===name));
+  document.querySelectorAll(".navbtn").forEach(b=>b.classList.toggle("active",b.dataset.view===name));
+  if(name==="feed")loadFeed();
+  if(name==="discover")loadMembers();
+  if(name==="messages")loadConversations();
+  if(name==="broadcast")loadChannels();
+  if(name==="notifications")loadNotifications();
+}
+document.querySelectorAll(".navbtn").forEach(b=>b.addEventListener("click",()=>showView(b.dataset.view)));
 $("rightDiscover").onclick=()=>showView("discover");
 
 async function init(){
   try{
     const {data,error}=await db.auth.getSession();
-    if(error) throw error;
-    const session=data.session;
+    if(error)throw error;
+    if(!data.session?.user?.id){location.href="index.html";return;}
+    user=data.session.user;
 
-    if(!session){
-      location.href="index.html";
-      return;
-    }
-
-    user=session.user;
-
-    const {data:profile,error:profileError}=await db
-      .from("profiles")
-      .select("*")
-      .eq("id",user.id)
-      .maybeSingle();
-
-    if(profileError) throw profileError;
+    const {data:profile,error:profileError}=await db.from("profiles")
+      .select("*").eq("id",user.id).maybeSingle();
+    if(profileError)throw profileError;
 
     myProfile=profile;
     $("myName").textContent=displayName(profile);
-    await Promise.all([loadFeed(),loadConversations(),loadApplication()]);
+
+    await Promise.allSettled([loadFeed(),loadConversations(),loadApplication()]);
   }catch(error){
     console.error("Grove initialization:",error);
     toast("Grove could not initialize: "+error.message);
@@ -372,26 +259,22 @@ async function init(){
 
 $("logout").onclick=async()=>{
   const {error}=await db.auth.signOut();
-  if(error) return toast(error.message);
+  if(error)return toast(error.message);
   location.href="index.html";
 };
 
 /* FEED */
-
 async function loadFeed(){
-  if(!user || feedBusy) return;
+  if(!user?.id||feedBusy)return;
   feedBusy=true;
   const host=$("feedPosts");
   host.innerHTML='<p class="muted">Loading posts…</p>';
 
   try{
-    const {data:posts,error}=await db
-      .from("posts")
+    const {data:posts,error}=await db.from("posts")
       .select("id,author_id,body,media_urls,visibility,created_at")
-      .order("created_at",{ascending:false})
-      .limit(50);
-
-    if(error) throw error;
+      .order("created_at",{ascending:false}).limit(50);
+    if(error)throw error;
 
     if(!posts?.length){
       host.innerHTML='<p class="muted">No posts are visible to your account yet.</p>';
@@ -402,350 +285,224 @@ async function loadFeed(){
     const authorIds=[...new Set(posts.map(p=>p.author_id))];
 
     const [profileResult,likeResult,commentResult]=await Promise.all([
-      db.from("profiles")
-        .select("id,username,display_name,avatar_url")
-        .in("id",authorIds),
-      db.from("post_likes")
-        .select("post_id,user_id")
-        .in("post_id",postIds),
-      db.from("comments")
-        .select("id,post_id,author_id,body,created_at")
-        .in("post_id",postIds)
-        .order("created_at",{ascending:true})
+      db.from("profiles").select("id,username,display_name,avatar_url").in("id",authorIds),
+      db.from("post_likes").select("post_id,user_id").in("post_id",postIds),
+      db.from("comments").select("id,post_id,author_id,body,created_at").in("post_id",postIds).order("created_at",{ascending:true})
     ]);
+    if(profileResult.error)throw profileResult.error;
+    if(likeResult.error)throw likeResult.error;
+    if(commentResult.error)throw commentResult.error;
 
-    if(profileResult.error) throw profileResult.error;
-    if(likeResult.error) throw likeResult.error;
-    if(commentResult.error) throw commentResult.error;
-
-    const profiles=Object.fromEntries(
-      (profileResult.data||[]).map(p=>[p.id,p])
-    );
+    const profiles=Object.fromEntries((profileResult.data||[]).map(p=>[p.id,p]));
     const likes=likeResult.data||[];
     const comments=commentResult.data||[];
     const commentAuthorIds=[...new Set(comments.map(c=>c.author_id))];
-
     let commentProfiles={};
+
     if(commentAuthorIds.length){
-      const {data,error}=await db.from("profiles")
-        .select("id,username,display_name")
-        .in("id",commentAuthorIds);
-      if(error) throw error;
+      const {data,error}=await db.from("profiles").select("id,username,display_name").in("id",commentAuthorIds);
+      if(error)throw error;
       commentProfiles=Object.fromEntries((data||[]).map(p=>[p.id,p]));
     }
 
-    const likedIds=new Set(
-      likes.filter(l=>l.user_id===user.id).map(l=>l.post_id)
-    );
+    const likedIds=new Set(likes.filter(l=>l.user_id===user.id).map(l=>l.post_id));
 
     host.innerHTML=posts.map(post=>{
       const author=profiles[post.author_id]||{};
       const ownComments=comments.filter(c=>c.post_id===post.id);
       const ownLikes=likes.filter(l=>l.post_id===post.id).length;
-
       const media=(post.media_urls||[]).map(url=>{
         const path=String(url).split("?")[0].toLowerCase();
-        if(/\.(mp4|webm|mov)$/.test(path)){
-          return `<video src="${esc(url)}" controls playsinline></video>`;
-        }
-        return `<img src="${esc(url)}" alt="Post media" loading="lazy">`;
+        return /\.(mp4|webm|mov)$/.test(path)
+          ?`<video src="${esc(url)}" controls playsinline></video>`
+          :`<img src="${esc(url)}" alt="Post media" loading="lazy">`;
       }).join("");
 
-      return `
-      <article class="post">
-        <div class="posthead">
-          ${avatar(author)}
-          <div>
-            <strong>${esc(displayName(author))}</strong>
-            <div class="muted">
-              ${author.username?"@"+esc(author.username)+" · ":""}
-              ${new Date(post.created_at).toLocaleString()}
-            </div>
-          </div>
-        </div>
+      return `<article class="post">
+        <div class="posthead">${avatar(author)}<div>
+          <strong>${esc(displayName(author))}</strong>
+          <div class="muted">${author.username?"@"+esc(author.username)+" · ":""}${new Date(post.created_at).toLocaleString()}</div>
+        </div></div>
         <div class="postbody">${esc(post.body||"")}</div>
         <div class="postmedia">${media}</div>
         <div class="actions">
-          <button class="${likedIds.has(post.id)?"liked":""}"
-            data-like="${esc(post.id)}">
-            ${likedIds.has(post.id)?"♥ Liked":"♡ Like"} · ${ownLikes}
-          </button>
-          <button data-focus-comment="${esc(post.id)}">
-            Comment · ${ownComments.length}
-          </button>
+          <button class="${likedIds.has(post.id)?"liked":""}" data-like="${esc(post.id)}">${likedIds.has(post.id)?"♥ Liked":"♡ Like"} · ${ownLikes}</button>
+          <button data-focus-comment="${esc(post.id)}">Comment · ${ownComments.length}</button>
           <button data-bookmark="${esc(post.id)}">Save</button>
-          ${post.author_id===user.id?
-            `<button class="danger" data-delete="${esc(post.id)}">Delete</button>`:""}
+          ${post.author_id===user.id?`<button class="danger" data-delete="${esc(post.id)}">Delete</button>`:""}
         </div>
-        <div>
-          ${ownComments.map(c=>`
-            <div class="comment">
-              <strong>${esc(displayName(commentProfiles[c.author_id]))}</strong>
-              ${esc(c.body)}
-            </div>`).join("")}
-        </div>
+        <div>${ownComments.map(c=>`<div class="comment"><strong>${esc(displayName(commentProfiles[c.author_id]))}</strong> ${esc(c.body)}</div>`).join("")}</div>
         <form class="row comment-form" data-comment="${esc(post.id)}">
           <input class="grow" maxlength="1500" placeholder="Write a comment…">
           <button class="secondary">Send</button>
         </form>
       </article>`;
     }).join("");
-
   }catch(error){
     console.error("Feed load error:",error);
-    host.innerHTML=`
-      <div class="panel">
-        <strong>Feed failed to load.</strong>
-        <p class="muted">${esc(error.message)}</p>
-        <button class="secondary" onclick="loadFeed()">Retry</button>
-      </div>`;
-  }finally{
-    feedBusy=false;
-  }
+    host.innerHTML=`<div class="panel"><strong>Feed failed to load.</strong><p class="muted">${esc(error.message)}</p><button class="secondary" id="retryFeed">Retry</button></div>`;
+  }finally{feedBusy=false;}
 }
-
-$("publishPost").onclick=async()=>{
-  const button=$("publishPost");
-  const body=$("postBody").value.trim();
-  const files=[...$("postMediaFiles").files];
-
-  if(!body && !files.length) return toast("Write a post or attach media.");
-
-  button.disabled=true;
-  button.textContent="Publishing…";
-
-  try{
-    const mediaUrls=[];
-
-    for(const file of files){
-      if(file.size>50*1024*1024) throw new Error(file.name+" exceeds 50 MB.");
-      if(!/^(image\/(jpeg|png|webp|gif)|video\/(mp4|webm|quicktime))$/.test(file.type)){
-        throw new Error("Unsupported media type: "+file.name);
-      }
-
-      const ext=(file.name.split(".").pop()||"bin").toLowerCase();
-      const path=`${user.id}/${crypto.randomUUID()}.${ext}`;
-
-      const {data,error}=await db.storage.from("post-media").upload(path,file,{
-        cacheControl:"3600",upsert:false,contentType:file.type
-      });
-      if(error) throw error;
-
-      const {data:publicData}=db.storage.from("post-media").getPublicUrl(data.path);
-      mediaUrls.push(publicData.publicUrl);
-    }
-
-    const {error}=await db.from("posts").insert({
-      author_id:user.id,
-      body,
-      media_urls:mediaUrls,
-      visibility:$("postVisibility").value
-    });
-
-    if(error) throw error;
-
-    $("postBody").value="";
-    $("postMediaFiles").value="";
-    toast("Your post is live.");
-    await loadFeed();
-  }catch(error){
-    console.error("Publish error:",error);
-    toast("Post failed: "+error.message);
-  }finally{
-    button.disabled=false;
-    button.textContent="Publish post";
-  }
-};
-
 $("feedPosts").addEventListener("click",async e=>{
+  if(e.target.closest("#retryFeed"))return loadFeed();
   const like=e.target.closest("[data-like]");
   const del=e.target.closest("[data-delete]");
   const bookmark=e.target.closest("[data-bookmark]");
   const focus=e.target.closest("[data-focus-comment]");
 
   if(focus){
-    const form=document.querySelector(`[data-comment="${CSS.escape(focus.dataset.focusComment)}"] input`);
-    form?.focus();
+    document.querySelector(`[data-comment="${CSS.escape(focus.dataset.focusComment)}"] input`)?.focus();
     return;
   }
+  if(!requireUser())return;
 
   if(like){
     const postId=like.dataset.like;
     const already=like.classList.contains("liked");
-
     try{
-      if(already){
-        const {error}=await db.from("post_likes")
-          .delete().eq("post_id",postId).eq("user_id",user.id);
-        if(error) throw error;
-      }else{
-        const {error}=await db.from("post_likes")
-          .insert({post_id:postId,user_id:user.id});
-        if(error) throw error;
-      }
+      const result=already
+        ?await db.from("post_likes").delete().eq("post_id",postId).eq("user_id",user.id)
+        :await db.from("post_likes").insert({post_id:postId,user_id:user.id});
+      if(result.error)throw result.error;
       await loadFeed();
-    }catch(error){toast(error.message)}
+    }catch(error){toast(error.message);}
   }
-
-  if(del && confirm("Delete this post?")){
-    const {error}=await db.from("posts").delete()
-      .eq("id",del.dataset.delete).eq("author_id",user.id);
-    if(error) toast(error.message);
-    else {toast("Post deleted.");loadFeed()}
+  if(del&&confirm("Delete this post?")){
+    const {error}=await db.from("posts").delete().eq("id",del.dataset.delete).eq("author_id",user.id);
+    if(error)toast(error.message);else{toast("Post deleted.");await loadFeed();}
   }
-
   if(bookmark){
-    const {error}=await db.from("bookmarks").upsert({
-      user_id:user.id,post_id:bookmark.dataset.bookmark
-    },{onConflict:"user_id,post_id"});
-    if(error) toast(error.message);
-    else toast("Post saved.");
+    const {data:existing,error:findError}=await db.from("bookmarks").select("post_id")
+      .eq("user_id",user.id).eq("post_id",bookmark.dataset.bookmark).maybeSingle();
+    if(findError)return toast(findError.message);
+    if(existing){
+      const {error}=await db.from("bookmarks").delete().eq("user_id",user.id).eq("post_id",bookmark.dataset.bookmark);
+      if(error)toast(error.message);else toast("Bookmark removed.");
+    }else{
+      const {error}=await db.from("bookmarks").insert({user_id:user.id,post_id:bookmark.dataset.bookmark});
+      if(error)toast(error.message);else toast("Post saved.");
+    }
   }
 });
-
 $("feedPosts").addEventListener("submit",async e=>{
   const form=e.target.closest("[data-comment]");
-  if(!form) return;
+  if(!form)return;
   e.preventDefault();
-
-  const input=form.querySelector("input");
-  const body=input.value.trim();
-  if(!body) return;
-
-  const {error}=await db.from("comments").insert({
-    post_id:form.dataset.comment,
-    author_id:user.id,
-    body
-  });
-
-  if(error) toast(error.message);
-  else {toast("Comment added.");loadFeed()}
+  if(!requireUser())return;
+  const input=form.querySelector("input"),body=input.value.trim();
+  if(!body)return;
+  const {error}=await db.from("comments").insert({post_id:form.dataset.comment,author_id:user.id,body});
+  if(error)toast(error.message);else{toast("Comment added.");await loadFeed();}
 });
 
-/* MEMBER DISCOVERY */
+$("publishPost").onclick=async()=>{
+  if(!requireUser())return;
+  const button=$("publishPost"),body=$("postBody").value.trim(),files=[...$("postMediaFiles").files];
+  if(!body&&!files.length)return toast("Write a post or attach media.");
+  button.disabled=true;button.textContent="Publishing…";
+  try{
+    const mediaUrls=[];
+    for(const file of files){
+      if(file.size>50*1024*1024)throw new Error(file.name+" exceeds 50 MB.");
+      if(!/^(image\/(jpeg|png|webp|gif)|video\/(mp4|webm|quicktime))$/.test(file.type))throw new Error("Unsupported media type: "+file.name);
+      const ext=(file.name.split(".").pop()||"bin").toLowerCase();
+      const path=`${user.id}/${crypto.randomUUID()}.${ext}`;
+      const {data,error}=await db.storage.from("post-media").upload(path,file,{cacheControl:"3600",upsert:false,contentType:file.type});
+      if(error)throw error;
+      const {data:publicData}=db.storage.from("post-media").getPublicUrl(data.path);
+      mediaUrls.push(publicData.publicUrl);
+    }
+    const {error}=await db.from("posts").insert({author_id:user.id,body,media_urls:mediaUrls,visibility:$("postVisibility").value});
+    if(error)throw error;
+    $("postBody").value="";$("postMediaFiles").value="";
+    toast("Your post is live.");await loadFeed();
+  }catch(error){console.error(error);toast("Post failed: "+error.message);}
+  finally{button.disabled=false;button.textContent="Publish post";}
+};
 
+/* DISCOVER */
 async function loadMembers(search=""){
   const host=$("membersList");
+  if(!user?.id){host.innerHTML='<p class="muted">Authenticating…</p>';return;}
   host.innerHTML='<p class="muted">Loading members…</p>';
-
   try{
-    let query=db.from("profiles")
-      .select("id,username,display_name,avatar_url,created_at,is_private")
-      .neq("id",user.id)
-      .order("created_at",{ascending:false})
-      .limit(40);
-
+    let query=db.from("profiles").select("id,username,display_name,avatar_url,created_at,is_private")
+      .neq("id",user.id).order("created_at",{ascending:false}).limit(40);
     if(search){
       const term=search.replace(/[,%()]/g," ").trim();
-      query=query.or(`display_name.ilike.%${term}%,username.ilike.%${term}%`);
+      if(term)query=query.or(`display_name.ilike.%${term}%,username.ilike.%${term}%`);
     }
-
     const {data,error}=await query;
-    if(error) throw error;
-
-    if(!data?.length){
-      host.innerHTML='<p class="muted">No matching visible members found.</p>';
-      return;
-    }
-
-    host.innerHTML=data.map(p=>memberCard(p)).join("");
-  }catch(error){
-    host.innerHTML=`<p class="muted">Member search failed: ${esc(error.message)}</p>`;
-  }
+    if(error)throw error;
+    host.innerHTML=data?.length?data.map(memberCard).join(""):'<p class="muted">No matching visible members found.</p>';
+  }catch(error){host.innerHTML=`<p class="muted">Member search failed: ${esc(error.message)}</p>`;}
 }
-
 function memberCard(p){
-  return `
-    <div class="member">
-      ${avatar(p)}
-      <div class="member-info">
-        <strong>${esc(displayName(p))}</strong>
-        <small>${p.username?"@"+esc(p.username):"Grove member"}
-          ${p.is_private?" · Private profile":""}</small>
-      </div>
-      <button class="secondary" data-profile-message="${esc(p.id)}">Message</button>
-      <button class="secondary" data-follow="${esc(p.id)}">Follow</button>
-    </div>`;
+  return `<div class="member">
+    ${avatar(p)}
+    <div class="member-info"><strong>${esc(displayName(p))}</strong><small>${p.username?"@"+esc(p.username):"Grove member"}${p.is_private?" · Private profile":""}</small></div>
+    <button class="secondary" data-profile-message="${esc(p.id)}">Message</button>
+    <button class="secondary" data-follow="${esc(p.id)}">Follow</button>
+  </div>`;
 }
-
-let discoverTimer;
 $("memberSearch").addEventListener("input",()=>{
   clearTimeout(discoverTimer);
   discoverTimer=setTimeout(()=>loadMembers($("memberSearch").value.trim()),300);
 });
 $("newMembers").onclick=()=>loadMembers("");
 $("followingMembers").onclick=async()=>{
-  const host=$("membersList");
-  host.innerHTML='<p class="muted">Loading following…</p>';
-
-  const {data:follows,error}=await db.from("follows")
-    .select("following_id").eq("follower_id",user.id);
-
-  if(error) return host.textContent=error.message;
+  if(!requireUser())return;
+  const host=$("membersList");host.innerHTML='<p class="muted">Loading following…</p>';
+  const {data:follows,error}=await db.from("follows").select("following_id").eq("follower_id",user.id).eq("status","accepted");
+  if(error)return host.textContent=error.message;
   const ids=(follows||[]).map(f=>f.following_id);
-
-  if(!ids.length) return host.innerHTML='<p class="muted">You are not following anyone yet.</p>';
-
-  const {data,error:profileError}=await db.from("profiles")
-    .select("id,username,display_name,avatar_url,is_private")
-    .in("id",ids);
-
-  if(profileError) return host.textContent=profileError.message;
+  if(!ids.length)return host.innerHTML='<p class="muted">You are not following anyone yet.</p>';
+  const {data,error:profileError}=await db.from("profiles").select("id,username,display_name,avatar_url,is_private").in("id",ids);
+  if(profileError)return host.textContent=profileError.message;
   host.innerHTML=(data||[]).map(memberCard).join("");
 };
-
 $("membersList").addEventListener("click",async e=>{
-  const msg=e.target.closest("[data-profile-message]");
-  const follow=e.target.closest("[data-follow]");
-
-  if(msg) await openDirectMessage(msg.dataset.profileMessage);
-
-  if(follow){
-    const target=follow.dataset.follow;
-    const {data:profile,error:profileError}=await db.from("profiles")
-      .select("is_private").eq("id",target).single();
-
-    if(profileError) return toast(profileError.message);
-
-    if(profile?.is_private){
-      const {error}=await db.from("follow_requests").insert({
-        requester_id:user.id,target_id:target,status:"pending"
-      });
-      if(error) toast(error.message);
-      else toast("Follow request sent.");
+  const msg=e.target.closest("[data-profile-message]"),follow=e.target.closest("[data-follow]");
+  if(msg)return openDirectMessage(msg.dataset.profileMessage);
+  if(!follow||!requireUser())return;
+  const target=follow.dataset.follow;
+  try{
+    const {data:profile,error}=await db.from("profiles").select("is_private").eq("id",target).maybeSingle();
+    if(error)throw error;
+    if(!profile)throw new Error("That member is no longer available.");
+    if(profile.is_private){
+      const {data:prior,error:priorError}=await db.from("follow_requests").select("id,status")
+        .eq("requester_id",user.id).eq("target_id",target).maybeSingle();
+      if(priorError)throw priorError;
+      if(prior?.status==="pending")return toast("Your follow request is already pending.");
+      const {error:requestError}=await db.from("follow_requests").insert({requester_id:user.id,target_id:target,status:"pending"});
+      if(requestError)throw requestError;
+      toast("Follow request sent.");
     }else{
-      const {error}=await db.from("follows").insert({
-        follower_id:user.id,following_id:target,status:"accepted"
-      });
-      if(error) toast(error.message);
-      else toast("Following member.");
+      const {data:prior,error:priorError}=await db.from("follows").select("following_id")
+        .eq("follower_id",user.id).eq("following_id",target).maybeSingle();
+      if(priorError)throw priorError;
+      if(prior)return toast("You already follow this member.");
+      const {error:followError}=await db.from("follows").insert({follower_id:user.id,following_id:target,status:"accepted"});
+      if(followError)throw followError;
+      toast("Following member.");
     }
-  }
+  }catch(error){toast(error.message);}
 });
 
-/* MESSAGING: SEARCH BY NAME OR USERNAME */
-
+/* MESSAGE MEMBER SEARCH */
 $("messageUsername").addEventListener("input",()=>{
   clearTimeout(messageSearchTimer);
   messageSearchTimer=setTimeout(searchMessageMembers,250);
 });
-
 async function searchMessageMembers(){
   const term=$("messageUsername").value.trim().replace(/^@/,"");
   const host=$("messageSearchResults");
   const request=++messageSearchRequest;
-
-  if(!term){
-    host.innerHTML="";
-    return;
-  }
-  if(term.length<2){
-    host.innerHTML='<p class="muted">Type at least two letters.</p>';
-    return;
-  }
-
+  if(!user?.id){host.innerHTML='<p class="muted">Authenticating… please wait.</p>';return;}
+  if(!term){host.innerHTML="";return;}
+  if(term.length<2){host.innerHTML='<p class="muted">Type at least two letters.</p>';return;}
   host.innerHTML='<p class="muted">Searching members…</p>';
-
   try{
     const safe=term.replace(/[,%()]/g," ").trim();
     const {data,error}=await db.from("profiles")
@@ -753,502 +510,238 @@ async function searchMessageMembers(){
       .neq("id",user.id)
       .or(`display_name.ilike.%${safe}%,username.ilike.%${safe}%`)
       .limit(30);
-
-    if(request!==messageSearchRequest) return;
-    if(error) throw error;
-
-    if(!data?.length){
-      host.innerHTML='<p class="muted">No visible matches. Try another spelling or username.</p>';
-      return;
-    }
-
-    host.innerHTML=data.map(p=>`
-      <button type="button" class="member"
-        data-message-member="${esc(p.id)}"
-        style="width:100%;text-align:left;background:transparent;color:inherit;border:0">
-        ${avatar(p)}
-        <span class="member-info">
-          <strong>${esc(displayName(p))}</strong>
-          <small>${p.username?"@"+esc(p.username):"No username set"}</small>
-        </span>
-        <span class="muted">Message →</span>
-      </button>
-    `).join("");
+    if(request!==messageSearchRequest)return;
+    if(error)throw error;
+    if(!data?.length){host.innerHTML='<p class="muted">No visible matches. Try another spelling or username.</p>';return;}
+    host.innerHTML=data.map(p=>`<button type="button" class="member" data-message-member="${esc(p.id)}" style="width:100%;text-align:left;background:transparent;color:inherit;border:0">
+      ${avatar(p)}<span class="member-info"><strong>${esc(displayName(p))}</strong><small>${p.username?"@"+esc(p.username):"Grove member"}</small></span><span class="muted">Message →</span>
+    </button>`).join("");
   }catch(error){
     console.error("Message member search:",error);
-    host.innerHTML=`<p class="muted">Search failed: ${esc(error.message)}</p>`;
+    host.innerHTML=`<p class="muted">Member search failed: ${esc(error.message)}</p>`;
   }
 }
-
 $("messageSearchResults").addEventListener("click",async e=>{
   const button=e.target.closest("[data-message-member]");
-  if(button) await openDirectMessage(button.dataset.messageMember);
+  if(button)await openDirectMessage(button.dataset.messageMember);
 });
 
-$("startChat").onclick=async()=>{
-  const term=$("messageUsername").value.trim();
-  if(!term) return toast("Search for a member first.");
-  await searchMessageMembers();
-};
+/* IMPORTANT: no startChat handler here. There is no startChat element in this page. */
 
 async function openDirectMessage(targetId){
+  if(!requireUser())return;
+  if(!targetId)return toast("Choose a member first.");
   try{
-    const {data:conversationId,error}=await db.rpc(
-      "open_or_create_direct_conversation",
-      {p_target_user_id:targetId}
-    );
-    if(error) throw error;
-    if(!conversationId) throw new Error("No conversation was returned.");
-
+    const {data:conversationId,error}=await db.rpc("open_or_create_direct_conversation",{p_target_user_id:targetId});
+    if(error)throw error;
+    if(!conversationId)throw new Error("No conversation was returned.");
     activeConversation=conversationId;
     $("messageSearchResults").innerHTML="";
     $("messageUsername").value="";
     $("messageBody").disabled=false;
     $("sendMessage").disabled=false;
-
     await loadConversations();
     await openConversation(conversationId);
     showView("messages");
-  }catch(error){
-    console.error("Open direct conversation:",error);
-    toast("Could not open conversation: "+error.message);
-  }
+  }catch(error){console.error("Open direct conversation:",error);toast("Could not open conversation: "+error.message);}
 }
 
 async function loadConversations(){
-  if(!user) return;
-
-  const host=$("chatList");
-  host.innerHTML='<p class="muted">Loading inbox…</p>';
-
+  if(!user?.id)return;
+  const host=$("chatList");host.innerHTML='<p class="muted">Loading inbox…</p>';
   try{
-    const {data:memberships,error}=await db.from("conversation_members")
-      .select("conversation_id,role,last_read_at")
-      .eq("user_id",user.id);
-
-    if(error) throw error;
-
-    if(!memberships?.length){
-      host.innerHTML='<p class="muted">No conversations yet.</p>';
-      return;
-    }
-
+    const {data:memberships,error}=await db.from("conversation_members").select("conversation_id,role,last_read_at").eq("user_id",user.id);
+    if(error)throw error;
+    if(!memberships?.length){host.innerHTML='<p class="muted">No conversations yet.</p>';return;}
     const ids=memberships.map(m=>m.conversation_id);
-    const {data:conversations,error:conversationError}=await db
-      .from("conversations")
-      .select("id,conversation_type,title,updated_at")
-      .in("id",ids)
-      .order("updated_at",{ascending:false});
-
-    if(conversationError) throw conversationError;
-
-    const {data:allMembers,error:memberError}=await db
-      .from("conversation_members")
-      .select("conversation_id,user_id")
-      .in("conversation_id",ids);
-
-    if(memberError) throw memberError;
-
-    const otherIds=[...new Set((allMembers||[])
-      .filter(m=>m.user_id!==user.id).map(m=>m.user_id))];
-
+    const {data:conversations,error:conversationError}=await db.from("conversations")
+      .select("id,conversation_type,title,updated_at").in("id",ids).order("updated_at",{ascending:false});
+    if(conversationError)throw conversationError;
+    const {data:allMembers,error:memberError}=await db.from("conversation_members").select("conversation_id,user_id").in("conversation_id",ids);
+    if(memberError)throw memberError;
+    const otherIds=[...new Set((allMembers||[]).filter(m=>m.user_id!==user.id).map(m=>m.user_id))];
     let profileMap={};
     if(otherIds.length){
-      const {data,error}=await db.from("profiles")
-        .select("id,username,display_name,avatar_url")
-        .in("id",otherIds);
-      if(error) throw error;
+      const {data,error}=await db.from("profiles").select("id,username,display_name,avatar_url").in("id",otherIds);
+      if(error)throw error;
       profileMap=Object.fromEntries((data||[]).map(p=>[p.id,p]));
     }
-
     host.innerHTML=(conversations||[]).map(c=>{
-      const others=(allMembers||[])
-        .filter(m=>m.conversation_id===c.id && m.user_id!==user.id)
-        .map(m=>profileMap[m.user_id]).filter(Boolean);
-
-      const title=c.title ||
-        others.map(displayName).join(", ") || "Conversation";
-
-      return `<button class="chat-item ${activeConversation===c.id?"active":""}"
-        data-conversation="${esc(c.id)}">
-        <strong>${esc(title)}</strong>
-        <div class="muted">${c.conversation_type==="group"?"Group":"Direct message"}</div>
-      </button>`;
-    }).join("");
-  }catch(error){
-    console.error("Inbox error:",error);
-    host.innerHTML=`<p class="muted">Inbox error: ${esc(error.message)}</p>`;
-  }
+      const others=(allMembers||[]).filter(m=>m.conversation_id===c.id&&m.user_id!==user.id).map(m=>profileMap[m.user_id]).filter(Boolean);
+      const title=c.title||others.map(displayName).join(", ")||"Conversation";
+      return `<button class="chat-item ${activeConversation===c.id?"active":""}" data-conversation="${esc(c.id)}"><strong>${esc(title)}</strong><div class="muted">${c.conversation_type==="group"?"Group":"Direct message"}</div></button>`;
+    }).join("")||'<p class="muted">No conversations yet.</p>';
+  }catch(error){console.error("Inbox error:",error);host.innerHTML=`<p class="muted">Inbox error: ${esc(error.message)}</p>`;}
 }
-
 $("chatList").addEventListener("click",async e=>{
   const button=e.target.closest("[data-conversation]");
-  if(!button) return;
+  if(!button)return;
   activeConversation=button.dataset.conversation;
-  $("messageBody").disabled=false;
-  $("sendMessage").disabled=false;
-  await openConversation(activeConversation);
-  loadConversations();
+  $("messageBody").disabled=false;$("sendMessage").disabled=false;
+  await openConversation(activeConversation);await loadConversations();
 });
-
 async function openConversation(conversationId){
-  const host=$("chatMessages");
-  host.innerHTML='<p class="muted">Loading messages…</p>';
-
+  if(!user?.id||!conversationId)return;
+  const host=$("chatMessages");host.innerHTML='<p class="muted">Loading messages…</p>';
   try{
-    const {data:members,error:memberError}=await db
-      .from("conversation_members")
-      .select("user_id")
-      .eq("conversation_id",conversationId);
-
-    if(memberError) throw memberError;
-
+    const {data:members,error:memberError}=await db.from("conversation_members").select("user_id").eq("conversation_id",conversationId);
+    if(memberError)throw memberError;
     const otherIds=(members||[]).filter(m=>m.user_id!==user.id).map(m=>m.user_id);
     let title="Conversation";
-
     if(otherIds.length){
-      const {data:profiles,error}=await db.from("profiles")
-        .select("id,username,display_name")
-        .in("id",otherIds);
-      if(error) throw error;
+      const {data:profiles,error}=await db.from("profiles").select("id,username,display_name").in("id",otherIds);
+      if(error)throw error;
       title=(profiles||[]).map(displayName).join(", ")||title;
     }
-
     $("chatTitle").textContent=title;
-
     const {data:messages,error}=await db.from("conversation_messages")
-      .select("id,sender_id,body,created_at")
-      .eq("conversation_id",conversationId)
-      .order("created_at",{ascending:true})
-      .limit(100);
-
-    if(error) throw error;
-
-    host.innerHTML=(messages||[]).map(m=>`
-      <div class="bubble ${m.sender_id===user.id?"mine":""}">
-        ${esc(m.body)}
-        <small>${new Date(m.created_at).toLocaleString()}</small>
-      </div>
-    `).join("")||'<p class="muted">No messages yet. Say hello.</p>';
-
+      .select("id,sender_id,body,created_at").eq("conversation_id",conversationId)
+      .order("created_at",{ascending:true}).limit(100);
+    if(error)throw error;
+    host.innerHTML=(messages||[]).map(m=>`<div class="bubble ${m.sender_id===user.id?"mine":""}">${esc(m.body)}<small>${new Date(m.created_at).toLocaleString()}</small></div>`).join("")||'<p class="muted">No messages yet. Say hello.</p>';
     host.scrollTop=host.scrollHeight;
-
-    await db.from("conversation_members")
-      .update({last_read_at:new Date().toISOString()})
-      .eq("conversation_id",conversationId)
-      .eq("user_id",user.id);
-
-  }catch(error){
-    console.error("Conversation load:",error);
-    host.innerHTML=`<p class="muted">Could not load messages: ${esc(error.message)}</p>`;
-  }
+    const {error:readError}=await db.from("conversation_members").update({last_read_at:new Date().toISOString()}).eq("conversation_id",conversationId).eq("user_id",user.id);
+    if(readError)console.warn("Read marker:",readError.message);
+  }catch(error){console.error("Conversation load:",error);host.innerHTML=`<p class="muted">Could not load messages: ${esc(error.message)}</p>`;}
 }
-
 $("sendMessageForm").addEventListener("submit",async e=>{
   e.preventDefault();
-  if(!activeConversation) return toast("Choose a conversation first.");
-
-  const input=$("messageBody");
-  const body=input.value.trim();
-  if(!body) return;
-
-  const button=$("sendMessage");
-  button.disabled=true;
-
+  if(!requireUser())return;
+  if(!activeConversation)return toast("Choose a conversation first.");
+  const input=$("messageBody"),body=input.value.trim();
+  if(!body)return;
+  const button=$("sendMessage");button.disabled=true;
   try{
-    const {error}=await db.from("conversation_messages").insert({
-      conversation_id:activeConversation,
-      sender_id:user.id,
-      body
-    });
-    if(error) throw error;
-
-    input.value="";
-    await openConversation(activeConversation);
-    await loadConversations();
-  }catch(error){
-    toast("Message failed: "+error.message);
-  }finally{
-    button.disabled=false;
-  }
+    const {error}=await db.from("conversation_messages").insert({conversation_id:activeConversation,sender_id:user.id,body});
+    if(error)throw error;
+    input.value="";await openConversation(activeConversation);await loadConversations();
+  }catch(error){toast("Message failed: "+error.message);}
+  finally{button.disabled=false;}
 });
 
-/* GROUP CONVERSATIONS */
-
+/* GROUP CHAT
+   Current database policy does not let a regular member add other people
+   directly to conversation_members. Do not create a broken partial group. */
 (function addGroupChat(){
-  const panel=document.createElement("div");
-  panel.className="panel";
-  panel.innerHTML=`
-    <h3>Create group conversation</h3>
-    <input id="groupChatName" maxlength="80" placeholder="Group name">
-    <input id="groupChatUsers" style="margin-top:8px"
-      placeholder="Member names or usernames, comma separated">
-    <p class="muted">Search by display name or username.</p>
-    <button class="primary" id="createGroupChat">Create group</button>
-  `;
+  const panel=document.createElement("div");panel.className="panel";
+  panel.innerHTML=`<h3>Group conversations</h3><p class="muted">Group creation requires a trusted server-side invitation flow. Direct member insertion is blocked by Grove's access policies.</p>`;
   $("messages").querySelector(".panel").prepend(panel);
-
-  $("createGroupChat").onclick=async()=>{
-    const title=$("groupChatName").value.trim();
-    const names=$("groupChatUsers").value.split(",")
-      .map(s=>s.trim().replace(/^@/,"")).filter(Boolean);
-
-    if(!title || !names.length) return toast("Enter a group name and members.");
-
-    const button=$("createGroupChat");
-    button.disabled=true;
-
-    try{
-      const ids=[];
-      for(const name of names){
-        const safe=name.replace(/[,%()]/g," ").trim();
-        const {data,error}=await db.from("profiles")
-          .select("id,username,display_name")
-          .or(`display_name.ilike.%${safe}%,username.ilike.%${safe}%`)
-          .limit(10);
-        if(error) throw error;
-
-        if(!data?.length) throw new Error("No visible member found for "+name);
-        if(data.length>1) throw new Error("More than one member matches "+name+". Use their exact username.");
-        if(data[0].id!==user.id) ids.push(data[0].id);
-      }
-
-      const memberIds=[...new Set([user.id,...ids])];
-      if(memberIds.length<3) throw new Error("A group needs you and at least two other members.");
-
-      const {data:conversation,error}=await db.from("conversations")
-        .insert({conversation_type:"group",title,created_by:user.id})
-        .select().single();
-
-      if(error) throw error;
-
-      const rows=memberIds.map((id,index)=>({
-        conversation_id:conversation.id,user_id:id,
-        role:index===0?"admin":"member"
-      }));
-
-      const {error:memberError}=await db.from("conversation_members").insert(rows);
-      if(memberError){
-        await db.from("conversations").delete().eq("id",conversation.id);
-        throw memberError;
-      }
-
-      $("groupChatName").value="";
-      $("groupChatUsers").value="";
-      activeConversation=conversation.id;
-      toast("Group conversation created.");
-      await loadConversations();
-      await openConversation(conversation.id);
-    }catch(error){
-      toast("Group creation failed: "+error.message);
-    }finally{
-      button.disabled=false;
-    }
-  };
 })();
 
 /* BROADCAST CHANNELS */
-
 async function loadChannels(){
-  const host=$("channelList");
-  host.innerHTML='<p class="muted">Loading channels…</p>';
-
+  if(!user?.id)return;
+  const host=$("channelList");host.innerHTML='<p class="muted">Loading channels…</p>';
   try{
-    const {data,error}=await db.from("broadcast_channels")
-      .select("id,owner_id,name,description,is_private,created_at")
-      .eq("is_private",false)
-      .order("created_at",{ascending:false})
-      .limit(50);
-
-    if(error) throw error;
-
-    host.innerHTML=(data||[]).map(c=>`
-      <div class="panel">
-        <strong>${esc(c.name)}</strong>
-        <p class="muted">${esc(c.description||"")}</p>
-        <button class="secondary" data-open-channel="${esc(c.id)}">Open channel</button>
-        <button class="secondary" data-join-channel="${esc(c.id)}">Join</button>
-      </div>
-    `).join("")||'<p class="muted">No public channels yet.</p>';
-  }catch(error){
-    host.textContent="Channels could not load: "+error.message;
-  }
+    const {data,error}=await db.from("broadcast_channels").select("id,owner_id,name,description,is_private,created_at")
+      .eq("is_private",false).order("created_at",{ascending:false}).limit(50);
+    if(error)throw error;
+    host.innerHTML=(data||[]).map(c=>`<div class="panel"><strong>${esc(c.name)}</strong><p class="muted">${esc(c.description||"")}</p><button class="secondary" data-open-channel="${esc(c.id)}">Open channel</button><button class="secondary" data-join-channel="${esc(c.id)}">Join</button></div>`).join("")||'<p class="muted">No public channels yet.</p>';
+  }catch(error){host.textContent="Channels could not load: "+error.message;}
 }
-
 $("createChannel").onclick=async()=>{
+  if(!requireUser())return;
   const name=$("channelName").value.trim();
-  if(!name) return toast("Enter a channel name.");
-
-  const {data,error}=await db.from("broadcast_channels").insert({
-    owner_id:user.id,
-    name,
-    description:$("channelDescription").value.trim(),
-    is_private:$("channelPrivate").checked
-  }).select().single();
-
-  if(error) return toast(error.message);
-
-  const {error:joinError}=await db.from("channel_members").insert({
-    channel_id:data.id,user_id:user.id,role:"owner"
-  });
-
-  if(joinError) return toast("Channel created, but joining failed: "+joinError.message);
-
-  $("channelName").value="";
-  $("channelDescription").value="";
-  $("channelPrivate").checked=false;
-  toast("Channel created.");
-  await loadChannels();
-  openChannel(data);
+  if(!name)return toast("Enter a channel name.");
+  try{
+    const {data,error}=await db.from("broadcast_channels").insert({
+      owner_id:user.id,name,description:$("channelDescription").value.trim(),is_private:$("channelPrivate").checked
+    }).select().single();
+    if(error)throw error;
+    const {error:joinError}=await db.from("channel_members").insert({channel_id:data.id,user_id:user.id,role:"owner"});
+    if(joinError)throw new Error("Channel created, but owner membership failed: "+joinError.message);
+    $("channelName").value="";$("channelDescription").value="";$("channelPrivate").checked=false;
+    toast("Channel created.");await loadChannels();await openChannel(data);
+  }catch(error){toast(error.message);}
 };
-
 $("channelList").addEventListener("click",async e=>{
-  const open=e.target.closest("[data-open-channel]");
-  const join=e.target.closest("[data-join-channel]");
-
+  const open=e.target.closest("[data-open-channel]"),join=e.target.closest("[data-join-channel]");
   if(join){
-    const {error}=await db.from("channel_members").upsert({
-      channel_id:join.dataset.joinChannel,user_id:user.id,role:"member"
-    },{onConflict:"channel_id,user_id"});
-    if(error) toast(error.message);
-    else toast("Joined channel.");
+    if(!requireUser())return;
+    try{
+      const {data:existing,error:checkError}=await db.from("channel_members").select("channel_id")
+        .eq("channel_id",join.dataset.joinChannel).eq("user_id",user.id).maybeSingle();
+      if(checkError)throw checkError;
+      if(existing){toast("You already joined this channel.");return;}
+      const {error}=await db.from("channel_members").insert({channel_id:join.dataset.joinChannel,user_id:user.id,role:"subscriber"});
+      if(error)throw error;
+      toast("Joined channel.");
+    }catch(error){toast(error.message);}
   }
-
   if(open){
-    const {data,error}=await db.from("broadcast_channels")
-      .select("*").eq("id",open.dataset.openChannel).single();
-    if(error) return toast(error.message);
+    const {data,error}=await db.from("broadcast_channels").select("*").eq("id",open.dataset.openChannel).single();
+    if(error)return toast(error.message);
     await openChannel(data);
   }
 });
-
 async function openChannel(channel){
-  activeChannel=channel;
-  $("channelComposer").hidden=false;
-  $("channelHeading").textContent=channel.name;
-
-  const {data,error}=await db.from("channel_posts")
-    .select("*").eq("channel_id",channel.id)
-    .order("created_at",{ascending:false}).limit(50);
-
-  if(error){
-    $("channelPosts").textContent=error.message;
-    return;
-  }
-
-  $("channelPosts").innerHTML=(data||[]).map(p=>`
-    <article class="post">
-      <div class="postbody">${esc(p.body)}</div>
-      <small class="muted">${new Date(p.created_at).toLocaleString()}</small>
-    </article>
-  `).join("")||'<p class="muted">No channel updates yet.</p>';
+  activeChannel=channel;$("channelComposer").hidden=false;$("channelHeading").textContent=channel.name;
+  const {data,error}=await db.from("channel_posts").select("*").eq("channel_id",channel.id).order("created_at",{ascending:false}).limit(50);
+  if(error){$("channelPosts").textContent=error.message;return;}
+  $("channelPosts").innerHTML=(data||[]).map(p=>`<article class="post"><div class="postbody">${esc(p.body)}</div><small class="muted">${new Date(p.created_at).toLocaleString()}</small></article>`).join("")||'<p class="muted">No channel updates yet.</p>';
 }
-
 $("publishChannelPost").onclick=async()=>{
-  if(!activeChannel) return;
-  const body=$("channelBody").value.trim();
-  if(!body) return;
-
-  const {error}=await db.from("channel_posts").insert({
-    channel_id:activeChannel.id,author_id:user.id,body
-  });
-  if(error) return toast(error.message);
-
-  $("channelBody").value="";
-  toast("Broadcast published.");
-  await openChannel(activeChannel);
+  if(!requireUser())return;
+  if(!activeChannel)return;
+  const body=$("channelBody").value.trim();if(!body)return;
+  const {error}=await db.from("channel_posts").insert({channel_id:activeChannel.id,author_id:user.id,body});
+  if(error)return toast(error.message);
+  $("channelBody").value="";toast("Broadcast published.");await openChannel(activeChannel);
 };
 
 /* NOTIFICATIONS */
-
 async function loadNotifications(){
-  const host=$("notificationList");
-  host.innerHTML='<p class="muted">Loading notifications…</p>';
-
-  const {data,error}=await db.from("notifications")
-    .select("*").eq("recipient_id",user.id)
-    .order("created_at",{ascending:false}).limit(50);
-
-  if(error){
-    host.textContent=error.message;
-    return;
-  }
-
-  host.innerHTML=(data||[]).map(n=>`
-    <div class="member">
-      <div class="member-info">
-        <strong>${esc(n.message||n.kind)}</strong>
-        <small>${new Date(n.created_at).toLocaleString()} · ${n.read_at?"Read":"New"}</small>
-      </div>
-      ${!n.read_at?`<button class="secondary" data-read="${esc(n.id)}">Mark read</button>`:""}
-    </div>
-  `).join("")||'<p class="muted">You are all caught up.</p>';
+  if(!user?.id)return;
+  const host=$("notificationList");host.innerHTML='<p class="muted">Loading notifications…</p>';
+  const {data,error}=await db.from("notifications").select("*").eq("recipient_id",user.id).order("created_at",{ascending:false}).limit(50);
+  if(error){host.textContent=error.message;return;}
+  host.innerHTML=(data||[]).map(n=>`<div class="member"><div class="member-info"><strong>${esc(n.message||n.kind)}</strong><small>${new Date(n.created_at).toLocaleString()} · ${n.read_at?"Read":"New"}</small></div>${!n.read_at?`<button class="secondary" data-read="${esc(n.id)}">Mark read</button>`:""}</div>`).join("")||'<p class="muted">You are all caught up.</p>';
 }
-
 $("refreshNotifications").onclick=loadNotifications;
 $("notificationList").addEventListener("click",async e=>{
-  const button=e.target.closest("[data-read]");
-  if(!button) return;
-
-  const {error}=await db.from("notifications").update({
-    read_at:new Date().toISOString()
-  }).eq("id",button.dataset.read).eq("recipient_id",user.id);
-
-  if(error) toast(error.message);
-  else loadNotifications();
+  const button=e.target.closest("[data-read]");if(!button||!requireUser())return;
+  const {error}=await db.from("notifications").update({read_at:new Date().toISOString()}).eq("id",button.dataset.read).eq("recipient_id",user.id);
+  if(error)toast(error.message);else await loadNotifications();
 });
 
 /* MODERATOR APPLICATION */
-
 async function loadApplication(){
-  const {data,error}=await db.from("moderator_applications")
-    .select("*").eq("applicant_id",user.id)
+  if(!user?.id)return;
+  const {data,error}=await db.from("moderator_applications").select("*").eq("applicant_id",user.id)
     .order("created_at",{ascending:false}).limit(1).maybeSingle();
-
-  if(error){
-    $("applicationStatus").textContent=error.message;
-    return;
-  }
-
-  $("applicationStatus").textContent=data
-    ?"Application status: "+data.status+" · "+new Date(data.created_at).toLocaleDateString()
-    :"You have not submitted an application yet.";
+  if(error){$("applicationStatus").textContent=error.message;return;}
+  $("applicationStatus").textContent=data?"Application status: "+data.status+" · "+new Date(data.created_at).toLocaleDateString():"You have not submitted an application yet.";
 }
-
 $("submitApplication").onclick=async()=>{
-  const experience=$("staffExperience").value.trim();
-  const availability=$("staffAvailability").value.trim();
-
-  if(!experience) return toast("Tell us about your experience first.");
-
-  const {data:existing,error:checkError}=await db.from("moderator_applications")
-    .select("id").eq("applicant_id",user.id).eq("status","pending").maybeSingle();
-
-  if(checkError) return toast(checkError.message);
-  if(existing) return toast("You already have a pending application.");
-
-  const {error}=await db.from("moderator_applications").insert({
-    applicant_id:user.id,experience,availability
-  });
-
-  if(error) return toast(error.message);
-
-  $("staffExperience").value="";
-  $("staffAvailability").value="";
-  toast("Application submitted.");
-  loadApplication();
+  if(!requireUser())return;
+  const experience=$("staffExperience").value.trim(),availability=$("staffAvailability").value.trim();
+  if(!experience)return toast("Tell us about your experience first.");
+  const button=$("submitApplication");button.disabled=true;
+  try{
+    const {data:existing,error:checkError}=await db.from("moderator_applications").select("id")
+      .eq("applicant_id",user.id).eq("status","pending").maybeSingle();
+    if(checkError)throw checkError;
+    if(existing)throw new Error("You already have a pending application.");
+    const {error}=await db.from("moderator_applications").insert({applicant_id:user.id,experience,availability});
+    if(error)throw error;
+    $("staffExperience").value="";$("staffAvailability").value="";
+    toast("Application submitted.");await loadApplication();
+  }catch(error){toast(error.message);}
+  finally{button.disabled=false;}
 };
 
 /* REFRESH ACTIVE CONVERSATION */
-
 setInterval(()=>{
-  if(activeConversation && $("messages").classList.contains("active")){
-    openConversation(activeConversation);
-  }
+  if(activeConversation&&$("messages").classList.contains("active"))openConversation(activeConversation);
 },12000);
 
-/* START */
+/* AUTH SESSION */
+db.auth.onAuthStateChange((event,session)=>{
+  if(event==="SIGNED_OUT"){location.href="index.html";return;}
+  if(event==="TOKEN_REFRESHED"&&session?.user)user=session.user;
+});
 
+/* START */
 init();
 </script>
 </body>
