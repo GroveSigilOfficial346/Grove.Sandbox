@@ -22,8 +22,10 @@
 
   function showError(message) {
     const status = $("#status");
-    status.textContent = message;
-    status.hidden = false;
+    if (status) {
+      status.textContent = message;
+      status.hidden = false;
+    }
   }
 
   function safeUrl(value) {
@@ -383,8 +385,6 @@
     let audioUrl = null;
     let canDownload = false;
 
-    // First use the URL saved by Profile Settings.
-    // This works even if the audio_tracks flag is missing or outdated.
     if (profile.profile_music_url) {
       audioUrl = await resolveMedia(profile.profile_music_url);
       canDownload = Boolean(
@@ -392,7 +392,6 @@
       );
     }
 
-    // If the saved URL could not be resolved, fall back to the selected track.
     if (!audioUrl && track?.storage_path) {
       const { data: privateData, error: privateError } = await client.storage
         .from(PRIVATE_BUCKET)
@@ -737,4 +736,90 @@
       let query = client
         .from("profiles")
         .select(
-          "id,username,display_name,bio,avatar_url,cover_url,location,website,pronouns,is_private,pr
+          "id,username,display_name,bio,avatar_url,cover_url,location,website,pronouns,is_private,profile_music_url,profile_music_title,profile_music_artist,profile_music_enabled,allow_music_downloads"
+        );
+
+      if (requestedId) {
+        query = query.eq("id", requestedId);
+      } else if (requestedUsername) {
+        query = query.ilike("username", requestedUsername.replace(/^@/, ""));
+      } else if (currentUser) {
+        query = query.eq("id", currentUser.id);
+      } else {
+        throw new Error(
+          "Profile not specified. Open a member profile from Grove or sign in to view your own."
+        );
+      }
+
+      const { data, error: profileError } = await query.maybeSingle();
+
+      if (profileError) throw profileError;
+      if (!data) throw new Error("This Grove profile could not be found.");
+
+      profile = data;
+      isOwner = Boolean(currentUser && currentUser.id === profile.id);
+
+      $("#profile-card").hidden = false;
+      $("#status").hidden = true;
+
+      $("#edit-profile-link").hidden = !isOwner;
+      $("#avatar-upload-button").hidden = !isOwner;
+      $("#cover-upload-button").hidden = !isOwner;
+
+      const canViewPrivate = isOwner || !profile.is_private;
+
+      $("#private-note").hidden = canViewPrivate;
+
+      if (!isOwner && currentUser) {
+        $("#follow-button").hidden = false;
+        $("#message-button").hidden = false;
+
+        $("#message-button").href =
+          "community.html?to=" +
+          encodeURIComponent(profile.id) +
+          "#messages";
+
+        await checkFollowState();
+      } else {
+        $("#follow-button").hidden = true;
+        $("#message-button").hidden = true;
+      }
+
+      await renderProfile(profile);
+
+      if (canViewPrivate) {
+        await Promise.allSettled([
+          loadMusic(),
+          loadPosts()
+        ]);
+      } else {
+        $("#music-section").hidden = true;
+        $("#posts-section").hidden = true;
+      }
+
+      if (!isOwner && !currentUser) {
+        $("#follow-button").hidden = true;
+        $("#message-button").hidden = true;
+      }
+
+      $("#follow-button").addEventListener("click", handleFollow);
+      bindImageButtons();
+
+    } catch (error) {
+      console.error("Grove profile initialization failed:", error);
+
+      showError(
+        error?.message ||
+        "The profile could not be loaded. Please refresh."
+      );
+
+      $("#profile-card").hidden = true;
+    }
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initialize, { once: true });
+  } else {
+    initialize();
+  }
+})();
