@@ -1,3 +1,4 @@
+```css
 :root {
   --night: #050019;
   --violet: #851eff;
@@ -20,10 +21,6 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
-  display: grid;
-  place-items: center;
-  overflow-x: hidden;
-  overflow-y: auto;
   color: var(--white);
   font-family: Arial, sans-serif;
   background: radial-gradient(
@@ -34,27 +31,56 @@ body {
   );
 }
 
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  opacity: .22;
-  background-image: radial-gradient(
-    circle, #8e65ff 1px, transparent 1.5px
-  );
-  background-size: 62px 62px;
-  mask-image: radial-gradient(
-    ellipse at center, black, transparent 75%
-  );
-}
+/* Homepage */
 
 .landing {
   position: relative;
   z-index: 1;
+  display: grid;
+  align-content: center;
+  justify-items: center;
   width: 100%;
+  min-height: 100vh;
   padding: 24px;
   text-align: center;
+  overflow: hidden;
+}
+
+.landing::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: .22;
+  background-image: radial-gradient(
+    circle,
+    #8e65ff 1px,
+    transparent 1.5px
+  );
+  background-size: 62px 62px;
+  mask-image: radial-gradient(
+    ellipse at center,
+    black,
+    transparent 75%
+  );
+}
+
+.landing h1 {
+  margin: 0;
+  font-size: clamp(38px, 9vw, 64px);
+  font-weight: 500;
+  letter-spacing: 12px;
+  text-indent: 12px;
+  background: linear-gradient(
+    90deg,
+    #a855f7,
+    var(--white),
+    var(--cyan)
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 #grove-logo {
@@ -102,26 +128,15 @@ body::before {
     drop-shadow(0 0 12px #05c9f455);
 }
 
-h1 {
-  margin: 0;
-  font-size: clamp(38px, 9vw, 64px);
-  font-weight: 500;
-  letter-spacing: 12px;
-  text-indent: 12px;
-  background: linear-gradient(
-    90deg, #a855f7, var(--white), var(--cyan)
-  );
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
 .divider {
   width: 90px;
   height: 2px;
   margin: 25px auto;
   background: linear-gradient(
-    90deg, var(--violet), var(--magenta), var(--cyan)
+    90deg,
+    var(--violet),
+    var(--magenta),
+    var(--cyan)
   );
   box-shadow: 0 0 14px #851eff66;
 }
@@ -156,8 +171,13 @@ h1 {
 }
 
 @keyframes breathe {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.035); }
+  0%, 100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.035);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -166,3 +186,4 @@ h1 {
     transition: none;
   }
 }
+```
