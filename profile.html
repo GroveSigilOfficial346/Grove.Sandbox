@@ -9,60 +9,489 @@
   <link rel="stylesheet" href="css/global.css">
 
   <style>
-    body{display:block;min-height:100vh;overflow-x:hidden;padding:24px 16px 60px;color:#f7f5ff}
-    .profile-app{width:min(100%,900px);margin:auto}
-    .topbar{display:flex;justify-content:space-between;align-items:center;gap:16px;margin-bottom:28px}
-    .brand{color:#f7f5ff;font-size:19px;letter-spacing:5px;text-decoration:none}
-    .top-actions,.profile-actions{display:flex;gap:10px;flex-wrap:wrap}
-    .top-actions a,.action-button,.upload-button{padding:10px 15px;border:1px solid #851eff66;border-radius:9px;color:#eee5ff;background:#100b25;text-decoration:none;font-size:13px;cursor:pointer}
-    .top-actions a:hover,.action-button:hover,.upload-button:hover{filter:brightness(1.2)}
-    .profile-card{overflow:hidden;border:1px solid #851eff55;border-radius:20px;background:#100b25;box-shadow:0 15px 55px #0006}
-    .cover-wrap{height:260px;position:relative;background:radial-gradient(ellipse at 50% 100%,#851eff55,transparent 65%),linear-gradient(120deg,#08051a,#171044,#08051a);background-position:center;background-size:cover}
-    .cover-upload{position:absolute;right:16px;bottom:16px}
-    .profile-content{position:relative;padding:0 32px 30px}
-    .avatar-row{display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-top:-66px;position:relative}
-    .avatar{width:132px;height:132px;display:grid;place-items:center;overflow:hidden;border:5px solid #100b25;border-radius:50%;background:linear-gradient(135deg,#851eff,#353bff);color:white;font-size:42px;font-weight:700}
-    .avatar img{width:100%;height:100%;object-fit:cover}
-    .avatar-upload{margin-bottom:8px}
-    .profile-heading{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;margin-top:15px}
-    .name{margin:0;color:#fff;font-size:clamp(25px,5vw,34px);overflow-wrap:anywhere}
-    .username{margin:5px 0 0;color:#b9a7df;font-size:14px}
-    .edit-profile-link{display:inline-block;padding:11px 17px;border:1px solid #851eff88;border-radius:9px;background:linear-gradient(110deg,#851eff,#5965ff);color:white;text-decoration:none;font-size:13px;font-weight:600}
-    .bio{max-width:650px;margin:23px 0 0;color:#e0d9f0;line-height:1.7;white-space:pre-wrap;overflow-wrap:anywhere}
-    .details{display:flex;flex-wrap:wrap;gap:18px;margin-top:18px;color:#a99bc9;font-size:13px}
-    .details a{color:#45e5ff;text-decoration:none;overflow-wrap:anywhere}
-    .section{margin-top:24px;padding:25px 28px;border:1px solid #851eff44;border-radius:16px;background:#100b25}
-    .section h2{margin:0 0 10px;color:#f7f5ff;font-size:19px}
-    .posts-list{display:grid;gap:16px}
-    .empty-state{padding:24px 10px;color:#a99bc9;text-align:center;line-height:1.7}
-    #status{margin:24px 0;color:#ff9caa;text-align:center;font-size:14px}
-    #action-status{min-height:20px;margin:12px 0 0;color:#45e5ff;font-size:13px}
-    .music-player{display:grid;gap:12px;margin-top:22px;padding:16px;border:1px solid #851eff44;border-radius:13px;background:#08051a}
-    .music-title{margin:0;color:#fff;font-weight:700}
-    .music-artist{margin:4px 0 0;color:#a99bc9;font-size:13px}
-    .music-player audio{width:100%}
-    .music-download{width:max-content;color:#45e5ff;font-size:13px}
-    .private-note{margin-top:12px;color:#b9a7df;font-size:13px}
-    [hidden]{display:none!important}
+    *{box-sizing:border-box}
+
+    body{
+      display:block;
+      min-height:100vh;
+      overflow-x:hidden;
+      padding:24px 16px 60px;
+      color:#f7f5ff;
+    }
+
+    .profile-app{
+      width:min(100%,900px);
+      margin:0 auto;
+    }
+
+    .topbar{
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:16px;
+      margin-bottom:24px;
+    }
+
+    .brand{
+      flex-shrink:0;
+      color:#f7f5ff;
+      font-size:19px;
+      letter-spacing:5px;
+      text-decoration:none;
+    }
+
+    .top-actions,.profile-actions{
+      display:flex;
+      align-items:center;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+
+    .top-actions a,.action-button,.upload-button{
+      display:inline-flex;
+      justify-content:center;
+      align-items:center;
+      min-height:42px;
+      padding:10px 15px;
+      border:1px solid #851eff66;
+      border-radius:9px;
+      color:#eee5ff;
+      background:#100b25;
+      text-decoration:none;
+      font-size:13px;
+      cursor:pointer;
+      transition:filter .2s,border-color .2s;
+    }
+
+    .top-actions a:hover,.action-button:hover,.upload-button:hover{
+      filter:brightness(1.2);
+      border-color:#b77aff;
+    }
+
+    button:focus-visible,a:focus-visible{
+      outline:2px solid #45e5ff;
+      outline-offset:3px;
+    }
+
+    .profile-card{
+      overflow:hidden;
+      border:1px solid #851eff55;
+      border-radius:20px;
+      background:#100b25;
+      box-shadow:0 15px 55px #0006;
+    }
+
+    .cover-wrap{
+      height:260px;
+      position:relative;
+      background:
+        radial-gradient(ellipse at 50% 100%,#851eff55,transparent 65%),
+        linear-gradient(120deg,#08051a,#171044,#08051a);
+      background-position:center;
+      background-size:cover;
+    }
+
+    .cover-upload{
+      position:absolute;
+      right:16px;
+      bottom:16px;
+      z-index:2;
+    }
+
+    .profile-content{
+      position:relative;
+      padding:0 32px 30px;
+    }
+
+    .avatar-row{
+      display:flex;
+      align-items:flex-end;
+      gap:12px;
+      flex-wrap:wrap;
+      margin-top:-66px;
+      position:relative;
+    }
+
+    .avatar{
+      width:132px;
+      height:132px;
+      flex-shrink:0;
+      display:grid;
+      place-items:center;
+      overflow:hidden;
+      border:5px solid #100b25;
+      border-radius:50%;
+      background:linear-gradient(135deg,#851eff,#353bff);
+      color:white;
+      font-size:42px;
+      font-weight:700;
+    }
+
+    .avatar img{
+      width:100%;
+      height:100%;
+      object-fit:cover;
+    }
+
+    .avatar-upload{
+      margin-bottom:8px;
+    }
+
+    .profile-heading{
+      display:flex;
+      justify-content:space-between;
+      align-items:flex-start;
+      gap:20px;
+      flex-wrap:wrap;
+      margin-top:15px;
+    }
+
+    .name{
+      margin:0;
+      color:#fff;
+      font-size:clamp(25px,5vw,34px);
+      overflow-wrap:anywhere;
+    }
+
+    .username{
+      margin:5px 0 0;
+      color:#b9a7df;
+      font-size:14px;
+      overflow-wrap:anywhere;
+    }
+
+    .edit-profile-link{
+      display:inline-flex;
+      justify-content:center;
+      align-items:center;
+      min-height:42px;
+      padding:11px 17px;
+      border:1px solid #851eff88;
+      border-radius:9px;
+      background:linear-gradient(110deg,#851eff,#5965ff);
+      color:white;
+      text-decoration:none;
+      font-size:13px;
+      font-weight:600;
+    }
+
+    .bio{
+      max-width:650px;
+      margin:23px 0 0;
+      color:#e0d9f0;
+      line-height:1.7;
+      white-space:pre-wrap;
+      overflow-wrap:anywhere;
+    }
+
+    .details{
+      display:flex;
+      flex-wrap:wrap;
+      gap:12px 18px;
+      margin-top:18px;
+      color:#a99bc9;
+      font-size:13px;
+    }
+
+    .details a{
+      color:#45e5ff;
+      text-decoration:none;
+      overflow-wrap:anywhere;
+    }
+
+    .section{
+      margin-top:22px;
+      padding:25px 28px;
+      border:1px solid #851eff44;
+      border-radius:16px;
+      background:#100b25;
+    }
+
+    .section h2{
+      margin:0 0 14px;
+      color:#f7f5ff;
+      font-size:19px;
+    }
+
+    .posts-list{
+      display:grid;
+      gap:16px;
+      min-width:0;
+    }
+
+    .posts-list>*{
+      min-width:0;
+      max-width:100%;
+    }
+
+    .posts-list img,.posts-list video{
+      max-width:100%;
+      height:auto;
+    }
+
+    .empty-state{
+      padding:24px 10px;
+      color:#a99bc9;
+      text-align:center;
+      line-height:1.7;
+    }
+
+    #status{
+      margin:24px 0;
+      color:#ff9caa;
+      text-align:center;
+      font-size:14px;
+    }
+
+    #action-status{
+      min-height:20px;
+      margin:12px 0 0;
+      color:#45e5ff;
+      font-size:13px;
+      overflow-wrap:anywhere;
+    }
+
+    .music-player{
+      display:grid;
+      gap:12px;
+      margin-top:22px;
+      padding:16px;
+      border:1px solid #851eff44;
+      border-radius:13px;
+      background:#08051a;
+      min-width:0;
+    }
+
+    .music-title{
+      margin:0;
+      color:#fff;
+      font-weight:700;
+      overflow-wrap:anywhere;
+    }
+
+    .music-artist{
+      margin:4px 0 0;
+      color:#a99bc9;
+      font-size:13px;
+    }
+
+    .music-player audio{
+      width:100%;
+      max-width:100%;
+    }
+
+    .music-download{
+      width:max-content;
+      max-width:100%;
+      color:#45e5ff;
+      font-size:13px;
+      overflow-wrap:anywhere;
+    }
+
+    .private-note{
+      margin-top:12px;
+      color:#b9a7df;
+      font-size:13px;
+      line-height:1.6;
+    }
+
+    [hidden]{
+      display:none!important;
+    }
+
     @media(max-width:600px){
-      body{padding:18px 12px 40px}
-      .cover-wrap{height:190px}
-      .profile-content{padding:0 20px 25px}
-      .avatar{width:108px;height:108px}
-      .avatar-row{margin-top:-54px}
-      .section{padding:20px}
-      .topbar{align-items:flex-start}
+      body{
+        padding:14px 10px 32px;
+      }
+
+      .profile-app{
+        width:100%;
+      }
+
+      .topbar{
+        display:grid;
+        grid-template-columns:1fr;
+        gap:13px;
+        margin-bottom:18px;
+      }
+
+      .brand{
+        font-size:17px;
+        letter-spacing:4px;
+      }
+
+      .top-actions{
+        display:grid;
+        grid-template-columns:repeat(3,minmax(0,1fr));
+        gap:7px;
+        width:100%;
+      }
+
+      .top-actions a{
+        min-width:0;
+        min-height:42px;
+        padding:9px 5px;
+        font-size:12px;
+        text-align:center;
+        white-space:nowrap;
+      }
+
+      .profile-card{
+        border-radius:15px;
+      }
+
+      .cover-wrap{
+        height:175px;
+      }
+
+      .cover-upload{
+        right:10px;
+        bottom:10px;
+        min-height:40px;
+        padding:9px 11px;
+        font-size:12px;
+      }
+
+      .profile-content{
+        padding:0 15px 20px;
+      }
+
+      .avatar-row{
+        gap:9px;
+        margin-top:-45px;
+      }
+
+      .avatar{
+        width:90px;
+        height:90px;
+        border-width:4px;
+        font-size:30px;
+      }
+
+      .avatar-upload{
+        min-height:40px;
+        margin-bottom:5px;
+        padding:9px 11px;
+        font-size:12px;
+      }
+
+      .profile-heading{
+        display:grid;
+        grid-template-columns:minmax(0,1fr);
+        gap:14px;
+        margin-top:14px;
+      }
+
+      .name{
+        font-size:26px;
+        line-height:1.2;
+      }
+
+      .username{
+        font-size:13px;
+      }
+
+      .profile-actions{
+        display:grid;
+        grid-template-columns:repeat(2,minmax(0,1fr));
+        gap:8px;
+        width:100%;
+      }
+
+      .profile-actions>*{
+        width:100%;
+        min-width:0;
+        min-height:43px;
+        padding:10px 8px;
+        text-align:center;
+        font-size:12px;
+      }
+
+      .bio{
+        margin-top:17px;
+        font-size:14px;
+        line-height:1.65;
+      }
+
+      .details{
+        gap:10px 14px;
+        margin-top:14px;
+        font-size:12px;
+      }
+
+      .section{
+        margin-top:15px;
+        padding:17px 14px;
+        border-radius:13px;
+      }
+
+      .section h2{
+        margin-bottom:12px;
+        font-size:17px;
+      }
+
+      .posts-list{
+        gap:13px;
+      }
+
+      .empty-state{
+        padding:20px 5px;
+        font-size:13px;
+      }
+
+      .music-player{
+        padding:13px;
+      }
+
+      #status{
+        margin:18px 0;
+        font-size:13px;
+      }
+    }
+
+    @media(max-width:360px){
+      .top-actions{
+        gap:5px;
+      }
+
+      .top-actions a{
+        font-size:11px;
+        padding:8px 3px;
+      }
+
+      .profile-content{
+        padding-right:12px;
+        padding-left:12px;
+      }
+
+      .avatar{
+        width:82px;
+        height:82px;
+      }
+
+      .avatar-row{
+        margin-top:-41px;
+      }
+
+      .profile-actions{
+        grid-template-columns:1fr;
+      }
+
+      .cover-wrap{
+        height:155px;
+      }
     }
   </style>
 
-  <!-- Load Supabase first, then the profile script. -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
   <script src="js/profile-view.js?v=20261031" defer></script>
 </head>
+
 <body>
   <main class="profile-app">
     <header class="topbar">
       <a class="brand" href="index.html" aria-label="Grove home">GROVE</a>
+
       <nav class="top-actions" aria-label="Main navigation">
         <a href="index.html">Home</a>
         <a href="community.html">Community</a>
@@ -74,7 +503,12 @@
 
     <section class="profile-card" id="profile-card" aria-label="Member profile" hidden>
       <div class="cover-wrap" id="cover">
-        <button class="upload-button cover-upload" id="cover-upload-button" type="button" hidden>
+        <button
+          class="upload-button cover-upload"
+          id="cover-upload-button"
+          type="button"
+          hidden
+        >
           Change cover photo
         </button>
         <input id="cover-file" type="file" accept="image/*" hidden>
@@ -83,9 +517,16 @@
       <div class="profile-content">
         <div class="avatar-row">
           <div class="avatar" id="avatar"></div>
-          <button class="upload-button avatar-upload" id="avatar-upload-button" type="button" hidden>
+
+          <button
+            class="upload-button avatar-upload"
+            id="avatar-upload-button"
+            type="button"
+            hidden
+          >
             Change profile photo
           </button>
+
           <input id="avatar-file" type="file" accept="image/*" hidden>
         </div>
 
@@ -94,16 +535,38 @@
             <h1 class="name" id="display-name"></h1>
             <p class="username" id="username"></p>
           </div>
+
           <div class="profile-actions">
-            <a class="edit-profile-link" id="edit-profile-link" href="edit-profile.html" hidden>Edit Profile</a>
-            <button class="action-button" id="follow-button" type="button" hidden>Follow</button>
-            <a class="action-button" id="message-button" href="community.html#messages" hidden>Message</a>
+            <a
+              class="edit-profile-link"
+              id="edit-profile-link"
+              href="edit-profile.html"
+              hidden
+            >Edit Profile</a>
+
+            <button
+              class="action-button"
+              id="follow-button"
+              type="button"
+              hidden
+            >Follow</button>
+
+            <a
+              class="action-button"
+              id="message-button"
+              href="community.html#messages"
+              hidden
+            >Message</a>
           </div>
         </div>
 
         <p class="bio" id="bio" hidden></p>
         <div class="details" id="details"></div>
-        <p class="private-note" id="private-note" hidden>This is a private account. Follow and be accepted to view members-only content.</p>
+
+        <p class="private-note" id="private-note" hidden>
+          This is a private account. Follow and be accepted to view members-only content.
+        </p>
+
         <p id="action-status" role="status" aria-live="polite"></p>
       </div>
     </section>
@@ -113,10 +576,18 @@
       <div id="music-content"></div>
     </section>
 
-    <section class="section" id="posts-section" aria-labelledby="posts-heading" hidden>
+    <section
+      class="section"
+      id="posts-section"
+      aria-labelledby="posts-heading"
+      hidden
+    >
       <h2 id="posts-heading">Posts</h2>
+
       <div class="posts-list" id="posts-list">
-        <div class="empty-state" id="posts-empty">This member hasn't posted anything yet.</div>
+        <div class="empty-state" id="posts-empty">
+          This member hasn't posted anything yet.
+        </div>
       </div>
     </section>
   </main>
