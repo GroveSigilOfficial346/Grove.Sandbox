@@ -41,7 +41,9 @@
         });
 
       if (error) throw error;
-      if (!data.user) throw new Error("No authenticated user was returned.");
+      if (!data.user) {
+        throw new Error("No authenticated user was returned.");
+      }
 
       const { data: profile, error: profileError } =
         await window.groveClient
@@ -55,14 +57,19 @@
       showMessage("Signed in. Opening Grove...");
 
       window.location.assign(
-        profile?.username ? "user-dashboard.html" : "complete-profile.html"
+        profile?.username
+          ? "user-dashboard.html"
+          : "complete-profile.html"
       );
+
     } catch (error) {
       console.error("Grove login failed:", error);
+
       showMessage(
         error.message || "Login failed. Check your credentials.",
         true
       );
+
     } finally {
       button.disabled = false;
     }
