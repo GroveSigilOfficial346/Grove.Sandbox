@@ -3,26 +3,23 @@ import { supabase } from "./supabase.js";
 (() => {
   "use strict";
 
-  const loginForm = document.getElementById("login-form");
-  const registerForm = document.getElementById("register-form");
+  const $ = (id) => document.getElementById(id);
 
-  const loginPanel = document.getElementById("login-panel");
-  const registerPanel = document.getElementById("register-panel");
+  const loginForm = $("login-form");
+  const registerForm = $("register-form");
+  const loginPanel = $("login-panel");
+  const registerPanel = $("register-panel");
+  const message = $("auth-message");
 
-  const showRegister = document.getElementById("show-register");
-  const showLogin = document.getElementById("show-login");
-  const message = document.getElementById("auth-message");
+  const showRegister = $("show-register");
+  const showLogin = $("show-login");
 
   if (
-    !loginForm ||
-    !registerForm ||
-    !loginPanel ||
-    !registerPanel ||
-    !showRegister ||
-    !showLogin ||
-    !message
+    !loginForm || !registerForm ||
+    !loginPanel || !registerPanel ||
+    !message || !showRegister || !showLogin
   ) {
-    console.error("Grove login: required HTML elements are missing.");
+    console.error("Grove: Account page elements are missing.");
     return;
   }
 
@@ -34,9 +31,20 @@ import { supabase } from "./supabase.js";
   function setLoading(form, loading) {
     const button = form.querySelector('button[type="submit"]');
 
-    if (button) {
-      button.disabled = loading;
-    }
+    if (button) button.disabled = loading;
+  }
+
+  function validUsername(username) {
+    return /^[a-z0-9_]{3,30}$/.test(username);
+  }
+
+  function validPassword(password) {
+    return (
+      password.length >= 8 &&
+      /[a-z]/.test(password) &&
+      /[A-Z]/.test(password) &&
+      /[0-9]/.test(password)
+    );
   }
 
   showRegister.addEventListener("click", () => {
@@ -55,8 +63,8 @@ import { supabase } from "./supabase.js";
   loginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    const email = document.getElementById("login-email").value.trim();
-    const password = document.getElementById("login-password").value;
+    const email = $("login-email").value.trim();
+    const password = $("login-password").value;
 
     setLoading(loginForm, true);
     showMessage("Signing in...");
@@ -70,13 +78,12 @@ import { supabase } from "./supabase.js";
       if (error) throw error;
       if (!data.user) throw new Error("Authentication failed.");
 
-      showMessage("Signed in. Opening Grove...");
-      window.location.assign("/profile.html");
+      showMessage("Welcome back. Opening Grove...");
+      window.location.replace("/profile.html");
 
     } catch (error) {
-      console.error("Grove login failed:", error);
-      showMessage(error.message || "Login failed.", true);
-
+      console.error("Grove login:", error);
+      showMessage(error.message || "Unable to sign in.", true);
     } finally {
       setLoading(loginForm, false);
     }
@@ -86,30 +93,38 @@ import { supabase } from "./supabase.js";
   registerForm.addEventListener("submit", async (event) => {
     event.preventDefault();
 
-    const email = document.getElementById("register-email").value.trim();
-    const password = document.getElementById("register-password").value;
+    const username = $("register-username").value.trim().toLowerCase();
+    const email = $("register-email").value.trim();
+    const password = $("register-password").value;
 
-    if (
-      password.length < 8 ||
-      !/[a-z]/.test(password) ||
-      !/[A-Z]/.test(password) ||
-      !/[0-9]/.test(password)
-    ) {
+    if (!validUsername(username)) {
       showMessage(
-        "Use at least 8 characters, including uppercase, lowercase, and a number.",
+        "Username must be 3–30 characters using lowercase letters, numbers, or underscores.",
+        true
+      );
+      return;
+    }
+
+    if (!validPassword(password)) {
+      showMessage(
+        "Password needs at least 8 characters, including uppercase, lowercase, and a number.",
         true
       );
       return;
     }
 
     setLoading(registerForm, true);
-    showMessage("Creating your account...");
+    showMessage("Creating your Grove account...");
 
     try {
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          data: {
+            username,
+            display_name: username
+          },
           emailRedirectTo: `${window.location.origin}/profile.html`
         }
       });
@@ -118,24 +133,38 @@ import { supabase } from "./supabase.js";
 
       if (data.session) {
         showMessage("Account created. Opening Grove...");
-        window.location.assign("/profile.html");
+        window.location.replace("/profile.html");
         return;
       }
 
       showMessage(
-        "Account created. Check your email to verify your address before logging in."
+        "Account created. Check your email to verify your address. You can log in after confirmation."
       );
 
       registerForm.reset();
 
     } catch (error) {
-      console.error("Grove registration failed:", error);
-      showMessage(error.message || "Registration failed.", true);
-
+      console.error("Grove registration:", error);
+      showMessage(error.message || "Unable to create your account.", true);
     } finally {
       setLoading(registerForm, false);
     }
   });
+
+  // Existing authenticated session
+  (async () => {
+    try {
+      const { data, error } = await supabase.auth.getSession();
+
+      if (error) throw error;
+
+      if (data.session) {
+        window.location.replace("/profile.html");
+      }
+    } catch (error) {
+      console.error("Grove session check:", error);
+    }
+  })();
 
   console.info("Grove account access initialized.");
 })();
