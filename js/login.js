@@ -1,81 +1,82 @@
-/* =========================================
-   GROVE — LOGIN PAGE CONTROLS
-   File: js/login.js
-========================================= */
+console.log("Grove login controller loaded");
 
-import "./auth.js";
+const loginButton = document.getElementById("login");
+const emailInput = document.getElementById("email");
+const passwordInput = document.getElementById("password");
+const message = document.getElementById("message");
 
-const loginPanel = document.getElementById("login-panel");
-const registerPanel = document.getElementById("register-panel");
-const message = document.getElementById("auth-message");
-
-const loginForm = document.getElementById("login-form");
-const registerForm = document.getElementById("register-form");
-
-function showLogin() {
-  loginPanel.hidden = false;
-  registerPanel.hidden = true;
-  message.textContent = "";
+function showMessage(text, color = "#8f9893") {
+  message.textContent = text;
+  message.style.color = color;
 }
 
-function showRegister() {
-  loginPanel.hidden = true;
-  registerPanel.hidden = false;
-  message.textContent = "";
+async function redirectAfterLogin(user) {
+  const { data: profile, error } =
+    await window.groveClient
+      .from("profiles")
+      .select("id, username")
+      .eq("id", user.id)
+      .maybeSingle();
+
+  if (error) throw error;
+
+  window.location.replace(
+    profile?.username
+      ? "user-dashboard.html"
+      : "complete-profile.html"
+  );
 }
 
-// HOMEPAGE JOIN BUTTON SUPPORT
-if (window.location.hash === "#register") {
-  showRegister();
-} else {
-  showLogin();
-}
+loginButton.addEventListener("click", async () => {
+  if (!window.groveClient) {
+    showMessage(
+      "Grove could not connect to its database.",
+      "#ff7777"
+    );
+    return;
+  }
 
-// PANEL SWITCHING
-document
-  .getElementById("show-register")
-  .addEventListener("click", showRegister);
+  const email = emailInput.value.trim();
+  const password = passwordInput.value;
 
-document
-  .getElementById("show-login")
-  .addEventListener("click", showLogin);
+  if (!email || !password) {
+    showMessage("Enter your email and password.", "#ff7777");
+    return;
+  }
 
-// LOGIN SUBMISSION
-loginForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-
-  const email = document.getElementById("login-email").value;
-  const password = document.getElementById("login-password").value;
-  const button = loginForm.querySelector("button");
-
-  button.disabled = true;
-  button.textContent = "Signing In...";
+  loginButton.disabled = true;
+  showMessage("Signing in...");
 
   try {
-    await window.GroveAuth.login(email, password);
-  } finally {
-    button.disabled = false;
-    button.textContent = "Log In";
+    const { data, error } =
+      await window.groveClient.auth.signInWithPassword({
+        email,
+        password
+      });
+
+    if (error) throw error;
+    if (!data.user) {
+      throw new Error("Supabase did not return a user.");
+    }
+
+    showMessage("Signed in. Loading your profile...");
+
+    await redirectAfterLogin(data.user);
+
+  } catch (error) {
+    console.error("Grove login:", error);
+
+    showMessage(
+      error.message || "Unable to sign in.",
+      "#ff7777"
+    );
+
+    loginButton.disabled = false;
   }
 });
 
-// REGISTRATION SUBMISSION
-registerForm.addEventListener("submit", async (event) => {
-  event.preventDefault();
-
-  const email = document.getElementById("register-email").value;
-  const password = document.getElementById("register-password").value;
-  const button = registerForm.querySelector("button");
-
-  button.disabled = true;
-  button.textContent = "Creating Account...";
-
-  try {
-    await window.GroveAuth.register(email, password);
-  } finally {
-    button.disabled = false;
-    button.textContent = "Join Grove";
+passwordInput.addEventListener("keydown", event => {
+  if (event.key === "Enter") {
+    loginButton.click();
   }
 });
-
-console.log("Grove: Login page initialized.");
