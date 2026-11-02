@@ -4,16 +4,20 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#050019">
+  <meta name="description" content="Customize your Grove profile.">
   <title>Edit Profile | Grove</title>
   <link rel="stylesheet" href="css/profile.css">
+  <script type="module" src="js/edit-profile.js"></script>
 </head>
 <body>
+
   <header class="site-header">
     <a class="brand" href="/">GROVE</a>
-    <nav>
+    <nav aria-label="Main navigation">
       <a href="/">Home</a>
       <a href="/community.html">Community</a>
       <a href="/profile.html">Profile</a>
+      <a href="/messages.html">Messages</a>
     </nav>
   </header>
 
@@ -26,10 +30,18 @@
         <h2>Profile details</h2>
 
         <label for="edit-username">Username</label>
-        <input id="edit-username" name="username" type="text"
-          minlength="3" maxlength="24" autocomplete="username"
-          placeholder="your_username" required>
-        <p class="field-hint">3–24 characters: letters, numbers, underscores.</p>
+        <input
+          id="edit-username"
+          name="username"
+          type="text"
+          minlength="3"
+          maxlength="30"
+          pattern="[a-zA-Z0-9_]+"
+          autocomplete="username"
+          placeholder="your_username"
+          required
+        >
+        <p class="field-hint">3–30 characters: letters, numbers, underscores.</p>
 
         <label for="edit-display-name">Display name</label>
         <input id="edit-display-name" name="display_name"
@@ -118,13 +130,14 @@
 
         <label for="edit-background-file">Upload profile background</label>
         <input id="edit-background-file" type="file" accept="image/*">
-        <p class="field-hint">Image limit: 5 MB. Uploading a new background replaces your previous background setting.</p>
+        <p class="field-hint">Image limit: 5 MB.</p>
 
         <div id="background-preview" class="background-preview">
           Background preview
         </div>
 
-        <p id="edit-status" class="status-message" role="status" aria-live="polite"></p>
+        <p id="edit-status" class="status-message"
+          role="status" aria-live="polite"></p>
 
         <div class="profile-actions">
           <button id="save-profile" class="button primary" type="submit">
@@ -136,6 +149,5 @@
     </section>
   </main>
 
-  <script type="module" src="js/edit-profile.js"></script>
 </body>
 </html>
