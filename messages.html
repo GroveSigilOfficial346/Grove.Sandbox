@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#050019">
+
+  <title>Messages | Grove</title>
+
+  <link rel="stylesheet" href="css/messages.css">
+
+  <script
+    type="module"
+    src="js/messages.js">
+  </script>
+</head>
+
+<body>
+  <main class="messages-app">
+
+    <header class="messages-header">
+      <a href="/" class="brand">GROVE</a>
+
+      <h1>Messages</h1>
+
+      <a href="/profile.html">My profile</a>
+    </header>
+
+    <p id="messages-status" role="status"></p>
+
+    <section class="messages-layout">
+
+      <aside class="conversation-sidebar">
+        <h2>Conversations</h2>
+
+        <div id="conversation-list" aria-live="polite">
+          <p>Loading conversations...</p>
+        </div>
+      </aside>
+
+      <section class="chat-panel">
+
+        <div class="chat-heading">
+          <h2 id="chat-title">
+            Choose a conversation
+          </h2>
+
+          <span id="chat-subtitle"></span>
+        </div>
+
+        <div
+          id="message-list"
+          class="message-list"
+          aria-live="polite">
+
+          <p class="empty-chat">
+            Your conversations will appear here.
+          </p>
+
+        </div>
+
+        <form id="message-form" class="message-form">
+
+          <label class="sr-only" for="message-input">
+            Write a message
+          </label>
+
+          <textarea
+            id="message-input"
+            maxlength="5000"
+            rows="2"
+            placeholder="Write a message..."
+            required>
+          </textarea>
+
+          <button
+            type="submit"
+            id="send-message">
+            Send
+          </button>
+
+        </form>
+
+      </section>
+    </section>
+  </main>
+</body>
+</html>
