@@ -10,14 +10,7 @@ const SUPABASE_URL =
   "https://fpkrvgcpbnrusbfmhinj.supabase.co";
 
 const SUPABASE_ANON_KEY =
-  "PASTE_YOUR_SUPABASE_ANON_KEY_HERE";
-
-if (
-  !SUPABASE_ANON_KEY ||
-  SUPABASE_ANON_KEY === "PASTE_YOUR_SUPABASE_ANON_KEY_HERE"
-) {
-  throw new Error("Grove: Supabase public key is missing.");
-}
+  "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
 
 window.supabaseClient = createClient(
   SUPABASE_URL,
