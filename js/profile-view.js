@@ -2,16 +2,11 @@
   "use strict";
 
   const SUPABASE_URL = "https://wmkujovlsfvahycjcmkj.supabase.co";
-
   const SUPABASE_ANON_KEY =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indta3Vqb3Zsc2Z2YWh5Y2pjbWtqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1OTg2MDEsImV4cCI6MjEwODE3NDYwMX0.YgR5GG_RJWgWjczh3J4TKoTTpT4ZzRuomPsBmuakY8k";
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indta3Vqb3Zsc2Z2YWh5Y2pjbWtqIiwicm9sZSI6ImFub24iLCJpYXQiMTc5MjU5ODYwMSwiZXhwIjoyMTA4MTc0NjAxfQ.YgR5GG_RJWgWjczh3J4TKoTTpT4ZzRuomPsBmuakY8k";
 
   const MEDIA_BUCKET = "grove-media";
-
   const $ = (selector) => document.querySelector(selector);
-
-  const status = $("#status");
-  const actionStatus = $("#action-status");
 
   let client;
   let currentUser = null;
@@ -20,42 +15,35 @@
   let isFollowing = false;
 
   function setStatus(message, error = false) {
-    if (!status) return;
-    status.textContent = message;
-    status.style.color = error ? "#ff8585" : "";
+    const element = $("#status");
+    if (!element) return;
+    element.textContent = message;
+    element.style.color = error ? "#ff8585" : "";
   }
 
   function setActionStatus(message, error = false) {
-    if (!actionStatus) return;
-    actionStatus.textContent = message;
-    actionStatus.style.color = error ? "#ff8585" : "#05c9f4";
+    const element = $("#action-status");
+    if (!element) return;
+    element.textContent = message;
+    element.style.color = error ? "#ff8585" : "#05c9f4";
   }
 
-  function escapeHTML(value) {
-    return String(value ?? "").replace(/[&<>"']/g, (character) => ({
-      "&": "&amp;",
-      "<": "&lt;",
-      ">": "&gt;",
-      '"': "&quot;",
-      "'": "&#039;"
-    })[character]);
+  function getInitial(value) {
+    return String(value || "G").trim().charAt(0).toUpperCase();
   }
 
-  function getInitial(name) {
-    return String(name || "G").trim().charAt(0).toUpperCase();
-  }
-
-  function setImage(element, url, fallbackText) {
+  function setImage(element, url, fallbackText = "") {
     if (!element) return;
 
-    if (url) {
-      element.style.backgroundImage = `url("${url.replace(/["\\]/g, "")}")`;
-      element.textContent = "";
-      element.style.backgroundSize = "cover";
-      element.style.backgroundPosition = "center";
-    } else {
-      element.style.backgroundImage = "none";
-      element.textContent = fallbackText || "G";
+    element.style.backgroundImage = url
+      ? `url("${url.replace(/["\\]/g, "")}")`
+      : "none";
+
+    element.style.backgroundSize = "cover";
+    element.style.backgroundPosition = "center";
+
+    if (element.id === "avatar") {
+      element.textContent = url ? "" : fallbackText;
     }
   }
 
@@ -77,7 +65,7 @@
 
     let query = client
       .from("profiles")
-      .select("id, username, display_name, bio, avatar_url")
+      .select("id, username, display_name, bio, avatar_url, cover_url")
       .limit(1);
 
     if (requestedId) {
@@ -108,6 +96,7 @@
     isOwner = Boolean(currentUser && currentUser.id === profile.id);
 
     renderProfile();
+    connectButtons();
     await loadFollowState();
     updateButtons();
 
@@ -118,25 +107,18 @@
     if (!profile) return;
 
     const displayName =
-      profile.display_name ||
-      profile.username ||
-      "Grove Member";
-
-    const username = profile.username
-      ? `@${profile.username}`
-      : "";
+      profile.display_name || profile.username || "Grove Member";
 
     const nameElement = $("#display-name");
     const usernameElement = $("#username");
     const bioElement = $("#bio");
-    const avatarElement = $("#avatar");
 
-    if (nameElement) {
-      nameElement.textContent = displayName;
-    }
+    if (nameElement) nameElement.textContent = displayName;
 
     if (usernameElement) {
-      usernameElement.textContent = username;
+      usernameElement.textContent = profile.username
+        ? `@${profile.username}`
+        : "";
     }
 
     if (bioElement) {
@@ -144,29 +126,18 @@
     }
 
     setImage(
-      avatarElement,
+      $("#avatar"),
       publicMediaUrl(profile.avatar_url),
       getInitial(displayName)
     );
 
+    setImage($("#cover"), publicMediaUrl(profile.cover_url));
+
     const editButton = $("#edit-profile-button");
     const uploadActions = $("#profile-upload-actions");
 
-    if (editButton) {
-      editButton.hidden = !isOwner;
-      editButton.addEventListener("click", () => {
-        window.location.href = "/edit-profile.html";
-      });
-    }
-
-    if (uploadActions) {
-      uploadActions.hidden = !isOwner;
-    }
-
-    const details = $("#details");
-    if (details) {
-      details.textContent = "";
-    }
+    if (editButton) editButton.hidden = !isOwner;
+    if (uploadActions) uploadActions.hidden = !isOwner;
 
     document.title = `${displayName} | Grove`;
   }
@@ -219,7 +190,6 @@
           .eq("following_id", profile.id);
 
         if (error) throw error;
-
         isFollowing = false;
       } else {
         const { error } = await client
@@ -230,7 +200,6 @@
           });
 
         if (error) throw error;
-
         isFollowing = true;
       }
 
@@ -293,14 +262,14 @@
       }
 
       if (column === "cover_url") {
-        setImage($("#cover"), publicMediaUrl(path), "");
+        setImage($("#cover"), publicMediaUrl(path));
       }
 
       setActionStatus("Image updated successfully.");
     } catch (error) {
       console.error("Image upload failed:", error);
       setActionStatus(
-        "Upload failed. Check the storage bucket and its permissions.",
+        "Upload failed. Check the grove-media bucket and its permissions.",
         true
       );
     }
@@ -310,23 +279,44 @@
     const button = $(buttonSelector);
     const input = $(inputSelector);
 
-    if (!button || !input) return;
-
-    button.hidden = !isOwner;
+    if (!button || !input || !isOwner) return;
 
     button.addEventListener("click", () => input.click());
 
     input.addEventListener("change", async () => {
       const file = input.files?.[0];
+
       if (file) {
         await uploadProfileImage(file, column, prefix);
       }
+
       input.value = "";
     });
   }
 
   function connectButtons() {
-    $("#follow-button")?.addEventListener("click", toggleFollow);
+    const followButton = $("#follow-button");
+    const editButton = $("#edit-profile-button");
+    const messageButton = $("#message-button");
+
+    if (followButton && !followButton.dataset.connected) {
+      followButton.dataset.connected = "true";
+      followButton.addEventListener("click", toggleFollow);
+    }
+
+    if (editButton && !editButton.dataset.connected) {
+      editButton.dataset.connected = "true";
+      editButton.addEventListener("click", () => {
+        window.location.href = "/edit-profile.html";
+      });
+    }
+
+    if (messageButton && !messageButton.dataset.connected) {
+      messageButton.dataset.connected = "true";
+      messageButton.addEventListener("click", () => {
+        setActionStatus("Messaging is not connected yet.");
+      });
+    }
 
     connectUpload(
       "#avatar-upload-button",
@@ -338,16 +328,9 @@
     connectUpload(
       "#cover-upload-button",
       "#cover-file",
+      "cover_url",
       "cover"
     );
-
-    const messageButton = $("#message-button");
-
-    if (messageButton) {
-      messageButton.addEventListener("click", () => {
-        setActionStatus("Messaging will be connected in the messaging build.");
-      });
-    }
   }
 
   async function initialize() {
@@ -363,12 +346,9 @@
       );
 
       const { data, error } = await client.auth.getSession();
-
       if (error) throw error;
 
       currentUser = data.session?.user || null;
-
-      connectButtons();
 
       await loadProfile();
     } catch (error) {
