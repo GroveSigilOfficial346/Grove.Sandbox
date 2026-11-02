@@ -1,4 +1,3 @@
-
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 const SUPABASE_URL =
@@ -19,7 +18,7 @@ export const supabase = createClient(
   }
 );
 
-// Compatibility with older Grove scripts.
+// Temporary compatibility for older scripts.
 window.groveClient = supabase;
 
 console.info("Grove.Sandbox connected.");
