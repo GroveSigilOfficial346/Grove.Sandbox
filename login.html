@@ -3,8 +3,11 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#050019">
   <title>Grove — Account Access</title>
+
   <link rel="stylesheet" href="css/auth.css">
+  <script type="module" src="js/login.js"></script>
 </head>
 
 <body>
@@ -13,13 +16,14 @@
 
   <img
     src="assets/neural-tree.svg"
-    alt="Grove"
+    alt="Grove neural tree"
     class="auth-logo"
   >
 
   <h1>GROVE</h1>
   <p class="subtitle">A WORLD CONNECTED</p>
 
+  <!-- LOGIN -->
   <section id="login-panel">
     <h2>Welcome Back</h2>
 
@@ -51,6 +55,7 @@
     </p>
   </section>
 
+  <!-- REGISTRATION -->
   <section id="register-panel" hidden>
     <h2>Create Your Account</h2>
 
@@ -88,44 +93,6 @@
   <a href="/" class="back-link">Return Home</a>
 
 </main>
-
-<script type="module">
-  import "./js/auth.js";
-
-  const loginPanel = document.getElementById("login-panel");
-  const registerPanel = document.getElementById("register-panel");
-  const message = document.getElementById("auth-message");
-
-  document.getElementById("show-register").addEventListener("click", () => {
-    loginPanel.hidden = true;
-    registerPanel.hidden = false;
-    message.textContent = "";
-  });
-
-  document.getElementById("show-login").addEventListener("click", () => {
-    registerPanel.hidden = true;
-    loginPanel.hidden = false;
-    message.textContent = "";
-  });
-
-  document.getElementById("login-form").addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    const email = document.getElementById("login-email").value;
-    const password = document.getElementById("login-password").value;
-
-    await window.GroveAuth.login(email, password);
-  });
-
-  document.getElementById("register-form").addEventListener("submit", async (event) => {
-    event.preventDefault();
-
-    const email = document.getElementById("register-email").value;
-    const password = document.getElementById("register-password").value;
-
-    await window.GroveAuth.register(email, password);
-  });
-</script>
 
 </body>
 </html>
