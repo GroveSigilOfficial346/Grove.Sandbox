@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#050019">
+  <title>Edit Profile | Grove</title>
+  <link rel="stylesheet" href="css/profile.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="/">GROVE</a>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/community.html">Community</a>
+      <a href="/profile.html">Profile</a>
+    </nav>
+  </header>
+
+  <main class="page-container edit-container">
+    <section class="content-section">
+      <h1>Edit your profile</h1>
+      <p class="muted">Update how other members see you on Grove.</p>
+
+      <form id="edit-profile-form" class="profile-form">
+        <label for="edit-username">Username</label>
+        <input
+          id="edit-username"
+          name="username"
+          type="text"
+          minlength="3"
+          maxlength="24"
+          autocomplete="username"
+          placeholder="your_username"
+          required
+        >
+        <p class="field-hint">3–24 characters. Letters, numbers, and underscores only.</p>
+
+        <label for="edit-display-name">Display name</label>
+        <input
+          id="edit-display-name"
+          name="display_name"
+          type="text"
+          maxlength="50"
+          placeholder="Your name"
+        >
+
+        <label for="edit-bio">Bio</label>
+        <textarea
+          id="edit-bio"
+          name="bio"
+          rows="5"
+          maxlength="300"
+          placeholder="Tell the Grove community a little about yourself."
+        ></textarea>
+        <p class="field-hint">Maximum 300 characters.</p>
+
+        <p id="edit-status" class="status-message" role="status"></p>
+
+        <div class="profile-actions">
+          <button id="save-profile" class="button primary" type="submit">
+            Save changes
+          </button>
+          <a class="button secondary" href="/profile.html">Cancel</a>
+        </div>
+      </form>
+    </section>
+  </main>
+
+  <script type="module" src="js/edit-profile.js"></script>
+</body>
+</html>
