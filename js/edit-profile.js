@@ -80,7 +80,7 @@ import { supabase } from "./supabase.js";
 
     if (missing.length) {
       throw new Error(
-        `The profile editor is missing required HTML elements: ${missing.join(", ")}`
+        `Missing required HTML elements: ${missing.join(", ")}`
       );
     }
   }
@@ -90,11 +90,7 @@ import { supabase } from "./supabase.js";
 
     try {
       const url = new URL(value);
-
-      return (
-        url.protocol === "https:" ||
-        url.protocol === "http:"
-      );
+      return url.protocol === "https:" || url.protocol === "http:";
     } catch {
       return false;
     }
@@ -111,7 +107,7 @@ import { supabase } from "./supabase.js";
   }
 
   function previewMusic() {
-    if (!fields.musicPreview || !fields.musicUrl) return;
+    if (!fields.musicPreview) return;
 
     const url = fields.musicUrl.value.trim();
 
@@ -133,12 +129,10 @@ import { supabase } from "./supabase.js";
     if (url) {
       fields.backgroundPreview.style.backgroundImage =
         `url("${url.replace(/["\\]/g, "")}")`;
-
       fields.backgroundPreview.textContent = "";
     } else {
       fields.backgroundPreview.style.backgroundImage =
         "linear-gradient(120deg, #180b3c, #30105a, #071b3c)";
-
       fields.backgroundPreview.textContent = "Theme background";
     }
   }
@@ -158,15 +152,11 @@ import { supabase } from "./supabase.js";
     if (!file) return;
 
     if (!ALLOWED_IMAGE_TYPES.has(file.type)) {
-      throw new Error(
-        "Choose a JPG, PNG, WebP, or GIF image."
-      );
+      throw new Error("Choose a JPG, PNG, WebP, or GIF image.");
     }
 
     if (file.size > MAX_BACKGROUND_SIZE) {
-      throw new Error(
-        "Background images must be 5 MB or smaller."
-      );
+      throw new Error("Background images must be 5 MB or smaller.");
     }
 
     if (file.size === 0) {
@@ -200,56 +190,46 @@ import { supabase } from "./supabase.js";
 
     currentUser = authData.user;
 
-    const [profileResult, preferencesResult] =
-      await Promise.all([
-        supabase
-          .from("profiles")
-          .select(`
-            username,
-            display_name,
-            bio,
-            location,
-            website,
-            pronouns,
-            is_private,
-            comment_privacy,
-            profile_music_url,
-            profile_music_title,
-            profile_music_artist,
-            profile_music_enabled
-          `)
-          .eq("id", currentUser.id)
-          .maybeSingle(),
+    const [profileResult, preferencesResult] = await Promise.all([
+      supabase
+        .from("profiles")
+        .select(`
+          username,
+          display_name,
+          bio,
+          location,
+          website,
+          pronouns,
+          is_private,
+          comment_privacy,
+          profile_music_url,
+          profile_music_title,
+          profile_music_artist,
+          profile_music_enabled
+        `)
+        .eq("id", currentUser.id)
+        .maybeSingle(),
 
-        supabase
-          .from("user_preferences")
-          .select(`
-            theme_id,
-            background_mode,
-            custom_background_url
-          `)
-          .eq("user_id", currentUser.id)
-          .maybeSingle()
-      ]);
+      supabase
+        .from("user_preferences")
+        .select(`
+          theme_id,
+          background_mode,
+          custom_background_url
+        `)
+        .eq("user_id", currentUser.id)
+        .maybeSingle()
+    ]);
 
-    if (profileResult.error) {
-      throw profileResult.error;
-    }
-
-    if (preferencesResult.error) {
-      throw preferencesResult.error;
-    }
+    if (profileResult.error) throw profileResult.error;
+    if (preferencesResult.error) throw preferencesResult.error;
 
     if (!profileResult.data) {
-      throw new Error(
-        "Your profile record was not found. Please contact Grove support."
-      );
+      throw new Error("Your profile record was not found.");
     }
 
     originalProfile = { ...profileResult.data };
-    originalPreferences = {
-      ...(preferencesResult.data || {})
-    };
+    originalPreferences = { ...(preferencesResult.data || {}) };
 
     const profile = originalProfile;
     const preferences = originalPreferences;
@@ -262,27 +242,15 @@ import { supabase } from "./supabase.js";
     fields.pronouns.value = profile.pronouns || "";
 
     fields.isPrivate.checked = Boolean(profile.is_private);
+    fields.commentPrivacy.value = profile.comment_privacy || "everyone";
 
-    fields.commentPrivacy.value =
-      profile.comment_privacy || "everyone";
+    fields.musicTitle.value = profile.profile_music_title || "";
+    fields.musicArtist.value = profile.profile_music_artist || "";
+    fields.musicUrl.value = profile.profile_music_url || "";
+    fields.musicEnabled.checked = Boolean(profile.profile_music_enabled);
 
-    fields.musicTitle.value =
-      profile.profile_music_title || "";
-
-    fields.musicArtist.value =
-      profile.profile_music_artist || "";
-
-    fields.musicUrl.value =
-      profile.profile_music_url || "";
-
-    fields.musicEnabled.checked =
-      Boolean(profile.profile_music_enabled);
-
-    fields.theme.value =
-      preferences.theme_id || "midnight-violet";
-
-    fields.backgroundMode.value =
-      preferences.background_mode || "preset";
+    fields.theme.value = preferences.theme_id || "midnight-violet";
+    fields.backgroundMode.value = preferences.background_mode || "preset";
 
     currentBackgroundPath =
       preferences.custom_background_url || null;
@@ -291,9 +259,7 @@ import { supabase } from "./supabase.js";
       fields.backgroundMode.value === "custom" &&
       currentBackgroundPath
     ) {
-      showBackgroundPreview(
-        publicBackgroundUrl(currentBackgroundPath)
-      );
+      showBackgroundPreview(publicBackgroundUrl(currentBackgroundPath));
     } else {
       showBackgroundPreview("");
     }
@@ -303,8 +269,6 @@ import { supabase } from "./supabase.js";
   }
 
   async function uploadBackground(file) {
-    if (!file) return null;
-
     validateBackgroundFile(file);
 
     const extension = getSafeExtension(file);
@@ -337,10 +301,7 @@ import { supabase } from "./supabase.js";
       .remove([path]);
 
     if (error) {
-      console.warn(
-        "Temporary background cleanup failed:",
-        error
-      );
+      console.warn("Temporary background cleanup failed:", error);
     }
   }
 
@@ -352,10 +313,7 @@ import { supabase } from "./supabase.js";
       .remove([path]);
 
     if (error) {
-      console.warn(
-        "The previous background could not be removed:",
-        error
-      );
+      console.warn("Previous background cleanup failed:", error);
     }
   }
 
@@ -381,33 +339,23 @@ import { supabase } from "./supabase.js";
     }
 
     if (displayName.length > 50) {
-      throw new Error(
-        "Display name must be 50 characters or fewer."
-      );
+      throw new Error("Display name must be 50 characters or fewer.");
     }
 
     if (bio.length > 300) {
-      throw new Error(
-        "Bio must be 300 characters or fewer."
-      );
+      throw new Error("Bio must be 300 characters or fewer.");
     }
 
     if (location.length > 80) {
-      throw new Error(
-        "Location must be 80 characters or fewer."
-      );
+      throw new Error("Location must be 80 characters or fewer.");
     }
 
     if (pronouns.length > 40) {
-      throw new Error(
-        "Pronouns must be 40 characters or fewer."
-      );
+      throw new Error("Pronouns must be 40 characters or fewer.");
     }
 
     if (musicTitle.length > 100 || musicArtist.length > 100) {
-      throw new Error(
-        "Music title and artist must be 100 characters or fewer."
-      );
+      throw new Error("Music title and artist must be 100 characters or fewer.");
     }
 
     if (!validHttpUrl(website) || !validHttpUrl(musicUrl)) {
@@ -434,8 +382,7 @@ import { supabase } from "./supabase.js";
       profile_music_url: musicUrl || null,
       profile_music_title: musicTitle || null,
       profile_music_artist: musicArtist || null,
-      profile_music_enabled:
-        fields.musicEnabled.checked && Boolean(musicUrl),
+      profile_music_enabled: fields.musicEnabled.checked && Boolean(musicUrl),
       updated_at: new Date().toISOString()
     };
   }
@@ -463,9 +410,7 @@ import { supabase } from "./supabase.js";
       theme_id: themeId,
       background_mode: backgroundMode,
       custom_background_url:
-        backgroundMode === "custom"
-          ? backgroundPath
-          : null,
+        backgroundMode === "custom" ? backgroundPath : null,
       updated_at: new Date().toISOString()
     };
   }
@@ -479,10 +424,7 @@ import { supabase } from "./supabase.js";
       .eq("id", currentUser.id);
 
     if (error) {
-      console.error(
-        "Could not restore the original profile after a failed save:",
-        error
-      );
+      console.error("Profile rollback failed:", error);
     }
   }
 
@@ -509,26 +451,40 @@ import { supabase } from "./supabase.js";
       showStatus("Checking your settings...");
 
       const profileUpdate = collectProfileUpdate();
-      const selectedFile = getSelectedFile();
+      const backgroundMode = fields.backgroundMode.value;
 
-      validateBackgroundFile(selectedFile);
+      if (!["preset", "custom"].includes(backgroundMode)) {
+        throw new Error("Choose a valid background mode.");
+      }
 
-      showStatus("Preparing your background...");
+      // Only use or upload a file when custom mode is selected.
+      const selectedFile =
+        backgroundMode === "custom" ? getSelectedFile() : null;
 
-      // 1. Upload the new background before changing database records.
       if (selectedFile) {
+        validateBackgroundFile(selectedFile);
+      }
+
+      showStatus(
+        backgroundMode === "custom"
+          ? "Preparing your custom background..."
+          : "Preparing your theme..."
+      );
+
+      // Upload first, but only when custom mode actually needs a new image.
+      if (backgroundMode === "custom" && selectedFile) {
         uploadedPath = await uploadBackground(selectedFile);
       }
 
       const backgroundPath =
-        fields.backgroundMode.value === "custom"
+        backgroundMode === "custom"
           ? (uploadedPath || currentBackgroundPath)
           : null;
 
       const preferencesUpdate =
         collectPreferencesUpdate(backgroundPath);
 
-      // 2. Save profile fields.
+      // Save profile details.
       showStatus("Saving profile details...");
 
       const { error: profileError } = await supabase
@@ -540,7 +496,7 @@ import { supabase } from "./supabase.js";
 
       profileWasUpdated = true;
 
-      // 3. Save preferences only after the background upload succeeds.
+      // Save appearance settings.
       showStatus("Saving appearance settings...");
 
       const { error: preferencesError } = await supabase
@@ -553,7 +509,7 @@ import { supabase } from "./supabase.js";
 
       preferencesWereUpdated = true;
 
-      // 4. Only now is the previous background safe to remove.
+      // Remove the previous image only after the new settings are saved.
       if (
         oldBackgroundPath &&
         oldBackgroundPath !== backgroundPath
@@ -562,6 +518,7 @@ import { supabase } from "./supabase.js";
       }
 
       currentBackgroundPath = backgroundPath;
+
       originalProfile = {
         ...originalProfile,
         ...profileUpdate
@@ -582,13 +539,10 @@ import { supabase } from "./supabase.js";
     } catch (error) {
       console.error("Profile save failed:", error);
 
-      // If preferences failed after the profile update,
-      // attempt to restore the previous profile values.
       if (profileWasUpdated && !preferencesWereUpdated) {
         await restoreOriginalProfile();
       }
 
-      // Do not leave unused uploaded images in storage.
       if (uploadedPath) {
         await removeUploadedBackground(uploadedPath);
       }
@@ -617,13 +571,11 @@ import { supabase } from "./supabase.js";
 
       try {
         validateBackgroundFile(file);
-
         revokePreviewObjectUrl();
 
         previewObjectUrl = URL.createObjectURL(file);
 
         showBackgroundPreview(previewObjectUrl);
-
         fields.backgroundMode.value = "custom";
       } catch (error) {
         fields.backgroundFile.value = "";
