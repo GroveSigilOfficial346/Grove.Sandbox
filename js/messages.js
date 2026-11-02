@@ -6,42 +6,106 @@ let user = null;
 let activeConversationId = null;
 let activeChannel = null;
 let conversations = [];
+let conversationLoadToken = 0;
+let messageLoadToken = 0;
 
 function setStatus(message, error = false) {
   const node = $("#messages-status");
-
   if (!node) return;
 
   node.textContent = message;
   node.style.color = error ? "#ff8585" : "";
 }
 
+function showError(error, fallback = "Something went wrong.") {
+  console.error(error);
+  setStatus(error?.message || fallback, true);
+}
+
+function setComposerEnabled(enabled) {
+  const input = $("#message-input");
+  const button = $("#send-message");
+
+  if (input) input.disabled = !enabled;
+  if (button) button.disabled = !enabled;
+}
+
+function formatTime(value) {
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return "";
+
+  return date.toLocaleString([], {
+    hour: "numeric",
+    minute: "2-digit"
+  });
+}
+
+async function removeActiveChannel() {
+  if (!activeChannel) return;
+
+  const channel = activeChannel;
+  activeChannel = null;
+
+  try {
+    await supabase.removeChannel(channel);
+  } catch (error) {
+    console.warn("Could not remove previous message channel.", error);
+  }
+}
+
 async function getProfile(userId) {
-  const { data } = await supabase
+  const { data, error } = await supabase
     .from("profiles")
     .select("id,username,display_name,avatar_url")
     .eq("id", userId)
     .maybeSingle();
 
+  if (error) {
+    console.warn("Could not load conversation profile.", error);
+    return null;
+  }
+
   return data;
 }
 
-async function loadConversationList() {
-  const { data: memberships, error } = await supabase
-    .from("conversation_members")
-    .select("conversation_id,last_read_at")
-    .eq("user_id", user.id);
+function getProfileLabel(profile) {
+  if (!profile) return "Grove member";
 
-  if (error) throw error;
-
-  const ids = (memberships || []).map(
-    (item) => item.conversation_id
+  return (
+    profile.display_name?.trim() ||
+    (profile.username ? `@${profile.username}` : "Grove member")
   );
+}
 
+function renderConversationButton(conversation) {
+  const button = document.createElement("button");
+
+  button.type = "button";
+  button.className = "conversation-item";
+  button.textContent = conversation.label;
+  button.dataset.conversationId = conversation.id;
+
+  if (conversation.id === activeConversationId) {
+    button.classList.add("active");
+    button.setAttribute("aria-current", "true");
+  }
+
+  button.addEventListener("click", () => {
+    openConversation(conversation.id, conversation.label)
+      .catch((error) => showError(error, "Conversation could not open."));
+  });
+
+  return button;
+}
+
+function renderConversationList() {
   const list = $("#conversation-list");
+  if (!list) return;
+
   list.replaceChildren();
 
-  if (!ids.length) {
+  if (!conversations.length) {
     const empty = document.createElement("p");
 
     empty.textContent =
@@ -51,65 +115,121 @@ async function loadConversationList() {
     return;
   }
 
-  const { data: rows, error: conversationsError } =
+  for (const conversation of conversations) {
+    list.append(renderConversationButton(conversation));
+  }
+}
+
+async function loadConversationList() {
+  const token = ++conversationLoadToken;
+
+  const { data: memberships, error: membershipError } =
+    await supabase
+      .from("conversation_members")
+      .select("conversation_id,last_read_at")
+      .eq("user_id", user.id);
+
+  if (membershipError) throw membershipError;
+
+  const ids = (memberships || []).map(
+    (membership) => membership.conversation_id
+  );
+
+  if (!ids.length) {
+    conversations = [];
+    renderConversationList();
+    return;
+  }
+
+  const { data: rows, error: conversationError } =
     await supabase
       .from("conversations")
       .select("id,conversation_type,title,updated_at")
       .in("id", ids)
       .order("updated_at", { ascending: false });
 
-  if (conversationsError) throw conversationsError;
+  if (conversationError) throw conversationError;
 
-  conversations = [];
+  const { data: members, error: membersError } =
+    await supabase
+      .from("conversation_members")
+      .select("conversation_id,user_id")
+      .in("conversation_id", ids);
 
-  for (const conversation of rows || []) {
-    const { data: members, error: memberError } =
+  if (membersError) throw membersError;
+
+  const otherUserIds = [
+    ...new Set(
+      (members || [])
+        .filter((member) => member.user_id !== user.id)
+        .map((member) => member.user_id)
+    )
+  ];
+
+  let profilesById = new Map();
+
+  if (otherUserIds.length) {
+    const { data: profiles, error: profilesError } =
       await supabase
-        .from("conversation_members")
-        .select("user_id")
-        .eq("conversation_id", conversation.id);
+        .from("profiles")
+        .select("id,username,display_name,avatar_url")
+        .in("id", otherUserIds);
 
-    if (memberError) continue;
+    if (profilesError) {
+      console.warn("Some conversation names could not be loaded.", profilesError);
+    } else {
+      profilesById = new Map(
+        (profiles || []).map((profile) => [profile.id, profile])
+      );
+    }
+  }
 
-    const other = (members || []).find(
+  if (token !== conversationLoadToken) return;
+
+  conversations = (rows || []).map((conversation) => {
+    const conversationMembers = (members || []).filter(
+      (member) => member.conversation_id === conversation.id
+    );
+
+    const otherMembers = conversationMembers.filter(
       (member) => member.user_id !== user.id
     );
 
-    const profile = other
-      ? await getProfile(other.user_id)
-      : null;
+    let label = conversation.title?.trim();
 
-    const label =
-      conversation.title ||
-      profile?.display_name ||
-      (profile?.username
-        ? `@${profile.username}`
-        : "Grove conversation");
+    if (!label && conversation.conversation_type === "direct") {
+      const otherProfile = otherMembers.length
+        ? profilesById.get(otherMembers[0].user_id)
+        : null;
 
-    conversations.push({
+      label = getProfileLabel(otherProfile);
+    }
+
+    if (!label && conversation.conversation_type === "group") {
+      label = "Grove group";
+    }
+
+    if (!label) label = "Grove conversation";
+
+    return {
       ...conversation,
       label
-    });
+    };
+  });
 
-    const button = document.createElement("button");
+  renderConversationList();
 
-    button.type = "button";
-    button.className = "conversation-item";
-    button.textContent = label;
-
-    button.addEventListener("click", () => {
-      openConversation(conversation.id, label);
-    });
-
-    list.append(button);
-  }
-
-  const requestedUser =
-    new URLSearchParams(location.search).get("user");
+  const requestedUser = new URLSearchParams(location.search).get("user");
 
   if (requestedUser) {
     await startOrOpenDirectConversation(requestedUser);
-  } else if (conversations.length && !activeConversationId) {
+    return;
+  }
+
+  if (
+    conversations.length &&
+    !activeConversationId
+  ) {
     await openConversation(
       conversations[0].id,
       conversations[0].label
@@ -117,125 +237,44 @@ async function loadConversationList() {
   }
 }
 
-async function startOrOpenDirectConversation(otherUserId) {
-  if (!otherUserId || otherUserId === user.id) {
+async function startOrOpenDirectConversation(targetUserId) {
+  if (!targetUserId || targetUserId === user.id) {
     setStatus("Choose another member to message.", true);
     return;
   }
 
-  for (const conversation of conversations) {
-    if (conversation.conversation_type !== "direct") continue;
+  setStatus("Opening conversation...");
 
-    const { data: members } = await supabase
-      .from("conversation_members")
-      .select("user_id")
-      .eq("conversation_id", conversation.id);
-
-    if (
-      (members || []).some(
-        (member) => member.user_id === otherUserId
-      )
-    ) {
-      return openConversation(
-        conversation.id,
-        conversation.label
-      );
+  // This database function enforces message privacy and block rules.
+  // It also prevents duplicate direct conversations.
+  const { data: conversationId, error } = await supabase.rpc(
+    "open_or_create_direct_conversation",
+    {
+      p_target_user_id: targetUserId
     }
-  }
-
-  const { data: ownMemberships, error: membershipsError } =
-    await supabase
-      .from("conversation_members")
-      .select("conversation_id")
-      .eq("user_id", user.id);
-
-  if (membershipsError) throw membershipsError;
-
-  const ownIds = (ownMemberships || []).map(
-    (row) => row.conversation_id
   );
 
-  if (ownIds.length) {
-    const { data: shared } = await supabase
-      .from("conversation_members")
-      .select("conversation_id")
-      .eq("user_id", otherUserId)
-      .in("conversation_id", ownIds)
-      .limit(1);
+  if (error) throw error;
 
-    if (shared?.length) {
-      const id = shared[0].conversation_id;
-
-      const known = conversations.find(
-        (item) => item.id === id
-      );
-
-      return openConversation(
-        id,
-        known?.label || "Conversation"
-      );
-    }
+  if (!conversationId) {
+    throw new Error("The conversation could not be created.");
   }
-
-  const { data: target, error: targetError } =
-    await supabase
-      .from("profile_directory")
-      .select("id,username,display_name")
-      .eq("id", otherUserId)
-      .maybeSingle();
-
-  if (targetError || !target) {
-    setStatus("That member could not be found.", true);
-    return;
-  }
-
-  const { data: conversation, error: createError } =
-    await supabase
-      .from("conversations")
-      .insert({
-        conversation_type: "direct",
-        created_by: user.id
-      })
-      .select("id")
-      .single();
-
-  if (createError) throw createError;
-
-  const { error: addMembersError } = await supabase
-    .from("conversation_members")
-    .insert([
-      {
-        conversation_id: conversation.id,
-        user_id: user.id,
-        role: "owner"
-      },
-      {
-        conversation_id: conversation.id,
-        user_id: otherUserId,
-        role: "member"
-      }
-    ]);
-
-  if (addMembersError) {
-    setStatus(addMembersError.message, true);
-    return;
-  }
-
-  const label =
-    target.display_name ||
-    (target.username
-      ? `@${target.username}`
-      : "Conversation");
-
-  conversations.unshift({
-    id: conversation.id,
-    conversation_type: "direct",
-    label
-  });
 
   await loadConversationList();
 
-  await openConversation(conversation.id, label);
+  const existing = conversations.find(
+    (conversation) => conversation.id === conversationId
+  );
+
+  let label = existing?.label;
+
+  if (!label) {
+    const profile = await getProfile(targetUserId);
+    label = getProfileLabel(profile);
+  }
+
+  await openConversation(conversationId, label);
+  setStatus("");
 }
 
 function renderMessage(message) {
@@ -246,41 +285,69 @@ function renderMessage(message) {
       ? "message-bubble own-message"
       : "message-bubble";
 
+  article.dataset.messageId = message.id;
+
   const body = document.createElement("p");
   body.textContent = message.body ?? "";
 
   const time = document.createElement("time");
-
   time.dateTime = message.created_at;
-
-  time.textContent = new Date(
-    message.created_at
-  ).toLocaleString([], {
-    hour: "numeric",
-    minute: "2-digit"
-  });
+  time.textContent = formatTime(message.created_at);
 
   article.append(body, time);
 
   return article;
 }
 
+function scrollMessagesToBottom() {
+  const list = $("#message-list");
+  if (!list) return;
+
+  list.scrollTop = list.scrollHeight;
+}
+
+async function updateReadMarker(conversationId) {
+  const { error } = await supabase
+    .from("conversation_members")
+    .update({
+      last_read_at: new Date().toISOString()
+    })
+    .eq("conversation_id", conversationId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.warn("Could not update message read marker.", error);
+  }
+}
+
 async function loadMessages() {
   if (!activeConversationId) return;
+
+  const conversationId = activeConversationId;
+  const token = ++messageLoadToken;
 
   const { data, error } = await supabase
     .from("conversation_messages")
     .select(
       "id,conversation_id,sender_id,body,created_at,deleted_for_everyone_at"
     )
-    .eq("conversation_id", activeConversationId)
+    .eq("conversation_id", conversationId)
     .is("deleted_for_everyone_at", null)
     .order("created_at", { ascending: true })
     .limit(300);
 
   if (error) throw error;
 
+  if (
+    token !== messageLoadToken ||
+    conversationId !== activeConversationId
+  ) {
+    return;
+  }
+
   const list = $("#message-list");
+  if (!list) return;
+
   list.replaceChildren();
 
   if (!data?.length) {
@@ -291,37 +358,39 @@ async function loadMessages() {
       "This is the beginning of the conversation.";
 
     list.append(empty);
-    return;
+  } else {
+    for (const message of data) {
+      list.append(renderMessage(message));
+    }
   }
 
-  for (const message of data) {
-    list.append(renderMessage(message));
-  }
+  scrollMessagesToBottom();
 
-  list.scrollTop = list.scrollHeight;
+  await updateReadMarker(conversationId);
 }
 
 async function openConversation(id, label) {
+  if (!id) return;
+
   activeConversationId = id;
+  messageLoadToken++;
 
-  $("#chat-title").textContent =
-    label || "Conversation";
+  $("#chat-title").textContent = label || "Conversation";
+  $("#chat-subtitle").textContent = "Private conversation";
 
-  $("#chat-subtitle").textContent =
-    "Private conversation";
+  setComposerEnabled(true);
 
-  $("#message-input").disabled = false;
-  $("#send-message").disabled = false;
+  renderConversationList();
 
-  if (activeChannel) {
-    await supabase.removeChannel(activeChannel);
-    activeChannel = null;
-  }
+  await removeActiveChannel();
 
   await loadMessages();
 
-  activeChannel = supabase
-    .channel(`grove-chat-${id}`)
+  // Do not attach a channel if the user switched conversations while loading.
+  if (activeConversationId !== id) return;
+
+  const channel = supabase
+    .channel(`grove-chat-${id}-${user.id}`)
     .on(
       "postgres_changes",
       {
@@ -330,50 +399,99 @@ async function openConversation(id, label) {
         table: "conversation_messages",
         filter: `conversation_id=eq.${id}`
       },
-      (payload) => {
+      async (payload) => {
+        if (activeConversationId !== id) return;
+
         const message = payload.new;
 
-        if (message.sender_id === user.id) return;
+        if (
+          !message ||
+          message.sender_id === user.id ||
+          message.deleted_for_everyone_at
+        ) {
+          return;
+        }
 
-        $("#message-list").append(
-          renderMessage(message)
-        );
+        const list = $("#message-list");
+        if (!list) return;
 
-        $("#message-list").scrollTop =
-          $("#message-list").scrollHeight;
+        // Avoid rendering a duplicate if the message was already loaded.
+        if (
+          list.querySelector(
+            `[data-message-id="${message.id}"]`
+          )
+        ) {
+          return;
+        }
+
+        const empty = list.querySelector(".empty-chat");
+        if (empty) empty.remove();
+
+        list.append(renderMessage(message));
+        scrollMessagesToBottom();
+
+        await updateReadMarker(id);
       }
     )
-    .subscribe();
+    .subscribe((status) => {
+      if (activeConversationId !== id) return;
+
+      if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        setStatus(
+          "Live updates are temporarily unavailable. You can still refresh the conversation.",
+          true
+        );
+      }
+    });
+
+  activeChannel = channel;
 }
 
 async function sendMessage(event) {
   event.preventDefault();
 
   const input = $("#message-input");
+  const button = $("#send-message");
+
+  if (!input || !activeConversationId) return;
+
   const body = input.value.trim();
 
-  if (!body || !activeConversationId) return;
+  if (!body) return;
 
-  $("#send-message").disabled = true;
-
-  const { error } = await supabase
-    .from("conversation_messages")
-    .insert({
-      conversation_id: activeConversationId,
-      sender_id: user.id,
-      body
-    });
-
-  $("#send-message").disabled = false;
-
-  if (error) {
-    setStatus(error.message, true);
+  if (body.length > 5000) {
+    setStatus("Messages must be 5,000 characters or fewer.", true);
     return;
   }
 
-  input.value = "";
+  const conversationId = activeConversationId;
 
-  await loadMessages();
+  button.disabled = true;
+  setStatus("Sending...");
+
+  try {
+    const { error } = await supabase
+      .from("conversation_messages")
+      .insert({
+        conversation_id: conversationId,
+        sender_id: user.id,
+        body
+      });
+
+    if (error) throw error;
+
+    input.value = "";
+
+    if (activeConversationId === conversationId) {
+      await loadMessages();
+    }
+
+    setStatus("");
+  } catch (error) {
+    showError(error, "Your message could not be sent.");
+  } finally {
+    button.disabled = !activeConversationId;
+  }
 }
 
 async function initialize() {
@@ -386,28 +504,32 @@ async function initialize() {
 
     if (!user) {
       setStatus("Sign in to use Grove Messages.", true);
-      $("#message-form").hidden = true;
+
+      const form = $("#message-form");
+      if (form) form.hidden = true;
+
+      const list = $("#conversation-list");
+      if (list) {
+        list.textContent = "Sign in to view your conversations.";
+      }
+
+      setComposerEnabled(false);
       return;
     }
 
-    $("#message-input").disabled = true;
-    $("#send-message").disabled = true;
+    setComposerEnabled(false);
 
-    $("#message-form").addEventListener(
-      "submit",
-      sendMessage
-    );
+    const form = $("#message-form");
+
+    if (form) {
+      form.addEventListener("submit", sendMessage);
+    }
 
     await loadConversationList();
 
     setStatus("");
   } catch (error) {
-    console.error(error);
-
-    setStatus(
-      error.message || "Messages could not load.",
-      true
-    );
+    showError(error, "Messages could not load.");
   }
 }
 
