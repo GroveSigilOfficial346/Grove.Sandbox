@@ -7,14 +7,16 @@ import { createClient } from
   "https://esm.sh/@supabase/supabase-js@2";
 
 const SUPABASE_URL =
-  "https://fpkrvgcpbnrusbfmhinj.supabase.co";
+  "https://wmkujovlsfvahycjcmkj.supabase.co";
 
 const SUPABASE_ANON_KEY =
-  "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indta3Vqb3Zsc2Z2YWh5Y2pjbWtqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1OTg2MDEsImV4cCI6MjEwODE3NDYwMX0.YgR5GG_RJWgWjczh3J4TKoTTpT4ZzRuomPsBmuakY8k";
 
-window.supabaseClient = createClient(
+export const supabase = createClient(
   SUPABASE_URL,
   SUPABASE_ANON_KEY
 );
 
-console.log("Grove: Supabase connected.");
+window.supabaseClient = supabase;
+
+console.log("Grove: Connected to Supabase.");
