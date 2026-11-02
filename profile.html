@@ -4,359 +4,80 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#050019">
-
-  <meta
-    name="description"
-    content="Grove member profiles — connect, discover, and share."
-  >
-
-  <title>Grove — Member Profile</title>
-
-  <link rel="stylesheet" href="css/global.css">
-
-  <style>
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: #050019;
-      color: #f7f5ff;
-      font-family: Arial, sans-serif;
-    }
-
-    .profile-page {
-      width: min(900px, calc(100% - 30px));
-      margin: 35px auto;
-    }
-
-    .profile-navigation {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 15px;
-      margin-bottom: 25px;
-    }
-
-    .profile-navigation a {
-      color: #05c9f4;
-      text-decoration: none;
-    }
-
-    .profile-card {
-      overflow: hidden;
-      border: 1px solid #851eff55;
-      border-radius: 16px;
-      background: #111025;
-    }
-
-    #cover {
-      min-height: 210px;
-      background:
-        linear-gradient(120deg, #382268, #202060, #07536c);
-      background-position: center;
-      background-size: cover;
-    }
-
-    .profile-content {
-      padding: 24px;
-    }
-
-    .profile-identity {
-      display: flex;
-      align-items: center;
-      gap: 18px;
-      flex-wrap: wrap;
-    }
-
-    #avatar {
-      width: 105px;
-      height: 105px;
-      display: grid;
-      place-items: center;
-      overflow: hidden;
-      flex-shrink: 0;
-      border: 3px solid #851eff;
-      border-radius: 50%;
-      background: #20104a;
-      color: white;
-      font-size: 34px;
-    }
-
-    #avatar img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    #display-name {
-      margin: 0;
-      font-size: 27px;
-    }
-
-    #username {
-      margin-top: 5px;
-      color: #05c9f4;
-    }
-
-    #bio {
-      margin-top: 20px;
-      line-height: 1.7;
-      white-space: pre-wrap;
-      overflow-wrap: anywhere;
-    }
-
-    #details {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 15px;
-      margin-top: 14px;
-      color: #b9acd9;
-      font-size: 13px;
-    }
-
-    #details a {
-      color: #05c9f4;
-    }
-
-    .profile-actions,
-    .upload-actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 20px;
-    }
-
-    .profile-actions button,
-    .profile-actions a,
-    .upload-actions button {
-      padding: 10px 17px;
-      border: 1px solid #851eff88;
-      border-radius: 8px;
-      background: #851eff22;
-      color: #f7f5ff;
-      text-decoration: none;
-      cursor: pointer;
-    }
-
-    .profile-actions button:hover,
-    .profile-actions a:hover,
-    .upload-actions button:hover {
-      border-color: #05c9f4;
-    }
-
-    .profile-section {
-      margin-top: 22px;
-      padding: 22px;
-      border: 1px solid #851eff44;
-      border-radius: 14px;
-      background: #111025;
-    }
-
-    .profile-section h2 {
-      margin-top: 0;
-      font-size: 20px;
-    }
-
-    #action-status,
-    #status {
-      margin-top: 14px;
-      color: #45e5ff;
-      overflow-wrap: anywhere;
-    }
-
-    #status {
-      padding: 14px;
-      border: 1px solid #ff8585;
-      border-radius: 8px;
-      color: #ff8585;
-    }
-
-    .upload-actions input {
-      display: none;
-    }
-
-    .music-player audio {
-      display: block;
-      width: 100%;
-      margin-top: 12px;
-    }
-
-    .music-title {
-      font-weight: bold;
-    }
-
-    .music-artist {
-      color: #a99bc9;
-    }
-
-    .music-download {
-      display: inline-block;
-      margin-top: 12px;
-      color: #05c9f4;
-    }
-
-    .empty-state {
-      padding: 20px;
-      color: #a99bc9;
-      text-align: center;
-    }
-
-    @media (max-width: 600px) {
-      .profile-page {
-        margin-top: 18px;
-      }
-
-      #cover {
-        min-height: 145px;
-      }
-
-      .profile-content {
-        padding: 17px;
-      }
-
-      #display-name {
-        font-size: 22px;
-      }
-    }
-  </style>
+  <title>Grove Profile</title>
+  <link rel="stylesheet" href="css/profile.css">
 </head>
-
 <body>
+  <header class="site-header">
+    <a class="brand" href="/">GROVE</a>
+    <nav>
+      <a href="/">Home</a>
+      <a href="/community.html">Community</a>
+      <a href="/profile.html">Profile</a>
+    </nav>
+  </header>
 
-<main class="profile-page">
+  <main class="page-container">
+    <p id="status" class="status-message" role="status">Loading profile...</p>
 
-  <!-- NAVIGATION -->
-  <nav class="profile-navigation">
-    <a href="/">← Grove Home</a>
-    <a href="/community.html">Community</a>
-  </nav>
+    <section class="profile-card">
+      <div id="cover" class="profile-cover" aria-label="Profile cover"></div>
 
-  <!-- ERROR / LOADING STATUS -->
-  <div id="status" hidden role="alert"></div>
+      <div class="profile-main">
+        <div class="profile-heading">
+          <div id="avatar" class="profile-avatar" aria-label="Profile avatar">G</div>
 
-  <!-- PROFILE CARD -->
-  <section class="profile-card">
-
-    <!-- COVER IMAGE -->
-    <div id="cover" aria-label="Profile cover image"></div>
-
-    <div class="profile-content">
-
-      <!-- IDENTITY -->
-      <div class="profile-identity">
-
-        <div id="avatar" aria-label="Profile picture">
-          G
+          <div class="profile-identity">
+            <h1 id="display-name">Grove Member</h1>
+            <p id="username" class="muted"></p>
+          </div>
         </div>
 
-        <div>
-          <h1 id="display-name">Loading profile...</h1>
-          <div id="username"></div>
+        <p id="bio" class="profile-bio">No bio yet.</p>
+        <div id="details" class="profile-details"></div>
+
+        <div class="profile-actions">
+          <button id="follow-button" class="button primary" type="button" hidden>
+            Follow
+          </button>
+          <button id="message-button" class="button secondary" type="button" hidden>
+            Message
+          </button>
+          <button id="edit-profile-button" class="button secondary" type="button" hidden>
+            Edit profile
+          </button>
         </div>
 
+        <div id="profile-upload-actions" class="upload-actions" hidden>
+          <button id="avatar-upload-button" class="button secondary" type="button">
+            Change avatar
+          </button>
+          <input id="avatar-file" type="file" accept="image/*" hidden>
+
+          <button id="cover-upload-button" class="button secondary" type="button">
+            Change cover
+          </button>
+          <input id="cover-file" type="file" accept="image/*" hidden>
+        </div>
+
+        <p id="action-status" class="status-message" role="status"></p>
       </div>
+    </section>
 
-      <!-- BIO -->
-      <p id="bio" hidden></p>
+    <section id="music-section" class="content-section" hidden>
+      <h2>Profile music</h2>
+      <div id="music-content"></div>
+    </section>
 
-      <!-- PROFILE DETAILS -->
-      <div id="details"></div>
-
-      <!-- FOLLOW / MESSAGE / EDIT -->
-      <div class="profile-actions">
-
-        <button
-          id="follow-button"
-          type="button"
-          hidden
-        >
-          Follow
-        </button>
-
-        <a
-          id="message-button"
-          href="/community.html#messages"
-          hidden
-        >
-          Message
-        </a>
-
-        <a
-          id="edit-profile-button"
-          href="/edit-profile.html"
-          hidden
-        >
-          Edit Profile
-        </a>
-
+    <section id="posts-section" class="content-section">
+      <h2>Posts</h2>
+      <div id="posts-list">
+        <p class="muted">Posts will appear here.</p>
       </div>
+    </section>
+  </main>
 
-      <!-- PROFILE IMAGE UPLOADS -->
-      <div class="upload-actions" id="profile-upload-actions" hidden>
-
-        <button id="avatar-upload-button" type="button">
-          Change Profile Photo
-        </button>
-
-        <input
-          id="avatar-file"
-          type="file"
-          accept="image/*"
-        >
-
-        <button id="cover-upload-button" type="button">
-          Change Cover Photo
-        </button>
-
-        <input
-          id="cover-file"
-          type="file"
-          accept="image/*"
-        >
-
-      </div>
-
-      <p id="action-status" role="status" aria-live="polite"></p>
-
-    </div>
-  </section>
-
-  <!-- PROFILE MUSIC -->
-  <section
-    class="profile-section"
-    id="music-section"
-    hidden
-  >
-    <h2>Profile Music</h2>
-    <div id="music-content"></div>
-  </section>
-
-  <!-- POSTS AND COMMENTS -->
-  <section
-    class="profile-section"
-    id="posts-section"
-  >
-    <h2>Posts</h2>
-
-    <div id="posts-list">
-      <div class="empty-state">
-        Loading posts and comments...
-      </div>
-    </div>
-  </section>
-
-</main>
-
-<!-- SUPABASE LIBRARY -->
-<script
-  src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"
-  defer
-></script>
-
-<!-- PROFILE CONTROLLER -->
-<script
-  src="js/profile-view.js?v=20261031"
-  defer
-></script>
-
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="js/profile-view.js" defer></script>
 </body>
 </html>
