@@ -1,22 +1,26 @@
-/* =========================================
-   GROVE — SUPABASE CONNECTION
-   File: js/supabase.js
-========================================= */
-
-import { createClient } from
-  "https://esm.sh/@supabase/supabase-js@2";
+console.log("Grove Supabase client loading");
 
 const SUPABASE_URL =
-  "https://wmkujovlsfvahycjcmkj.supabase.co";
+  "https://fpkrvgcpbnrusbfmhinj.supabase.co";
 
 const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Indta3Vqb3Zsc2Z2YWh5Y2pjbWtqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1OTg2MDEsImV4cCI6MjEwODE3NDYwMX0.YgR5GG_RJWgWjczh3J4TKoTTpT4ZzRuomPsBmuakY8k";
+  "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
 
-export const supabase = createClient(
-  SUPABASE_URL,
-  SUPABASE_ANON_KEY
-);
+if (!window.supabase?.createClient) {
+  console.error("Grove: Supabase JS library did not load.");
+  window.groveClient = null;
+} else {
+  window.groveClient = window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_ANON_KEY,
+    {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+      }
+    }
+  );
 
-window.supabaseClient = supabase;
-
-console.log("Grove: Connected to Supabase.");
+  console.log("Grove Supabase client ready.");
+}
