@@ -1,31 +1,25 @@
-(() => {
-  "use strict";
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-  const SUPABASE_URL =
-    "https://fpkrvgcpbnrusbfmhinj.supabase.co";
+const SUPABASE_URL =
+  "https://fpkrvgcpbnrusbfmhinj.supabase.co";
 
-  const SUPABASE_ANON_KEY =
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwa3J2Z2NwYm5ydXNiZm1oaW5qIiwicm9sZSI6ImFub24iLCJpYXQiMTc5MjUxNzY5NiwibmJmIjoxNzkyNTE3Njk2LCJleHAiOjIxMDgwOTM2OTZ9.3CI1pHaEnpcQjnweA_g4Cmsscqp3eltMXWbPj2owHfo";
+// Keep your existing complete anon key here.
+// Do not use a service-role or secret key.
+const SUPABASE_ANON_KEY = "PASTE_YOUR_EXISTING_ANON_KEY_HERE";
 
-  if (!window.supabase) {
-    console.error("Grove: Supabase library did not load.");
-    window.groveClient = null;
-    return;
-  }
-
-  if (window.groveClient) return;
-
-  window.groveClient = window.supabase.createClient(
-    SUPABASE_URL,
-    SUPABASE_ANON_KEY,
-    {
-      auth: {
-        autoRefreshToken: true,
-        persistSession: true,
-        detectSessionInUrl: true
-      }
+export const supabase = createClient(
+  SUPABASE_URL,
+  SUPABASE_ANON_KEY,
+  {
+    auth: {
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: true
     }
-  );
+  }
+);
 
-  console.info("Grove.Sandbox connected.");
-})();
+// Temporary compatibility for older Grove scripts.
+window.groveClient = supabase;
+
+console.info("Grove.Sandbox connected.");
