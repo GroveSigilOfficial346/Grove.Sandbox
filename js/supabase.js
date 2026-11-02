@@ -1,26 +1,34 @@
-console.log("Grove Supabase client loading");
+(() => {
+  "use strict";
 
-const SUPABASE_URL =
-  "https://fpkrvgcpbnrusbfmhinj.supabase.co";
+  const SUPABASE_URL =
+    "https://fpkrvgcpbnrusbfmhinj.supabase.co";
 
-const SUPABASE_ANON_KEY =
-  "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
+  const SUPABASE_PUBLISHABLE_KEY =
+    "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
 
-if (!window.supabase?.createClient) {
-  console.error("Grove: Supabase JS library did not load.");
-  window.groveClient = null;
-} else {
+  if (!window.supabase) {
+    console.error(
+      "Grove: Supabase library was not loaded."
+    );
+    return;
+  }
+
+  if (window.groveClient) {
+    return;
+  }
+
   window.groveClient = window.supabase.createClient(
     SUPABASE_URL,
-    SUPABASE_ANON_KEY,
+    SUPABASE_PUBLISHABLE_KEY,
     {
       auth: {
-        persistSession: true,
         autoRefreshToken: true,
+        persistSession: true,
         detectSessionInUrl: true
       }
     }
   );
 
-  console.log("Grove Supabase client ready.");
-}
+  console.info("Grove database connection initialized.");
+})();
