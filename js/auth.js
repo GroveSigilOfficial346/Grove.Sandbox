@@ -1,30 +1,22 @@
 /* =========================================
-   GROVE — AUTHENTICATION CONTROLLER
+   GROVE — AUTHENTICATION
    File: js/auth.js
 ========================================= */
+
+import { supabase } from "./supabase.js";
 
 (() => {
   "use strict";
 
-  const supabase = window.supabaseClient;
-
-  if (!supabase) {
-    console.error("Grove: Supabase client not found.");
-    return;
-  }
-
-  const $ = (id) => document.getElementById(id);
-
   const showMessage = (message, type = "error") => {
-    const output = $("auth-message");
+    const output = document.getElementById("auth-message");
 
-    if (!output) {
-      console.log(message);
-      return;
+    if (output) {
+      output.textContent = message;
+      output.dataset.type = type;
+    } else {
+      console.log("Grove:", message);
     }
-
-    output.textContent = message;
-    output.dataset.type = type;
   };
 
   // REGISTER
@@ -34,14 +26,14 @@
         email: email.trim(),
         password,
         options: {
-          emailRedirectTo: window.location.origin + "/"
+          emailRedirectTo: `${window.location.origin}/`
         }
       });
 
       if (error) throw error;
 
       showMessage(
-        "Check your email to verify your Grove account.",
+        "Registration received. Check your email to verify your account.",
         "success"
       );
 
@@ -73,19 +65,21 @@
 
   // LOGOUT
   async function logout() {
-    const { error } = await supabase.auth.signOut();
+    try {
+      const { error } = await supabase.auth.signOut();
 
-    if (error) {
+      if (error) throw error;
+
+      window.location.href = "/";
+    } catch (error) {
       showMessage(error.message);
-      return;
     }
-
-    window.location.href = "/";
   }
 
-  // SESSION CHECK
+  // GET CURRENT SESSION
   async function getSession() {
-    const { data, error } = await supabase.auth.getSession();
+    const { data, error } =
+      await supabase.auth.getSession();
 
     if (error) {
       console.error("Grove session error:", error.message);
@@ -95,10 +89,8 @@
     return data.session;
   }
 
-  // AUTH STATE CHANGES
+  // AUTHENTICATION STATE
   supabase.auth.onAuthStateChange((event, session) => {
-    console.log("Grove auth event:", event);
-
     window.dispatchEvent(
       new CustomEvent("grove-auth-change", {
         detail: { event, session }
@@ -106,12 +98,14 @@
     );
   });
 
-  // PUBLIC AUTH METHODS
-  window.GroveAuth = {
+  // PUBLIC METHODS
+  window.GroveAuth = Object.freeze({
     register,
     login,
     logout,
     getSession
-  };
+  });
+
+  console.log("Grove: Authentication initialized.");
 
 })();
