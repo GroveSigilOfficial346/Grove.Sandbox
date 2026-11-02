@@ -1,301 +1,338 @@
-console.log("Grove dashboard controller loaded");
+(() => {
+  "use strict";
 
-const usernameDisplay = document.getElementById("username");
-const emailDisplay = document.getElementById("user-email");
-const logoutButton = document.getElementById("logout");
+  const client = window.groveClient;
 
-const postContent = document.getElementById("post-content");
-const createPostButton = document.getElementById("create-post");
-const postMessage = document.getElementById("post-message");
-const feed = document.getElementById("feed");
+  const elements = {
+    username: document.getElementById("username"),
+    displayName: document.getElementById("display-name"),
+    avatar: document.getElementById("avatar"),
+    postInput: document.getElementById("post-content"),
+    postButton: document.getElementById("create-post"),
+    feed: document.getElementById("feed"),
+    logout: document.getElementById("logout"),
+    feedbackInput: document.getElementById("feedback-content"),
+    feedbackButton: document.getElementById("send-feedback"),
+    message: document.getElementById("message")
+  };
 
-const sendSuggestionButton =
-  document.getElementById("send-suggestion");
+  let currentUser = null;
+  let currentProfile = null;
+  let feedChannel = null;
 
-const suggestionMessage =
-  document.getElementById("suggestion-message");
+  function showMessage(text, isError = false) {
+    if (!elements.message) return;
 
-let currentUser = null;
-
-function setMessage(element, text, color = "#8f9893") {
-  if (!element) return;
-
-  element.textContent = text;
-  element.style.color = color;
-}
-
-function makeTextElement(tag, text, className) {
-  const element = document.createElement(tag);
-
-  element.textContent = text ?? "";
-
-  if (className) {
-    element.className = className;
+    elements.message.textContent = text;
+    elements.message.style.color = isError ? "#ff8585" : "#05c9f4";
   }
 
-  return element;
-}
+  function makeElement(tag, className, text) {
+    const element = document.createElement(tag);
 
-async function checkUser() {
-  const { data, error } =
-    await window.groveClient.auth.getSession();
+    if (className) element.className = className;
+    if (text !== undefined) element.textContent = text;
 
-  if (error || !data.session) {
-    window.location.replace("login.html");
-    return;
+    return element;
   }
 
-  currentUser = data.session.user;
+  function clearElement(element) {
+    if (element) element.replaceChildren();
+  }
 
-  const { data: profile, error: profileError } =
-    await window.groveClient
+  async function loadUser() {
+    if (!client) {
+      showMessage("Grove connection unavailable. Reload the page.", true);
+      return false;
+    }
+
+    const { data, error } = await client.auth.getUser();
+
+    if (error) throw error;
+
+    if (!data.user) {
+      window.location.replace("login.html");
+      return false;
+    }
+
+    currentUser = data.user;
+
+    const { data: profile, error: profileError } = await client
       .from("profiles")
-      .select("id, username, display_name")
+      .select("id, username, display_name, bio, avatar_url")
       .eq("id", currentUser.id)
       .maybeSingle();
 
-  if (profileError) {
-    console.error("Grove profile load:", profileError);
+    if (profileError) throw profileError;
 
-    usernameDisplay.textContent =
-      "Profile could not be loaded";
+    if (!profile?.username) {
+      window.location.replace("complete-profile.html");
+      return false;
+    }
 
-    return;
+    currentProfile = profile;
+
+    if (elements.username) {
+      elements.username.textContent = `@${profile.username}`;
+    }
+
+    if (elements.displayName) {
+      elements.displayName.textContent =
+        profile.display_name || profile.username;
+    }
+
+    if (elements.avatar) {
+      if (profile.avatar_url) {
+        elements.avatar.src = profile.avatar_url;
+        elements.avatar.hidden = false;
+      } else {
+        elements.avatar.hidden = true;
+      }
+    }
+
+    return true;
   }
 
-  if (!profile) {
-    window.location.replace("complete-profile.html");
-    return;
-  }
+  function renderPost(post, author) {
+    const article = makeElement("article", "grove-post");
+    article.dataset.postId = post.id;
 
-  usernameDisplay.textContent =
-    profile.display_name ||
-    profile.username ||
-    "Welcome to Grove";
+    const header = makeElement("div", "post-header");
+    const authorName = author?.display_name || author?.username || "Grove member";
+    const username = author?.username ? `@${author.username}` : "";
 
-  emailDisplay.textContent = currentUser.email || "";
-
-  await window.groveClient
-    .from("profiles")
-    .update({
-      last_seen_at: new Date().toISOString()
-    })
-    .eq("id", currentUser.id);
-
-  await loadPosts();
-}
-
-async function createPost() {
-  const body = postContent.value.trim();
-
-  if (!body) {
-    setMessage(
-      postMessage,
-      "Write something first.",
-      "#ff7777"
+    header.append(
+      makeElement("strong", "post-author", authorName),
+      makeElement("span", "post-username", username)
     );
 
-    return;
-  }
+    const body = makeElement("p", "post-body", post.body || "");
+    const date = makeElement(
+      "time",
+      "post-date",
+      post.created_at
+        ? new Date(post.created_at).toLocaleString()
+        : ""
+    );
 
-  createPostButton.disabled = true;
-  setMessage(postMessage, "Publishing...");
+    article.append(header, body, date);
 
-  const { error } =
-    await window.groveClient
-      .from("posts")
-      .insert({
-        author_id: currentUser.id,
-        body,
-        visibility: "public"
+    if (post.author_id === currentUser.id) {
+      const deleteButton = makeElement("button", "delete-post", "Delete");
+      deleteButton.type = "button";
+
+      deleteButton.addEventListener("click", () => {
+        deletePost(post.id, article);
       });
 
-  createPostButton.disabled = false;
+      article.append(deleteButton);
+    }
 
-  if (error) {
-    console.error("Grove post:", error);
-
-    setMessage(
-      postMessage,
-      error.message,
-      "#ff7777"
-    );
-
-    return;
+    return article;
   }
 
-  postContent.value = "";
+  async function loadFeed() {
+    if (!elements.feed) return;
 
-  setMessage(
-    postMessage,
-    "Posted to Grove.",
-    "#7bd7a2"
-  );
-
-  await loadPosts();
-}
-
-async function loadPosts() {
-  feed.replaceChildren(
-    makeTextElement("p", "Loading Grove feed...")
-  );
-
-  const { data: posts, error } =
-    await window.groveClient
+    const { data: posts, error } = await client
       .from("posts")
-      .select("id, author_id, body, created_at")
-      .order("created_at", {
-        ascending: false
-      })
+      .select("id, author_id, body, created_at, visibility")
+      .eq("visibility", "public")
+      .order("created_at", { ascending: false })
       .limit(50);
 
-  if (error) {
-    console.error("Grove feed:", error);
+    if (error) throw error;
 
-    feed.replaceChildren(
-      makeTextElement(
-        "p",
-        "Unable to load the feed: " + error.message
-      )
-    );
+    clearElement(elements.feed);
 
-    return;
-  }
+    if (!posts?.length) {
+      elements.feed.append(
+        makeElement("p", "empty-feed", "No posts yet. Start the conversation.")
+      );
+      return;
+    }
 
-  if (!posts?.length) {
-    feed.replaceChildren(
-      makeTextElement(
-        "p",
-        "No posts yet. Be the first to post."
-      )
-    );
+    const authorIds = [...new Set(posts.map(post => post.author_id))];
 
-    return;
-  }
-
-  const authorIds = [
-    ...new Set(posts.map(post => post.author_id))
-  ];
-
-  const { data: profiles, error: profilesError } =
-    await window.groveClient
+    const { data: profiles, error: profilesError } = await client
       .from("profiles")
       .select("id, username, display_name")
       .in("id", authorIds);
 
-  if (profilesError) {
-    console.warn(
-      "Grove author profiles:",
-      profilesError
+    if (profilesError) throw profilesError;
+
+    const profileMap = new Map(
+      (profiles || []).map(profile => [profile.id, profile])
     );
+
+    for (const post of posts) {
+      elements.feed.append(
+        renderPost(post, profileMap.get(post.author_id))
+      );
+    }
   }
 
-  const profileById = new Map(
-    (profiles || []).map(profile => [
-      profile.id,
-      profile
-    ])
-  );
+  async function createPost() {
+    if (!elements.postInput || !elements.postButton) return;
 
-  feed.replaceChildren();
+    const body = elements.postInput.value.trim();
 
-  for (const post of posts) {
-    const author = profileById.get(post.author_id);
-
-    const card = document.createElement("article");
-    card.className = "post";
-
-    card.appendChild(
-      makeTextElement(
-        "strong",
-        author?.display_name ||
-        author?.username ||
-        "Grove member"
-      )
-    );
-
-    card.appendChild(
-      makeTextElement("p", post.body)
-    );
-
-    card.appendChild(
-      makeTextElement(
-        "p",
-        new Date(post.created_at).toLocaleString(),
-        "post-time"
-      )
-    );
-
-    if (post.author_id === currentUser.id) {
-      const removeButton =
-        makeTextElement("button", "Delete");
-
-      removeButton.type = "button";
-
-      removeButton.addEventListener(
-        "click",
-        () => deletePost(post.id)
-      );
-
-      card.appendChild(removeButton);
+    if (!body) {
+      showMessage("Write something before posting.", true);
+      return;
     }
 
-    feed.appendChild(card);
-  }
-}
+    if (body.length > 5000) {
+      showMessage("Posts must be 5,000 characters or fewer.", true);
+      return;
+    }
 
-async function deletePost(postId) {
-  if (!confirm("Delete this post?")) return;
+    elements.postButton.disabled = true;
+    showMessage("Publishing post...");
 
-  const { error } =
-    await window.groveClient
-      .from("posts")
-      .delete()
-      .eq("id", postId)
-      .eq("author_id", currentUser.id);
+    try {
+      const { error } = await client
+        .from("posts")
+        .insert({
+          author_id: currentUser.id,
+          body,
+          visibility: "public"
+        });
 
-  if (error) {
-    alert(error.message);
-    return;
-  }
+      if (error) throw error;
 
-  await loadPosts();
-}
+      elements.postInput.value = "";
+      showMessage("Your post has been published.");
 
-logoutButton.addEventListener("click", async () => {
-  logoutButton.disabled = true;
+      await loadFeed();
 
-  const { error } =
-    await window.groveClient.auth.signOut();
+    } catch (error) {
+      console.error("Post creation failed:", error);
+      showMessage(error.message || "Could not publish your post.", true);
 
-  if (error) {
-    console.error("Grove logout:", error);
-    alert(error.message);
-    logoutButton.disabled = false;
-    return;
+    } finally {
+      elements.postButton.disabled = false;
+    }
   }
 
-  window.location.replace("index.html");
-});
+  async function deletePost(postId, article) {
+    if (!window.confirm("Delete this post?")) return;
 
-createPostButton.addEventListener(
-  "click",
-  createPost
-);
+    try {
+      const { error } = await client
+        .from("posts")
+        .delete()
+        .eq("id", postId)
+        .eq("author_id", currentUser.id);
 
-if (sendSuggestionButton) {
-  sendSuggestionButton.disabled = true;
+      if (error) throw error;
 
-  sendSuggestionButton.title =
-    "Suggestion submissions are not connected to a database table yet.";
+      article.remove();
+      showMessage("Post deleted.");
 
-  sendSuggestionButton.textContent =
-    "Suggestions coming soon";
+    } catch (error) {
+      console.error("Post deletion failed:", error);
+      showMessage(error.message || "Could not delete the post.", true);
+    }
+  }
 
-  setMessage(
-    suggestionMessage,
-    "The suggestion box is not connected yet."
-  );
-}
+  async function sendFeedback() {
+    if (!elements.feedbackInput || !elements.feedbackButton) return;
 
-checkUser();
+    const content = elements.feedbackInput.value.trim();
+
+    if (!content) {
+      showMessage("Enter feedback before sending.", true);
+      return;
+    }
+
+    elements.feedbackButton.disabled = true;
+    showMessage("Sending feedback...");
+
+    try {
+      const { error } = await client
+        .from("feedback")
+        .insert({
+          user_id: currentUser.id,
+          content
+        });
+
+      if (error) throw error;
+
+      elements.feedbackInput.value = "";
+      showMessage("Feedback sent. Thank you.");
+
+    } catch (error) {
+      console.error("Feedback submission failed:", error);
+      showMessage(error.message || "Could not send feedback.", true);
+
+    } finally {
+      elements.feedbackButton.disabled = false;
+    }
+  }
+
+  async function logout() {
+    if (!client) return;
+
+    const { error } = await client.auth.signOut();
+
+    if (error) {
+      showMessage(error.message || "Could not sign out.", true);
+      return;
+    }
+
+    window.location.replace("login.html");
+  }
+
+  function subscribeToFeed() {
+    if (feedChannel) {
+      client.removeChannel(feedChannel);
+    }
+
+    feedChannel = client
+      .channel("grove-public-feed")
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "posts"
+        },
+        () => {
+          loadFeed().catch(error => {
+            console.error("Live feed refresh failed:", error);
+          });
+        }
+      )
+      .subscribe();
+  }
+
+  async function initialize() {
+    try {
+      const authenticated = await loadUser();
+
+      if (!authenticated) return;
+
+      if (elements.postButton) {
+        elements.postButton.addEventListener("click", createPost);
+      }
+
+      if (elements.feedbackButton) {
+        elements.feedbackButton.addEventListener("click", sendFeedback);
+      }
+
+      if (elements.logout) {
+        elements.logout.addEventListener("click", logout);
+      }
+
+      await loadFeed();
+      subscribeToFeed();
+
+    } catch (error) {
+      console.error("Grove dashboard initialization failed:", error);
+      showMessage(error.message || "Could not load your dashboard.", true);
+    }
+  }
+
+  initialize();
+})();
