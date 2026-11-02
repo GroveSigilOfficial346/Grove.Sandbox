@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Grove — Account Access</title>
+  <link rel="stylesheet" href="css/auth.css">
+</head>
+
+<body>
+
+<main class="auth-container">
+
+  <img
+    src="assets/neural-tree.svg"
+    alt="Grove"
+    class="auth-logo"
+  >
+
+  <h1>GROVE</h1>
+  <p class="subtitle">A WORLD CONNECTED</p>
+
+  <section id="login-panel">
+    <h2>Welcome Back</h2>
+
+    <form id="login-form">
+      <input
+        id="login-email"
+        type="email"
+        placeholder="Email address"
+        autocomplete="email"
+        required
+      >
+
+      <input
+        id="login-password"
+        type="password"
+        placeholder="Password"
+        autocomplete="current-password"
+        required
+      >
+
+      <button type="submit">Log In</button>
+    </form>
+
+    <p class="switch">
+      New to Grove?
+      <button type="button" id="show-register">
+        Create Account
+      </button>
+    </p>
+  </section>
+
+  <section id="register-panel" hidden>
+    <h2>Create Your Account</h2>
+
+    <form id="register-form">
+      <input
+        id="register-email"
+        type="email"
+        placeholder="Email address"
+        autocomplete="email"
+        required
+      >
+
+      <input
+        id="register-password"
+        type="password"
+        placeholder="Create password"
+        autocomplete="new-password"
+        minlength="8"
+        required
+      >
+
+      <button type="submit">Join Grove</button>
+    </form>
+
+    <p class="switch">
+      Already a member?
+      <button type="button" id="show-login">
+        Log In
+      </button>
+    </p>
+  </section>
+
+  <p id="auth-message" role="status" aria-live="polite"></p>
+
+  <a href="/" class="back-link">Return Home</a>
+
+</main>
+
+<script type="module">
+  import "./js/auth.js";
+
+  const loginPanel = document.getElementById("login-panel");
+  const registerPanel = document.getElementById("register-panel");
+  const message = document.getElementById("auth-message");
+
+  document.getElementById("show-register").addEventListener("click", () => {
+    loginPanel.hidden = true;
+    registerPanel.hidden = false;
+    message.textContent = "";
+  });
+
+  document.getElementById("show-login").addEventListener("click", () => {
+    registerPanel.hidden = true;
+    loginPanel.hidden = false;
+    message.textContent = "";
+  });
+
+  document.getElementById("login-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const email = document.getElementById("login-email").value;
+    const password = document.getElementById("login-password").value;
+
+    await window.GroveAuth.login(email, password);
+  });
+
+  document.getElementById("register-form").addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const email = document.getElementById("register-email").value;
+    const password = document.getElementById("register-password").value;
+
+    await window.GroveAuth.register(email, password);
+  });
+</script>
+
+</body>
+</html>
