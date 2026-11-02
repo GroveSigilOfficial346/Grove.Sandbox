@@ -1,82 +1,70 @@
-console.log("Grove login controller loaded");
+(() => {
+  "use strict";
 
-const loginButton = document.getElementById("login");
-const emailInput = document.getElementById("email");
-const passwordInput = document.getElementById("password");
-const message = document.getElementById("message");
+  const button = document.getElementById("login");
+  const emailInput = document.getElementById("email");
+  const passwordInput = document.getElementById("password");
+  const message = document.getElementById("message");
 
-function showMessage(text, color = "#8f9893") {
-  message.textContent = text;
-  message.style.color = color;
-}
-
-async function redirectAfterLogin(user) {
-  const { data: profile, error } =
-    await window.groveClient
-      .from("profiles")
-      .select("id, username")
-      .eq("id", user.id)
-      .maybeSingle();
-
-  if (error) throw error;
-
-  window.location.replace(
-    profile?.username
-      ? "user-dashboard.html"
-      : "complete-profile.html"
-  );
-}
-
-loginButton.addEventListener("click", async () => {
-  if (!window.groveClient) {
-    showMessage(
-      "Grove could not connect to its database.",
-      "#ff7777"
-    );
+  if (!button || !emailInput || !passwordInput || !message) {
+    console.error("Grove login: required HTML elements are missing.");
     return;
   }
 
-  const email = emailInput.value.trim();
-  const password = passwordInput.value;
-
-  if (!email || !password) {
-    showMessage("Enter your email and password.", "#ff7777");
-    return;
+  function showMessage(text, isError = false) {
+    message.textContent = text;
+    message.style.color = isError ? "#ff8585" : "#05c9f4";
   }
 
-  loginButton.disabled = true;
-  showMessage("Signing in...");
-
-  try {
-    const { data, error } =
-      await window.groveClient.auth.signInWithPassword({
-        email,
-        password
-      });
-
-    if (error) throw error;
-    if (!data.user) {
-      throw new Error("Supabase did not return a user.");
+  button.addEventListener("click", async () => {
+    if (!window.groveClient) {
+      showMessage("Connection unavailable. Reload and try again.", true);
+      return;
     }
 
-    showMessage("Signed in. Loading your profile...");
+    const email = emailInput.value.trim();
+    const password = passwordInput.value;
 
-    await redirectAfterLogin(data.user);
+    if (!email || !password) {
+      showMessage("Enter your email and password.", true);
+      return;
+    }
 
-  } catch (error) {
-    console.error("Grove login:", error);
+    button.disabled = true;
+    showMessage("Signing in...");
 
-    showMessage(
-      error.message || "Unable to sign in.",
-      "#ff7777"
-    );
+    try {
+      const { data, error } =
+        await window.groveClient.auth.signInWithPassword({
+          email,
+          password
+        });
 
-    loginButton.disabled = false;
-  }
-});
+      if (error) throw error;
+      if (!data.user) throw new Error("No authenticated user was returned.");
 
-passwordInput.addEventListener("keydown", event => {
-  if (event.key === "Enter") {
-    loginButton.click();
-  }
-});
+      const { data: profile, error: profileError } =
+        await window.groveClient
+          .from("profiles")
+          .select("id, username")
+          .eq("id", data.user.id)
+          .maybeSingle();
+
+      if (profileError) throw profileError;
+
+      showMessage("Signed in. Opening Grove...");
+
+      window.location.assign(
+        profile?.username ? "user-dashboard.html" : "complete-profile.html"
+      );
+    } catch (error) {
+      console.error("Grove login failed:", error);
+      showMessage(
+        error.message || "Login failed. Check your credentials.",
+        true
+      );
+    } finally {
+      button.disabled = false;
+    }
+  });
+})();
