@@ -1,3 +1,4 @@
+```javascript
 (() => {
   "use strict";
 
@@ -5,10 +6,13 @@
     "https://fpkrvgcpbnrusbfmhinj.supabase.co";
 
   const SUPABASE_ANON_KEY =
-    "PASTE_THE_SANDBOX_ANON_KEY_YOU_JUST_SENT_HERE";
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwa3J2Z2NwYm5ydXNiZm1oaW5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1MTc2OTYsImV4cCI6MjEwODA5MzY5Nn0.3CI1pHaEnpcQjnweA_g4Cmsscqp3eltMXWbPj2owHfo";
 
   if (!window.supabase) {
-    console.error("Grove: Supabase library was not loaded.");
+    console.error(
+      "Grove.Sandbox: Supabase library was not loaded."
+    );
+
     window.groveClient = null;
     return;
   }
@@ -27,5 +31,8 @@
     }
   );
 
-  console.info("Grove.Sandbox connection initialized.");
+  console.info(
+    "Grove.Sandbox database connection initialized."
+  );
 })();
+```
