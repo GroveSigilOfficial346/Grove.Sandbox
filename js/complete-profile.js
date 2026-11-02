@@ -1,118 +1,120 @@
-console.log("Grove profile setup loaded");
+(() => {
+  "use strict";
 
-const usernameInput = document.getElementById("username");
-const finishButton = document.getElementById("finish");
-const message = document.getElementById("message");
+  const usernameInput = document.getElementById("username");
+  const finishButton = document.getElementById("finish");
+  const message = document.getElementById("message");
 
-let currentUser = null;
-
-function showMessage(text, color = "#8f9893") {
-  message.textContent = text;
-  message.style.color = color;
-}
-
-async function initializeProfileSetup() {
-  const { data, error } =
-    await window.groveClient.auth.getSession();
-
-  if (error || !data.session) {
-    window.location.replace("login.html");
+  if (!usernameInput || !finishButton || !message) {
+    console.error("Grove profile setup: required HTML elements are missing.");
     return;
   }
 
-  currentUser = data.session.user;
+  const client = window.groveClient;
 
-  const { data: profile, error: profileError } =
-    await window.groveClient
-      .from("profiles")
-      .select("id, username")
-      .eq("id", currentUser.id)
-      .maybeSingle();
-
-  if (profileError) {
-    console.error("Profile lookup:", profileError);
-    showMessage(profileError.message, "#ff7777");
-    return;
+  function showMessage(text, isError = false) {
+    message.textContent = text;
+    message.style.color = isError ? "#ff8585" : "#05c9f4";
   }
 
-  if (profile?.username) {
-    window.location.replace("user-dashboard.html");
-    return;
-  }
+  async function getCurrentUser() {
+    const { data, error } = await client.auth.getUser();
 
-  usernameInput.value =
-    currentUser.user_metadata?.username || "";
-}
-
-finishButton.addEventListener("click", async () => {
-  if (!currentUser) {
-    showMessage(
-      "Your session expired. Please sign in again.",
-      "#ff7777"
-    );
-    return;
-  }
-
-  const username = usernameInput.value
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "_");
-
-  if (!/^[a-z0-9_]{3,30}$/.test(username)) {
-    showMessage(
-      "Username must be 3–30 characters: lowercase letters, numbers, or underscores.",
-      "#ff7777"
-    );
-    return;
-  }
-
-  finishButton.disabled = true;
-  showMessage("Saving your username...");
-
-  try {
-    const { data: existing, error: lookupError } =
-      await window.groveClient
-        .from("profiles")
-        .select("id")
-        .ilike("username", username)
-        .neq("id", currentUser.id)
-        .maybeSingle();
-
-    if (lookupError) throw lookupError;
-
-    if (existing) {
-      throw new Error("That username is already taken.");
+    if (error) throw error;
+    if (!data.user) {
+      window.location.replace("login.html");
+      return null;
     }
 
-    const { error } =
-      await window.groveClient
+    return data.user;
+  }
+
+  async function loadProfile() {
+    if (!client) {
+      showMessage("Grove connection unavailable. Reload the page.", true);
+      finishButton.disabled = true;
+      return;
+    }
+
+    try {
+      const user = await getCurrentUser();
+      if (!user) return;
+
+      const { data: profile, error } = await client
+        .from("profiles")
+        .select("username, display_name")
+        .eq("id", user.id)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (profile?.username) {
+        usernameInput.value = profile.username;
+      }
+    } catch (error) {
+      console.error("Profile loading failed:", error);
+      showMessage(error.message || "Could not load your profile.", true);
+    }
+  }
+
+  finishButton.addEventListener("click", async () => {
+    if (!client) {
+      showMessage("Grove connection unavailable. Reload the page.", true);
+      return;
+    }
+
+    const username = usernameInput.value.trim().toLowerCase();
+
+    if (!/^[a-z0-9_]{3,30}$/.test(username)) {
+      showMessage(
+        "Use 3–30 characters: lowercase letters, numbers, or underscores.",
+        true
+      );
+      return;
+    }
+
+    finishButton.disabled = true;
+    showMessage("Checking username...");
+
+    try {
+      const user = await getCurrentUser();
+      if (!user) return;
+
+      const { data: existing, error: lookupError } = await client
+        .from("profiles")
+        .select("id")
+        .eq("username", username)
+        .neq("id", user.id)
+        .maybeSingle();
+
+      if (lookupError) throw lookupError;
+
+      if (existing) {
+        showMessage("That username is already taken.", true);
+        return;
+      }
+
+      const { error: updateError } = await client
         .from("profiles")
         .update({
           username,
-          display_name: username,
-          updated_at: new Date().toISOString()
+          display_name: username
         })
-        .eq("id", currentUser.id);
+        .eq("id", user.id);
 
-    if (error) throw error;
+      if (updateError) throw updateError;
 
-    showMessage(
-      "Profile saved. Entering Grove...",
-      "#7bd7a2"
-    );
+      showMessage("Profile complete. Opening Grove...");
+      window.location.assign("user-dashboard.html");
 
-    window.location.replace("user-dashboard.html");
+    } catch (error) {
+      console.error("Profile completion failed:", error);
+      showMessage(error.message || "Could not save your profile.", true);
 
-  } catch (error) {
-    console.error("Profile setup:", error);
+    } finally {
+      finishButton.disabled = false;
+    }
+  });
 
-    showMessage(
-      error.message || "Could not save your profile.",
-      "#ff7777"
-    );
-
-    finishButton.disabled = false;
-  }
-});
-
-initializeProfileSetup();
+  loadProfile();
+})();
