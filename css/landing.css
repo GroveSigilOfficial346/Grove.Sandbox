@@ -115,6 +115,46 @@ p {
 }
 
 /* =========================================
+   HOMEPAGE ACCOUNT NAVIGATION
+========================================= */
+
+.account-navigation {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 28px;
+}
+
+.account-navigation button {
+  min-width: 115px;
+  padding: 12px 18px;
+  color: #f7f5ff;
+  background: #851eff22;
+  border: 1px solid #851eff88;
+  border-radius: 7px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition:
+    background .2s ease,
+    border-color .2s ease;
+}
+
+.account-navigation button:hover {
+  background: #851eff55;
+  border-color: #05c9f4;
+}
+
+#join-button {
+  background: linear-gradient(
+    90deg,
+    #851eff,
+    #b52de8
+  );
+  border-color: transparent;
+}
+
+/* =========================================
    BACKGROUND PARTICLE EFFECT
 ========================================= */
 
@@ -159,4 +199,5 @@ body::before {
       transform: scale(1.035);
     }
   }
-  }
+
+}
