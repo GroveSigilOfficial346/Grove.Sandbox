@@ -4,63 +4,140 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#050019">
+  <meta name="description" content="View your Grove member profile.">
   <title>Grove Profile</title>
+
   <link rel="stylesheet" href="css/profile.css">
+
+  <!-- Profile controller loads the shared Supabase ES module -->
+  <script type="module" src="js/profile-view.js"></script>
 </head>
+
 <body>
+
   <header class="site-header">
     <a class="brand" href="/">GROVE</a>
-    <nav>
+
+    <nav aria-label="Main navigation">
       <a href="/">Home</a>
       <a href="/community.html">Community</a>
       <a href="/profile.html">Profile</a>
+      <a href="/messages.html">Messages</a>
     </nav>
   </header>
 
   <main class="page-container">
-    <p id="status" class="status-message" role="status">Loading profile...</p>
+
+    <p
+      id="status"
+      class="status-message"
+      role="status"
+      aria-live="polite"
+    >
+      Loading profile...
+    </p>
 
     <section class="profile-card">
-      <div id="cover" class="profile-cover" aria-label="Profile cover"></div>
+
+      <div
+        id="cover"
+        class="profile-cover"
+        aria-label="Profile cover"
+      ></div>
 
       <div class="profile-main">
+
         <div class="profile-heading">
-          <div id="avatar" class="profile-avatar" aria-label="Profile avatar">G</div>
+
+          <div
+            id="avatar"
+            class="profile-avatar"
+            aria-label="Profile avatar"
+          >G</div>
 
           <div class="profile-identity">
             <h1 id="display-name">Grove Member</h1>
             <p id="username" class="muted"></p>
           </div>
+
         </div>
 
         <p id="bio" class="profile-bio">No bio yet.</p>
+
         <div id="details" class="profile-details"></div>
 
         <div class="profile-actions">
-          <button id="follow-button" class="button primary" type="button" hidden>
+
+          <button
+            id="follow-button"
+            class="button primary"
+            type="button"
+            hidden
+          >
             Follow
           </button>
-          <button id="message-button" class="button secondary" type="button" hidden>
+
+          <button
+            id="message-button"
+            class="button secondary"
+            type="button"
+            hidden
+          >
             Message
           </button>
-          <button id="edit-profile-button" class="button secondary" type="button" hidden>
+
+          <button
+            id="edit-profile-button"
+            class="button secondary"
+            type="button"
+            hidden
+          >
             Edit profile
           </button>
+
         </div>
 
         <div id="profile-upload-actions" class="upload-actions" hidden>
-          <button id="avatar-upload-button" class="button secondary" type="button">
+
+          <button
+            id="avatar-upload-button"
+            class="button secondary"
+            type="button"
+          >
             Change avatar
           </button>
-          <input id="avatar-file" type="file" accept="image/*" hidden>
 
-          <button id="cover-upload-button" class="button secondary" type="button">
+          <input
+            id="avatar-file"
+            type="file"
+            accept="image/*"
+            hidden
+          >
+
+          <button
+            id="cover-upload-button"
+            class="button secondary"
+            type="button"
+          >
             Change cover
           </button>
-          <input id="cover-file" type="file" accept="image/*" hidden>
+
+          <input
+            id="cover-file"
+            type="file"
+            accept="image/*"
+            hidden
+          >
+
         </div>
 
-        <p id="action-status" class="status-message" role="status"></p>
+        <p
+          id="action-status"
+          class="status-message"
+          role="status"
+          aria-live="polite"
+        ></p>
+
       </div>
     </section>
 
@@ -71,13 +148,13 @@
 
     <section id="posts-section" class="content-section">
       <h2>Posts</h2>
+
       <div id="posts-list">
         <p class="muted">Posts will appear here.</p>
       </div>
     </section>
+
   </main>
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="js/profile-view.js" defer></script>
 </body>
 </html>
