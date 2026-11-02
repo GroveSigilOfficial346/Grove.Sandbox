@@ -1,11 +1,11 @@
+
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
 const SUPABASE_URL =
   "https://fpkrvgcpbnrusbfmhinj.supabase.co";
 
-// Keep your existing complete anon key here.
-// Do not use a service-role or secret key.
-const SUPABASE_ANON_KEY = "PASTE_YOUR_EXISTING_ANON_KEY_HERE";
+const SUPABASE_ANON_KEY =
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwa3J2Z2NwYm5ydXNiZm1oaW5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1MTc2OTYsImV4cCI6MjEwODA5MzY5Nn0.3CI1pHaEnpcQjnweA_g4Cmsscqp3eltMXWbPj2owHfo";
 
 export const supabase = createClient(
   SUPABASE_URL,
@@ -19,7 +19,7 @@ export const supabase = createClient(
   }
 );
 
-// Temporary compatibility for older Grove scripts.
+// Compatibility with older Grove scripts.
 window.groveClient = supabase;
 
 console.info("Grove.Sandbox connected.");
