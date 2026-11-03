@@ -1,6 +1,6 @@
 import { supabase } from "./supabase.js";
 
-const MEDIA_BUCKET = "grove-media";
+const POST_MEDIA_BUCKET = "post-media-private";
 const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 const MAX_IMAGES = 10;
 
@@ -22,11 +22,13 @@ let currentProfile = null;
 let feedLoading = false;
 
 function setStatus(message, isError = false) {
+  if (!elements.status) return;
   elements.status.textContent = message;
   elements.status.classList.toggle("error", isError);
 }
 
 function setComposerStatus(message, isError = false) {
+  if (!elements.composerStatus) return;
   elements.composerStatus.textContent = message;
   elements.composerStatus.classList.toggle("error", isError);
 }
@@ -65,12 +67,12 @@ function validateImages(files) {
   }
 
   for (const file of files) {
-    if (!file.type.startsWith("image/")) {
-      throw new Error("Only image files can be uploaded.");
+    if (!["image/jpeg", "image/png", "image/webp", "image/gif"].includes(file.type)) {
+      throw new Error("Use JPG, PNG, WEBP, or GIF images.");
     }
 
-    if (file.size > MAX_IMAGE_SIZE) {
-      throw new Error("Each image must be 5 MB or smaller.");
+    if (file.size <= 0 || file.size > MAX_IMAGE_SIZE) {
+      throw new Error("Each image must be larger than 0 bytes and 5 MB or smaller.");
     }
 
     if (!getFileExtension(file)) {
@@ -79,48 +81,75 @@ function validateImages(files) {
   }
 }
 
-async function uploadPostImages(files) {
-  const urls = [];
+function isHttpUrl(value) {
+  return typeof value === "string" &&
+    /^https?:\/\//i.test(value);
+}
+
+async function uploadPostImages(files, postId) {
+  const paths = [];
   const uploadedPaths = [];
 
   try {
     for (const file of files) {
       const extension = getFileExtension(file);
       const fileName = `${crypto.randomUUID()}.${extension}`;
-      const path = `${currentUser.id}/posts/${fileName}`;
+      const path = `${currentUser.id}/${postId}/${fileName}`;
 
       const { error: uploadError } = await supabase.storage
-        .from(MEDIA_BUCKET)
+        .from(POST_MEDIA_BUCKET)
         .upload(path, file, {
           contentType: file.type,
+          cacheControl: "3600",
           upsert: false
         });
 
       if (uploadError) throw uploadError;
 
       uploadedPaths.push(path);
-
-      const { data } = supabase.storage
-        .from(MEDIA_BUCKET)
-        .getPublicUrl(path);
-
-      if (!data?.publicUrl) {
-        throw new Error("Could not create an image URL.");
-      }
-
-      urls.push(data.publicUrl);
+      paths.push(path);
     }
 
-    return { urls, uploadedPaths };
+    return { paths, uploadedPaths };
+
   } catch (error) {
     if (uploadedPaths.length) {
       await supabase.storage
-        .from(MEDIA_BUCKET)
+        .from(POST_MEDIA_BUCKET)
         .remove(uploadedPaths);
     }
 
     throw error;
   }
+}
+
+async function createSignedUrlMap(posts) {
+  const paths = [
+    ...new Set(
+      posts.flatMap(post =>
+        (Array.isArray(post.media_urls) ? post.media_urls : [])
+          .filter(value => typeof value === "string" && !isHttpUrl(value))
+      )
+    )
+  ];
+
+  const signedUrls = new Map();
+
+  if (!paths.length) return signedUrls;
+
+  const { data, error } = await supabase.storage
+    .from(POST_MEDIA_BUCKET)
+    .createSignedUrls(paths, 180);
+
+  if (error) throw error;
+
+  for (const item of data || []) {
+    if (item.path && item.signedUrl && !item.error) {
+      signedUrls.set(item.path, item.signedUrl);
+    }
+  }
+
+  return signedUrls;
 }
 
 async function initialize() {
@@ -152,7 +181,11 @@ async function loadFeed() {
   if (feedLoading) return;
 
   feedLoading = true;
-  elements.refresh.disabled = true;
+
+  if (elements.refresh) {
+    elements.refresh.disabled = true;
+  }
+
   setStatus("Loading posts...");
 
   try {
@@ -183,7 +216,8 @@ async function loadFeed() {
     const [
       profilesResult,
       likesResult,
-      commentsResult
+      commentsResult,
+      signedUrlsByPath
     ] = await Promise.all([
       supabase
         .from("profiles")
@@ -199,7 +233,9 @@ async function loadFeed() {
         .from("comments")
         .select("id, post_id, author_id, body, created_at")
         .in("post_id", postIds)
-        .order("created_at", { ascending: true })
+        .order("created_at", { ascending: true }),
+
+      createSignedUrlMap(posts)
     ]);
 
     if (profilesResult.error) throw profilesResult.error;
@@ -242,31 +278,43 @@ async function loadFeed() {
         profiles,
         likesByPost,
         likedByMe,
-        commentsByPost
+        commentsByPost,
+        signedUrlsByPath
       );
 
       elements.feed.append(card);
     }
 
     setStatus("");
+
   } catch (error) {
     console.error("Grove feed error:", error);
     setStatus(error.message || "Could not load the community feed.", true);
+
   } finally {
     feedLoading = false;
-    elements.refresh.disabled = false;
+
+    if (elements.refresh) {
+      elements.refresh.disabled = false;
+    }
   }
 }
 
-function createPostCard(post, profiles, likesByPost, likedByMe, commentsByPost) {
+function createPostCard(
+  post,
+  profiles,
+  likesByPost,
+  likedByMe,
+  commentsByPost,
+  signedUrlsByPath
+) {
   const author = profiles.get(post.author_id);
   const card = createElement("article", "post-card");
 
   const header = createElement("div", "post-header");
-
   const avatar = createElement("div", "post-avatar");
 
-  if (author?.avatar_url) {
+  if (author?.avatar_url && isHttpUrl(author.avatar_url)) {
     const image = document.createElement("img");
     image.src = author.avatar_url;
     image.alt = "";
@@ -281,6 +329,7 @@ function createPostCard(post, profiles, likesByPost, likedByMe, commentsByPost) 
   }
 
   const identity = document.createElement("div");
+
   const authorLink = createElement(
     "a",
     "post-author",
@@ -308,8 +357,14 @@ function createPostCard(post, profiles, likesByPost, likedByMe, commentsByPost) 
   if (mediaUrls.length) {
     const mediaContainer = createElement("div", "post-images");
 
-    for (const url of mediaUrls) {
-      if (typeof url !== "string" || !/^https?:\/\//i.test(url)) continue;
+    for (const value of mediaUrls) {
+      if (typeof value !== "string") continue;
+
+      const url = isHttpUrl(value)
+        ? value
+        : signedUrlsByPath.get(value);
+
+      if (!url) continue;
 
       const link = document.createElement("a");
       link.href = url;
@@ -325,7 +380,9 @@ function createPostCard(post, profiles, likesByPost, likedByMe, commentsByPost) 
       mediaContainer.append(link);
     }
 
-    card.append(mediaContainer);
+    if (mediaContainer.childElementCount) {
+      card.append(mediaContainer);
+    }
   }
 
   const actions = createElement("div", "post-actions");
@@ -354,6 +411,7 @@ function createPostCard(post, profiles, likesByPost, likedByMe, commentsByPost) 
           .eq("user_id", currentUser.id);
 
         if (error) throw error;
+
       } else {
         const { error } = await supabase
           .from("post_likes")
@@ -366,6 +424,7 @@ function createPostCard(post, profiles, likesByPost, likedByMe, commentsByPost) 
       }
 
       await loadFeed();
+
     } catch (error) {
       console.error("Like error:", error);
       setStatus(error.message || "Could not update like.", true);
@@ -401,6 +460,18 @@ function createPostCard(post, profiles, likesByPost, likedByMe, commentsByPost) 
         return;
       }
 
+      const privatePaths = mediaUrlsFromPost(post);
+
+      if (privatePaths.length) {
+        const { error: cleanupError } = await supabase.storage
+          .from(POST_MEDIA_BUCKET)
+          .remove(privatePaths);
+
+        if (cleanupError) {
+          console.warn("Deleted post media cleanup failed:", cleanupError);
+        }
+      }
+
       await loadFeed();
     });
 
@@ -417,7 +488,6 @@ function createPostCard(post, profiles, likesByPost, likedByMe, commentsByPost) 
   if (comments.length) {
     for (const comment of comments) {
       const commentAuthor = profiles.get(comment.author_id);
-
       const commentBox = createElement("div", "comment");
 
       commentBox.append(
@@ -444,7 +514,12 @@ function createPostCard(post, profiles, likesByPost, likedByMe, commentsByPost) 
   commentInput.placeholder = "Write a comment...";
   commentInput.setAttribute("aria-label", "Write a comment");
 
-  const commentButton = createElement("button", "button secondary", "Comment");
+  const commentButton = createElement(
+    "button",
+    "button secondary",
+    "Comment"
+  );
+
   commentButton.type = "submit";
 
   commentForm.append(commentInput, commentButton);
@@ -482,95 +557,121 @@ function createPostCard(post, profiles, likesByPost, likedByMe, commentsByPost) 
   return card;
 }
 
-elements.images.addEventListener("change", () => {
-  const files = Array.from(elements.images.files || []);
-
-  try {
-    validateImages(files);
-
-    elements.selectedImages.textContent = files.length
-      ? `${files.length} image(s) selected`
-      : "";
-  } catch (error) {
-    elements.images.value = "";
-    elements.selectedImages.textContent = "";
-    setComposerStatus(error.message, true);
-  }
-});
-
-elements.form.addEventListener("submit", async event => {
-  event.preventDefault();
-
-  const body = elements.body.value.trim();
-  const files = Array.from(elements.images.files || []);
-  const visibility = elements.visibility.value;
-
-  if (!body && !files.length) {
-    setComposerStatus("Write something or choose an image first.", true);
-    return;
-  }
-
-  if (body.length > 5000) {
-    setComposerStatus("Posts cannot exceed 5,000 characters.", true);
-    return;
-  }
-
-  try {
-    validateImages(files);
-  } catch (error) {
-    setComposerStatus(error.message, true);
-    return;
-  }
-
-  elements.publish.disabled = true;
-  setComposerStatus("Publishing post...");
-
-  let uploadedPaths = [];
-
-  try {
-    let mediaUrls = [];
-
-    if (files.length) {
-      const uploadResult = await uploadPostImages(files);
-      mediaUrls = uploadResult.urls;
-      uploadedPaths = uploadResult.uploadedPaths;
-    }
-
-    const { error } = await supabase
-      .from("posts")
-      .insert({
-        author_id: currentUser.id,
-        body,
-        media_urls: mediaUrls,
-        visibility
-      });
-
-    if (error) throw error;
-
-    elements.form.reset();
-    elements.selectedImages.textContent = "";
-    setComposerStatus("Post published.");
-
-    await loadFeed();
-  } catch (error) {
-    console.error("Publish error:", error);
-
-    if (uploadedPaths.length) {
-      await supabase.storage
-        .from(MEDIA_BUCKET)
-        .remove(uploadedPaths);
-    }
-
-    setComposerStatus(
-      error.message || "Could not publish your post.",
-      true
+function mediaUrlsFromPost(post) {
+  return (Array.isArray(post.media_urls) ? post.media_urls : [])
+    .filter(value =>
+      typeof value === "string" &&
+      !isHttpUrl(value)
     );
-  } finally {
-    elements.publish.disabled = false;
-  }
-});
+}
 
-elements.refresh.addEventListener("click", loadFeed);
+if (elements.images) {
+  elements.images.addEventListener("change", () => {
+    const files = Array.from(elements.images.files || []);
+
+    try {
+      validateImages(files);
+
+      elements.selectedImages.textContent = files.length
+        ? `${files.length} image(s) selected`
+        : "";
+
+      setComposerStatus("");
+
+    } catch (error) {
+      elements.images.value = "";
+      elements.selectedImages.textContent = "";
+      setComposerStatus(error.message, true);
+    }
+  });
+}
+
+if (elements.form) {
+  elements.form.addEventListener("submit", async event => {
+    event.preventDefault();
+
+    const body = elements.body.value.trim();
+    const files = Array.from(elements.images.files || []);
+    const visibility = elements.visibility.value;
+
+    if (!body && !files.length) {
+      setComposerStatus("Write something or choose an image first.", true);
+      return;
+    }
+
+    if (body.length > 5000) {
+      setComposerStatus("Posts cannot exceed 5,000 characters.", true);
+      return;
+    }
+
+    if (!["public", "followers", "private"].includes(visibility)) {
+      setComposerStatus("Choose a valid post visibility setting.", true);
+      return;
+    }
+
+    try {
+      validateImages(files);
+    } catch (error) {
+      setComposerStatus(error.message, true);
+      return;
+    }
+
+    elements.publish.disabled = true;
+    setComposerStatus("Publishing post...");
+
+    let uploadedPaths = [];
+
+    try {
+      const postId = crypto.randomUUID();
+      let mediaUrls = [];
+
+      if (files.length) {
+        const uploadResult = await uploadPostImages(files, postId);
+        mediaUrls = uploadResult.paths;
+        uploadedPaths = uploadResult.uploadedPaths;
+      }
+
+      const { error } = await supabase
+        .from("posts")
+        .insert({
+          id: postId,
+          author_id: currentUser.id,
+          body,
+          media_urls: mediaUrls,
+          visibility
+        });
+
+      if (error) throw error;
+
+      elements.form.reset();
+      elements.selectedImages.textContent = "";
+      setComposerStatus("Post published.");
+
+      await loadFeed();
+
+    } catch (error) {
+      console.error("Publish error:", error);
+
+      if (uploadedPaths.length) {
+        await supabase.storage
+          .from(POST_MEDIA_BUCKET)
+          .remove(uploadedPaths);
+      }
+
+      setComposerStatus(
+        error.message || "Could not publish your post.",
+        true
+      );
+
+    } finally {
+      elements.publish.disabled = false;
+    }
+  });
+}
+
+if (elements.refresh) {
+  elements.refresh.addEventListener("click", loadFeed);
+}
 
 supabase.auth.onAuthStateChange((event, session) => {
   if (event === "SIGNED_OUT" || !session) {
