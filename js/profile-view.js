@@ -19,7 +19,16 @@ import { supabase } from "./supabase.js";
   ].join(",");
 
   const DIRECTORY_COLUMNS =
-    "id,username,display_name,avatar_url,cover_url,is_private";
+    "id,username,display_name,avatar_url,cover_url,is_private," +
+    "theme_id,background_mode,custom_background_path";
+
+  const ALLOWED_THEMES = new Set([
+    "midnight-violet",
+    "neon-grove",
+    "rose-galaxy",
+    "ocean-light",
+    "forest-night"
+  ]);
 
   const IMAGE_TYPES = {
     "image/jpeg": "jpg",
@@ -77,6 +86,46 @@ import { supabase } from "./supabase.js";
 
   function isHttpUrl(value) {
     return Boolean(safeHttpUrl(value));
+  }
+
+  function applyProfileAppearance(preferences = {}) {
+    const themeId = ALLOWED_THEMES.has(preferences.theme_id)
+      ? preferences.theme_id
+      : "midnight-violet";
+
+    document.body.dataset.profileTheme = themeId;
+
+    const customPath =
+      preferences.background_mode === "custom" &&
+      typeof preferences.custom_background_path === "string" &&
+      profile?.id &&
+      preferences.custom_background_path.startsWith(profile.id + "/")
+        ? preferences.custom_background_path
+        : null;
+
+    if (customPath) {
+      const { data } = supabase.storage
+        .from(MEDIA_BUCKET)
+        .getPublicUrl(customPath);
+
+      const backgroundUrl = safeHttpUrl(data?.publicUrl);
+
+      if (backgroundUrl) {
+        document.body.style.backgroundImage =
+          "linear-gradient(rgba(5, 0, 25, .58), rgba(5, 0, 25, .72)), " +
+          "url(" + JSON.stringify(backgroundUrl) + ")";
+
+        document.body.style.backgroundSize = "cover";
+        document.body.style.backgroundPosition = "center";
+        document.body.style.backgroundAttachment = "fixed";
+        return;
+      }
+    }
+
+    document.body.style.removeProperty("background-image");
+    document.body.style.removeProperty("background-size");
+    document.body.style.removeProperty("background-position");
+    document.body.style.removeProperty("background-attachment");
   }
 
   function profileName() {
@@ -156,6 +205,30 @@ import { supabase } from "./supabase.js";
     }
 
     profile = data;
+  }
+
+  async function loadOwnerAppearance() {
+    if (!isOwner || !currentUser) {
+      return {
+        theme_id: "midnight-violet",
+        background_mode: "preset",
+        custom_background_path: null
+      };
+    }
+
+    const { data, error } = await supabase
+      .from("user_preferences")
+      .select("theme_id,background_mode,custom_background_url")
+      .eq("user_id", currentUser.id)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    return {
+      theme_id: data?.theme_id || "midnight-violet",
+      background_mode: data?.background_mode || "preset",
+      custom_background_path: data?.custom_background_url || null
+    };
   }
 
   function renderDetails() {
@@ -295,8 +368,6 @@ import { supabase } from "./supabase.js";
         resultMessage = "Follow request cancelled.";
 
       } else if (isFollowing) {
-        // Remove the accepted request first for private accounts.
-        // This allows a fresh request after the member unfollows.
         if (profile.is_private) {
           const { error: requestError } = await supabase
             .from("follow_requests")
@@ -319,7 +390,6 @@ import { supabase } from "./supabase.js";
         resultMessage = "You unfollowed this member.";
 
       } else if (profile.is_private) {
-        // Clear an old declined request before creating a new one.
         const { error: clearError } = await supabase
           .from("follow_requests")
           .delete()
@@ -529,7 +599,12 @@ import { supabase } from "./supabase.js";
     }
   }
 
-  async function decideFollowRequest(requestId, decision, acceptButton, declineButton) {
+  async function decideFollowRequest(
+    requestId,
+    decision,
+    acceptButton,
+    declineButton
+  ) {
     if (!isOwner || !currentUser) return;
 
     acceptButton.disabled = true;
@@ -562,7 +637,6 @@ import { supabase } from "./supabase.js";
         );
       }
 
-      // The database trigger creates the follow row when accepted.
       await loadIncomingFollowRequests();
       await loadCounts();
 
@@ -725,8 +799,6 @@ import { supabase } from "./supabase.js";
       for (const value of media) {
         if (typeof value !== "string") continue;
 
-        // Existing public URLs remain supported.
-        // New private media paths receive short-lived signed URLs.
         const url = isHttpUrl(value)
           ? safeHttpUrl(value)
           : signedUrlsByPath.get(value);
@@ -1065,6 +1137,8 @@ import { supabase } from "./supabase.js";
       const requestedId = params.get("id");
       const requestedUsername = params.get("username");
 
+      let directoryAppearance = null;
+
       if (!requestedId && !requestedUsername && !currentUser) {
         setStatus("Sign in to view your profile.", true);
         return;
@@ -1105,10 +1179,26 @@ import { supabase } from "./supabase.js";
         isOwner = Boolean(
           currentUser && currentUser.id === profile.id
         );
+
+        directoryAppearance = {
+          theme_id: data.theme_id,
+          background_mode: data.background_mode,
+          custom_background_path: data.custom_background_path
+        };
       }
 
       await loadRelationship();
       await loadFullProfile();
+
+      const appearance = isOwner
+        ? await loadOwnerAppearance()
+        : directoryAppearance || {
+            theme_id: "midnight-violet",
+            background_mode: "preset",
+            custom_background_path: null
+          };
+
+      applyProfileAppearance(appearance);
 
       if (profile.is_private && !canViewPrivateContent) {
         setStatus(
