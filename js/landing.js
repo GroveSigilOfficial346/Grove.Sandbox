@@ -1,13 +1,9 @@
-/* =========================================
-   GROVE — HOMEPAGE CONTROLS
-   File: js/landing.js
-========================================= */
-
 (() => {
   "use strict";
 
   const loginButton = document.getElementById("login-button");
   const joinButton = document.getElementById("join-button");
+  const communityButton = document.getElementById("community-button");
 
   if (loginButton) {
     loginButton.addEventListener("click", () => {
@@ -21,4 +17,9 @@
     });
   }
 
+  if (communityButton) {
+    communityButton.addEventListener("click", () => {
+      window.location.href = "/community.html";
+    });
+  }
 })();
