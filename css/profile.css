@@ -291,6 +291,54 @@ a.profile-detail {
   margin: 10px 0;
 }
 
+/* Incoming follow requests */
+
+.follow-requests-panel {
+  margin-top: 24px;
+}
+
+.follow-requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.follow-request-card {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 14px;
+  padding: 15px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel-light);
+}
+
+.follow-request-identity {
+  min-width: 0;
+}
+
+.follow-request-name {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.follow-request-name:hover {
+  color: var(--cyan);
+}
+
+.follow-request-identity p {
+  margin: 6px 0 0;
+  font-size: .82rem;
+}
+
+.follow-request-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 /* Profile editor */
 
 .profile-form {
@@ -450,6 +498,16 @@ a.profile-detail {
   .profile-actions .button,
   .upload-actions .button {
     width: 100%;
+  }
+
+  .follow-request-card {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .follow-request-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
   }
 
   .content-section {
