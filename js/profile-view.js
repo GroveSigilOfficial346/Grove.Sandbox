@@ -4,7 +4,9 @@ import { supabase } from "./supabase.js";
   "use strict";
 
   const $ = (selector) => document.querySelector(selector);
+
   const MEDIA_BUCKET = "grove-media";
+  const POST_MEDIA_BUCKET = "post-media-private";
   const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
   const PROFILE_COLUMNS = [
@@ -32,10 +34,12 @@ import { supabase } from "./supabase.js";
   let isFollowing = false;
   let isFollowPending = false;
   let canViewPrivateContent = false;
+  let incomingRequestsLoading = false;
 
   function setStatus(message, error = false) {
     const node = $("#status");
     if (!node) return;
+
     node.textContent = message || "";
     node.style.color = error ? "#ff8585" : "";
   }
@@ -43,14 +47,17 @@ import { supabase } from "./supabase.js";
   function setActionStatus(message, error = false) {
     const node = $("#action-status");
     if (!node) return;
+
     node.textContent = message || "";
     node.style.color = error ? "#ff8585" : "";
   }
 
   function element(tag, className, text) {
     const node = document.createElement(tag);
+
     if (className) node.className = className;
     if (text !== undefined) node.textContent = text;
+
     return node;
   }
 
@@ -68,9 +75,24 @@ import { supabase } from "./supabase.js";
     }
   }
 
+  function isHttpUrl(value) {
+    return Boolean(safeHttpUrl(value));
+  }
+
   function profileName() {
     return profile?.display_name?.trim() ||
       (profile?.username ? "@" + profile.username : "Grove Member");
+  }
+
+  function formatDate(value) {
+    const date = new Date(value);
+
+    if (Number.isNaN(date.getTime())) return "";
+
+    return date.toLocaleString([], {
+      dateStyle: "medium",
+      timeStyle: "short"
+    });
   }
 
   async function loadRelationship() {
@@ -231,14 +253,12 @@ import { supabase } from "./supabase.js";
 
     if (follow) {
       follow.hidden = !currentUser || isOwner;
-
-      follow.disabled =
-        !currentUser || isOwner || isFollowPending;
+      follow.disabled = !currentUser || isOwner;
 
       follow.textContent = isFollowing
         ? "Following"
         : isFollowPending
-          ? "Request pending"
+          ? "Cancel request"
           : "Follow";
     }
 
@@ -259,8 +279,35 @@ import { supabase } from "./supabase.js";
 
     setActionStatus("Updating follow status...");
 
+    let resultMessage = "Follow status updated.";
+
     try {
-      if (isFollowing) {
+      if (isFollowPending) {
+        const { error } = await supabase
+          .from("follow_requests")
+          .delete()
+          .eq("requester_id", currentUser.id)
+          .eq("target_id", profile.id)
+          .eq("status", "pending");
+
+        if (error) throw error;
+
+        resultMessage = "Follow request cancelled.";
+
+      } else if (isFollowing) {
+        // Remove the accepted request first for private accounts.
+        // This allows a fresh request after the member unfollows.
+        if (profile.is_private) {
+          const { error: requestError } = await supabase
+            .from("follow_requests")
+            .delete()
+            .eq("requester_id", currentUser.id)
+            .eq("target_id", profile.id)
+            .eq("status", "accepted");
+
+          if (requestError) throw requestError;
+        }
+
         const { error } = await supabase
           .from("follows")
           .delete()
@@ -269,7 +316,10 @@ import { supabase } from "./supabase.js";
 
         if (error) throw error;
 
+        resultMessage = "You unfollowed this member.";
+
       } else if (profile.is_private) {
+        // Clear an old declined request before creating a new one.
         const { error: clearError } = await supabase
           .from("follow_requests")
           .delete()
@@ -288,6 +338,8 @@ import { supabase } from "./supabase.js";
 
         if (error) throw error;
 
+        resultMessage = "Follow request sent.";
+
       } else {
         const { error } = await supabase
           .from("follows")
@@ -298,19 +350,19 @@ import { supabase } from "./supabase.js";
           });
 
         if (error) throw error;
+
+        resultMessage = "You are now following this member.";
       }
 
       await loadRelationship();
       updateButtons();
-      await loadCounts();
 
-      setActionStatus(
-        isFollowing
-          ? "You are now following this member."
-          : isFollowPending
-            ? "Follow request sent."
-            : "Follow status updated."
-      );
+      await Promise.all([
+        loadCounts(),
+        loadPosts()
+      ]);
+
+      setActionStatus(resultMessage);
 
     } catch (error) {
       console.error("Follow action failed:", error);
@@ -320,8 +372,216 @@ import { supabase } from "./supabase.js";
         true
       );
 
+      try {
+        await loadRelationship();
+      } catch (refreshError) {
+        console.error("Relationship refresh failed:", refreshError);
+      }
+
     } finally {
       updateButtons();
+    }
+  }
+
+  function getIncomingRequestPanel() {
+    let panel = $("#follow-requests-panel");
+
+    if (panel) return panel;
+
+    panel = element("section", "content-section follow-requests-panel");
+    panel.id = "follow-requests-panel";
+
+    const heading = element("h2", "", "Follow requests");
+    const list = element("div", "follow-requests-list");
+    list.id = "follow-requests-list";
+
+    panel.append(heading, list);
+
+    const actions = $(".profile-actions");
+
+    if (actions) {
+      actions.insertAdjacentElement("afterend", panel);
+    } else {
+      $(".profile-main")?.append(panel);
+    }
+
+    return panel;
+  }
+
+  async function loadIncomingFollowRequests() {
+    if (!isOwner || !currentUser || incomingRequestsLoading) return;
+
+    incomingRequestsLoading = true;
+
+    try {
+      const panel = getIncomingRequestPanel();
+      const list = $("#follow-requests-list");
+
+      if (!panel || !list) return;
+
+      panel.hidden = false;
+      list.replaceChildren(
+        element("p", "muted", "Loading requests...")
+      );
+
+      const { data: requests, error } = await supabase
+        .from("follow_requests")
+        .select("id,requester_id,created_at")
+        .eq("target_id", currentUser.id)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      if (!requests?.length) {
+        list.replaceChildren(
+          element("p", "muted", "No pending follow requests.")
+        );
+        return;
+      }
+
+      const requesterIds = [
+        ...new Set(requests.map(request => request.requester_id))
+      ];
+
+      const { data: directoryProfiles, error: profilesError } =
+        await supabase
+          .from("profile_directory")
+          .select("id,username,display_name,avatar_url")
+          .in("id", requesterIds);
+
+      if (profilesError) throw profilesError;
+
+      const profilesById = new Map(
+        (directoryProfiles || []).map(item => [item.id, item])
+      );
+
+      list.replaceChildren();
+
+      for (const request of requests) {
+        const requester = profilesById.get(request.requester_id);
+        const card = element("article", "follow-request-card");
+
+        const identity = element("div", "follow-request-identity");
+
+        const name = requester?.display_name ||
+          (requester?.username ? "@" + requester.username : "Grove Member");
+
+        const link = element("a", "follow-request-name", name);
+        link.href =
+          "/profile.html?id=" +
+          encodeURIComponent(request.requester_id);
+
+        const date = element(
+          "p",
+          "muted",
+          formatDate(request.created_at)
+        );
+
+        identity.append(link, date);
+
+        const controls = element("div", "follow-request-actions");
+
+        const accept = element(
+          "button",
+          "button primary",
+          "Accept"
+        );
+        accept.type = "button";
+
+        const decline = element(
+          "button",
+          "button secondary",
+          "Decline"
+        );
+        decline.type = "button";
+
+        accept.addEventListener("click", () => {
+          decideFollowRequest(request.id, "accepted", accept, decline);
+        });
+
+        decline.addEventListener("click", () => {
+          decideFollowRequest(request.id, "declined", accept, decline);
+        });
+
+        controls.append(accept, decline);
+        card.append(identity, controls);
+        list.append(card);
+      }
+
+    } catch (error) {
+      console.error("Incoming follow requests failed:", error);
+
+      const list = $("#follow-requests-list");
+
+      if (list) {
+        list.replaceChildren(
+          element(
+            "p",
+            "muted",
+            error.message || "Could not load follow requests."
+          )
+        );
+      }
+
+    } finally {
+      incomingRequestsLoading = false;
+    }
+  }
+
+  async function decideFollowRequest(requestId, decision, acceptButton, declineButton) {
+    if (!isOwner || !currentUser) return;
+
+    acceptButton.disabled = true;
+    declineButton.disabled = true;
+
+    setActionStatus(
+      decision === "accepted"
+        ? "Accepting follow request..."
+        : "Declining follow request..."
+    );
+
+    try {
+      const { data, error } = await supabase
+        .from("follow_requests")
+        .update({
+          status: decision,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", requestId)
+        .eq("target_id", currentUser.id)
+        .eq("status", "pending")
+        .select("id,status")
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!data) {
+        throw new Error(
+          "This request is no longer pending. Refresh the request list."
+        );
+      }
+
+      // The database trigger creates the follow row when accepted.
+      await loadIncomingFollowRequests();
+      await loadCounts();
+
+      setActionStatus(
+        decision === "accepted"
+          ? "Follow request accepted."
+          : "Follow request declined."
+      );
+
+    } catch (error) {
+      console.error("Follow request decision failed:", error);
+
+      setActionStatus(
+        error.message || "Could not update this follow request.",
+        true
+      );
+
+      acceptButton.disabled = false;
+      declineButton.disabled = false;
     }
   }
 
@@ -412,7 +672,40 @@ import { supabase } from "./supabase.js";
     container.append(audio);
   }
 
-  function renderPost(post, likesByPost, viewerLikes) {
+  async function createPostSignedUrlMap(posts) {
+    const paths = [
+      ...new Set(
+        posts.flatMap(post =>
+          (Array.isArray(post.media_urls) ? post.media_urls : [])
+            .filter(value =>
+              typeof value === "string" &&
+              value.trim() &&
+              !isHttpUrl(value)
+            )
+        )
+      )
+    ];
+
+    const signedUrls = new Map();
+
+    if (!paths.length) return signedUrls;
+
+    const { data, error } = await supabase.storage
+      .from(POST_MEDIA_BUCKET)
+      .createSignedUrls(paths, 180);
+
+    if (error) throw error;
+
+    for (const item of data || []) {
+      if (item.path && item.signedUrl && !item.error) {
+        signedUrls.set(item.path, item.signedUrl);
+      }
+    }
+
+    return signedUrls;
+  }
+
+  function renderPost(post, likesByPost, viewerLikes, signedUrlsByPath) {
     const card = element("article", "profile-post");
     card.dataset.postId = post.id;
 
@@ -430,7 +723,14 @@ import { supabase } from "./supabase.js";
       const gallery = element("div", "profile-post-gallery");
 
       for (const value of media) {
-        const url = safeHttpUrl(value);
+        if (typeof value !== "string") continue;
+
+        // Existing public URLs remain supported.
+        // New private media paths receive short-lived signed URLs.
+        const url = isHttpUrl(value)
+          ? safeHttpUrl(value)
+          : signedUrlsByPath.get(value);
+
         if (!url) continue;
 
         const link = element("a", "profile-post-media-link");
@@ -447,7 +747,9 @@ import { supabase } from "./supabase.js";
         gallery.append(link);
       }
 
-      card.append(gallery);
+      if (gallery.childElementCount) {
+        card.append(gallery);
+      }
     }
 
     const footer = element("div", "profile-post-footer");
@@ -509,9 +811,13 @@ import { supabase } from "./supabase.js";
       return;
     }
 
-    const ids = posts.map((post) => post.id);
+    const ids = posts.map(post => post.id);
 
-    const [likes, mine] = await Promise.all([
+    const [
+      likes,
+      mine,
+      signedUrlsByPath
+    ] = await Promise.all([
       supabase
         .from("post_likes")
         .select("post_id")
@@ -523,7 +829,9 @@ import { supabase } from "./supabase.js";
             .select("post_id")
             .eq("user_id", currentUser.id)
             .in("post_id", ids)
-        : Promise.resolve({ data: [], error: null })
+        : Promise.resolve({ data: [], error: null }),
+
+      createPostSignedUrlMap(posts)
     ]);
 
     if (likes.error) {
@@ -544,14 +852,14 @@ import { supabase } from "./supabase.js";
     }
 
     const viewerLikes = new Set(
-      (mine.data || []).map((row) => row.post_id)
+      (mine.data || []).map(row => row.post_id)
     );
 
     container.replaceChildren();
 
     for (const post of posts) {
       container.append(
-        renderPost(post, likeCounts, viewerLikes)
+        renderPost(post, likeCounts, viewerLikes, signedUrlsByPath)
       );
     }
   }
@@ -839,10 +1147,16 @@ import { supabase } from "./supabase.js";
         }
       );
 
-      await Promise.all([
+      const tasks = [
         loadCounts(),
         loadPosts()
-      ]);
+      ];
+
+      if (isOwner) {
+        tasks.push(loadIncomingFollowRequests());
+      }
+
+      await Promise.all(tasks);
 
     } catch (error) {
       console.error("Profile initialization failed:", error);
