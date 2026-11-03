@@ -4,131 +4,136 @@ import { supabase } from "./supabase.js";
   "use strict";
 
   const $ = (selector) => document.querySelector(selector);
+  const MEDIA_BUCKET = "grove-media";
+  const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
   const PROFILE_COLUMNS = [
-    "id",
-    "username",
-    "display_name",
-    "bio",
-    "avatar_url",
-    "cover_url",
-    "created_at",
-    "updated_at",
-    "location",
-    "website",
-    "pronouns",
-    "account_type",
-    "is_private",
-    "profile_music_url",
-    "profile_music_title",
-    "profile_music_artist",
-    "profile_music_enabled",
-    "allow_image_downloads",
-    "allow_image_saves",
-    "allow_music_downloads",
-    "relationship_status"
+    "id", "username", "display_name", "bio", "avatar_url", "cover_url",
+    "created_at", "updated_at", "location", "website", "pronouns",
+    "account_type", "is_private", "profile_music_url",
+    "profile_music_title", "profile_music_artist",
+    "profile_music_enabled", "allow_image_downloads",
+    "allow_image_saves", "allow_music_downloads", "relationship_status"
   ].join(",");
+
+  const DIRECTORY_COLUMNS =
+    "id,username,display_name,avatar_url,cover_url,is_private";
+
+  const IMAGE_TYPES = {
+    "image/jpeg": "jpg",
+    "image/png": "png",
+    "image/webp": "webp",
+    "image/gif": "gif"
+  };
 
   let currentUser = null;
   let profile = null;
   let isOwner = false;
   let isFollowing = false;
-  let isFollowedBy = false;
   let isFollowPending = false;
   let canViewPrivateContent = false;
 
   function setStatus(message, error = false) {
-    const element = $("#status");
-    if (!element) return;
-
-    element.textContent = message;
-    element.style.color = error ? "#ff8585" : "";
+    const node = $("#status");
+    if (!node) return;
+    node.textContent = message || "";
+    node.style.color = error ? "#ff8585" : "";
   }
 
   function setActionStatus(message, error = false) {
-    const element = $("#action-status");
-    if (!element) return;
+    const node = $("#action-status");
+    if (!node) return;
+    node.textContent = message || "";
+    node.style.color = error ? "#ff8585" : "";
+  }
 
-    element.textContent = message;
-    element.style.color = error ? "#ff8585" : "";
+  function element(tag, className, text) {
+    const node = document.createElement(tag);
+    if (className) node.className = className;
+    if (text !== undefined) node.textContent = text;
+    return node;
   }
 
   function safeHttpUrl(value) {
-    if (!value) return "";
+    if (typeof value !== "string" || !value.trim()) return "";
 
     try {
-      const url = new URL(value, window.location.origin);
+      const url = new URL(value.trim());
 
-      if (!["http:", "https:"].includes(url.protocol)) {
-        return "";
-      }
-
-      return url.href;
+      return url.protocol === "https:" || url.protocol === "http:"
+        ? url.href
+        : "";
     } catch {
       return "";
     }
   }
 
-  function makeElement(tag, className, text) {
-    const element = document.createElement(tag);
-
-    if (className) element.className = className;
-    if (text !== undefined) element.textContent = text;
-
-    return element;
-  }
-
-  function getProfileName() {
-    return (
-      profile?.display_name?.trim() ||
-      (profile?.username ? `@${profile.username}` : "Grove Member")
-    );
+  function profileName() {
+    return profile?.display_name?.trim() ||
+      (profile?.username ? "@" + profile.username : "Grove Member");
   }
 
   async function loadRelationship() {
     isFollowing = false;
-    isFollowedBy = false;
     isFollowPending = false;
 
-    canViewPrivateContent = Boolean(isOwner);
+    if (!profile) {
+      canViewPrivateContent = false;
+      return;
+    }
 
-    if (!currentUser || !profile || isOwner) return;
+    if (isOwner) {
+      canViewPrivateContent = true;
+      return;
+    }
 
-    const [followingResult, followedByResult, requestResult] =
-      await Promise.all([
-        supabase
-          .from("follows")
-          .select("status")
-          .eq("follower_id", currentUser.id)
-          .eq("following_id", profile.id)
-          .maybeSingle(),
+    if (!currentUser) {
+      canViewPrivateContent = !profile.is_private;
+      return;
+    }
 
-        supabase
-          .from("follows")
-          .select("status")
-          .eq("follower_id", profile.id)
-          .eq("following_id", currentUser.id)
-          .maybeSingle(),
+    const [following, request] = await Promise.all([
+      supabase
+        .from("follows")
+        .select("status")
+        .eq("follower_id", currentUser.id)
+        .eq("following_id", profile.id)
+        .maybeSingle(),
 
-        supabase
-          .from("follow_requests")
-          .select("id,status")
-          .eq("requester_id", currentUser.id)
-          .eq("target_id", profile.id)
-          .eq("status", "pending")
-          .maybeSingle()
-      ]);
+      supabase
+        .from("follow_requests")
+        .select("id,status")
+        .eq("requester_id", currentUser.id)
+        .eq("target_id", profile.id)
+        .eq("status", "pending")
+        .maybeSingle()
+    ]);
 
-    if (followingResult.error) throw followingResult.error;
-    if (followedByResult.error) throw followedByResult.error;
-    if (requestResult.error) throw requestResult.error;
+    if (following.error) throw following.error;
+    if (request.error) throw request.error;
 
-    isFollowing = followingResult.data?.status === "accepted";
-    isFollowedBy = followedByResult.data?.status === "accepted";
-    isFollowPending = Boolean(requestResult.data);
+    isFollowing = following.data?.status === "accepted";
+    isFollowPending = Boolean(request.data);
 
-    canViewPrivateContent =
-      !profile.is_private || isFollowing;
+    canViewPrivateContent = !profile.is_private || isFollowing;
+  }
+
+  async function loadFullProfile() {
+    if (!canViewPrivateContent) return;
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select(PROFILE_COLUMNS)
+      .eq("id", profile.id)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    if (!data) {
+      throw new Error("The profile details could not be accessed.");
+    }
+
+    profile = data;
   }
 
   function renderDetails() {
@@ -137,48 +142,35 @@ import { supabase } from "./supabase.js";
 
     container.replaceChildren();
 
-    const details = [];
-
-    if (profile.location) {
-      details.push(["Location", profile.location]);
-    }
-
-    if (profile.pronouns) {
-      details.push(["Pronouns", profile.pronouns]);
-    }
-
-    if (profile.account_type) {
-      details.push([
-        "Account",
-        profile.account_type.charAt(0).toUpperCase() +
-          profile.account_type.slice(1)
-      ]);
-    }
-
-    if (profile.relationship_status &&
-        profile.relationship_status !== "not_set") {
-      details.push([
+    const values = [
+      ["Location", profile.location],
+      ["Pronouns", profile.pronouns],
+      ["Account", profile.account_type],
+      [
         "Relationship",
-        profile.relationship_status.replaceAll("_", " ")
-      ]);
+        profile.relationship_status &&
+        profile.relationship_status !== "not_set"
+          ? profile.relationship_status.replaceAll("_", " ")
+          : ""
+      ]
+    ];
+
+    for (const [label, value] of values) {
+      if (!value) continue;
+
+      container.append(
+        element("span", "profile-detail", label + ": " + value)
+      );
     }
 
-    if (profile.website) {
-      const url = safeHttpUrl(profile.website);
+    const website = safeHttpUrl(profile.website);
 
-      if (url) {
-        const link = makeElement("a", "", "Website");
-        link.href = url;
-        link.target = "_blank";
-        link.rel = "noopener noreferrer";
-        container.append(link);
-      }
-    }
-
-    for (const [label, value] of details) {
-      const item = makeElement("span", "profile-detail");
-      item.textContent = `${label}: ${value}`;
-      container.append(item);
+    if (website) {
+      const link = element("a", "profile-detail", "Website");
+      link.href = website;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      container.append(link);
     }
   }
 
@@ -188,14 +180,13 @@ import { supabase } from "./supabase.js";
     const bio = $("#bio");
     const avatar = $("#avatar");
     const cover = $("#cover");
+    const uploadActions = $("#profile-upload-actions");
 
-    if (displayName) {
-      displayName.textContent = getProfileName();
-    }
+    if (displayName) displayName.textContent = profileName();
 
     if (username) {
       username.textContent = profile.username
-        ? `@${profile.username}`
+        ? "@" + profile.username
         : "";
     }
 
@@ -204,65 +195,59 @@ import { supabase } from "./supabase.js";
     }
 
     if (avatar) {
-      const avatarUrl = safeHttpUrl(profile.avatar_url);
-
+      const url = safeHttpUrl(profile.avatar_url);
       avatar.replaceChildren();
 
-      if (avatarUrl) {
-        const image = makeElement("img");
-        image.src = avatarUrl;
-        image.alt = `${getProfileName()}'s profile picture`;
+      if (url) {
+        const image = element("img");
+        image.src = url;
+        image.alt = profileName() + " profile picture";
         image.loading = "lazy";
         avatar.append(image);
       } else {
-        avatar.textContent =
-          getProfileName().charAt(0).toUpperCase();
+        avatar.textContent = profileName().charAt(0).toUpperCase();
       }
     }
 
     if (cover) {
-      const coverUrl = safeHttpUrl(profile.cover_url);
-
-      cover.style.backgroundImage = coverUrl
-        ? `url("${coverUrl.replace(/["\\]/g, "")}")`
+      const url = safeHttpUrl(profile.cover_url);
+      cover.style.backgroundImage = url
+        ? "url(" + JSON.stringify(url) + ")"
         : "";
     }
 
+    if (uploadActions) {
+      uploadActions.hidden = !isOwner;
+    }
+
     renderDetails();
-
-    const uploadActions = $("#profile-upload-actions");
-
-    // Current Supabase column UPDATE grants do not include avatar_url
-    // or cover_url. Keep upload controls hidden until those grants exist.
-    if (uploadActions) uploadActions.hidden = true;
+    renderMusic();
   }
 
   function updateButtons() {
-    const followButton = $("#follow-button");
-    const messageButton = $("#message-button");
-    const editButton = $("#edit-profile-button");
+    const follow = $("#follow-button");
+    const message = $("#message-button");
+    const edit = $("#edit-profile-button");
 
-    if (followButton) {
-      followButton.hidden = isOwner || !currentUser;
+    if (follow) {
+      follow.hidden = !currentUser || isOwner;
 
-      if (isFollowing) {
-        followButton.textContent = "Following";
-      } else if (isFollowPending) {
-        followButton.textContent = "Request pending";
-      } else {
-        followButton.textContent = "Follow";
-      }
-
-      followButton.disabled =
+      follow.disabled =
         !currentUser || isOwner || isFollowPending;
+
+      follow.textContent = isFollowing
+        ? "Following"
+        : isFollowPending
+          ? "Request pending"
+          : "Follow";
     }
 
-    if (messageButton) {
-      messageButton.hidden = !currentUser || isOwner;
+    if (message) {
+      message.hidden = !currentUser || isOwner;
     }
 
-    if (editButton) {
-      editButton.hidden = !isOwner;
+    if (edit) {
+      edit.hidden = !isOwner;
     }
   }
 
@@ -285,6 +270,15 @@ import { supabase } from "./supabase.js";
         if (error) throw error;
 
       } else if (profile.is_private) {
+        const { error: clearError } = await supabase
+          .from("follow_requests")
+          .delete()
+          .eq("requester_id", currentUser.id)
+          .eq("target_id", profile.id)
+          .eq("status", "declined");
+
+        if (clearError) throw clearError;
+
         const { error } = await supabase
           .from("follow_requests")
           .insert({
@@ -308,16 +302,15 @@ import { supabase } from "./supabase.js";
 
       await loadRelationship();
       updateButtons();
+      await loadCounts();
 
       setActionStatus(
         isFollowing
-          ? "You are following this member."
+          ? "You are now following this member."
           : isFollowPending
             ? "Follow request sent."
             : "Follow status updated."
       );
-
-      await loadCounts();
 
     } catch (error) {
       console.error("Follow action failed:", error);
@@ -328,7 +321,6 @@ import { supabase } from "./supabase.js";
       );
 
     } finally {
-      if (button) button.disabled = false;
       updateButtons();
     }
   }
@@ -336,65 +328,51 @@ import { supabase } from "./supabase.js";
   async function loadCounts() {
     if (!profile) return;
 
-    const [followersResult, followingResult, postsResult] =
-      await Promise.all([
-        supabase
-          .from("follows")
-          .select("follower_id", {
-            count: "exact",
-            head: true
-          })
-          .eq("following_id", profile.id)
-          .eq("status", "accepted"),
+    const [followers, following, posts] = await Promise.all([
+      supabase
+        .from("follows")
+        .select("follower_id", { count: "exact", head: true })
+        .eq("following_id", profile.id)
+        .eq("status", "accepted"),
 
-        supabase
-          .from("follows")
-          .select("following_id", {
-            count: "exact",
-            head: true
-          })
-          .eq("follower_id", profile.id)
-          .eq("status", "accepted"),
+      supabase
+        .from("follows")
+        .select("following_id", { count: "exact", head: true })
+        .eq("follower_id", profile.id)
+        .eq("status", "accepted"),
 
-        supabase
-          .from("posts")
-          .select("id", {
-            count: "exact",
-            head: true
-          })
-          .eq("author_id", profile.id)
-      ]);
+      supabase
+        .from("posts")
+        .select("id", { count: "exact", head: true })
+        .eq("author_id", profile.id)
+    ]);
 
-    if (followersResult.error) {
-      console.warn("Follower count unavailable:", followersResult.error);
-    }
+    const stats = $("#profile-stats");
+    if (!stats) return;
 
-    if (followingResult.error) {
-      console.warn("Following count unavailable:", followingResult.error);
-    }
+    stats.replaceChildren();
 
-    if (postsResult.error) {
-      console.warn("Post count unavailable:", postsResult.error);
-    }
-
-    const container = $("#details");
-    if (!container) return;
-
-    const stats = makeElement("div", "profile-stats");
-
-    const values = [
-      ["Posts", postsResult.count],
-      ["Followers", followersResult.count],
-      ["Following", followingResult.count]
+    const items = [
+      ["Posts", posts.error ? null : posts.count],
+      ["Followers", followers.error ? null : followers.count],
+      ["Following", following.error ? null : following.count]
     ];
 
-    for (const [label, count] of values) {
-      const item = makeElement("span", "profile-stat");
-      item.textContent = `${count ?? "—"} ${label}`;
-      stats.append(item);
+    for (const [label, count] of items) {
+      stats.append(
+        element(
+          "span",
+          "profile-stat",
+          (count === null ? "—" : String(count ?? 0)) + " " + label
+        )
+      );
     }
 
-    container.append(stats);
+    for (const result of [followers, following, posts]) {
+      if (result.error) {
+        console.warn("A profile count could not load:", result.error);
+      }
+    }
   }
 
   function renderMusic() {
@@ -405,12 +383,9 @@ import { supabase } from "./supabase.js";
 
     container.replaceChildren();
 
-    const musicUrl = safeHttpUrl(profile?.profile_music_url);
+    const url = safeHttpUrl(profile?.profile_music_url);
 
-    if (
-      !profile?.profile_music_enabled ||
-      !musicUrl
-    ) {
+    if (!profile?.profile_music_enabled || !url) {
       section.hidden = true;
       return;
     }
@@ -419,110 +394,108 @@ import { supabase } from "./supabase.js";
 
     if (profile.profile_music_title) {
       container.append(
-        makeElement("h3", "", profile.profile_music_title)
+        element("h3", "", profile.profile_music_title)
       );
     }
 
     if (profile.profile_music_artist) {
       container.append(
-        makeElement("p", "muted", profile.profile_music_artist)
+        element("p", "muted", profile.profile_music_artist)
       );
     }
 
-    const audio = makeElement("audio", "profile-audio");
+    const audio = element("audio", "profile-audio");
     audio.controls = true;
     audio.preload = "none";
-    audio.src = musicUrl;
+    audio.src = url;
 
     container.append(audio);
   }
 
-  async function loadMusic() {
-    renderMusic();
-  }
-
   function renderPost(post, likesByPost, viewerLikes) {
-    const article = makeElement("article", "profile-post");
-    article.dataset.postId = post.id;
+    const card = element("article", "profile-post");
+    card.dataset.postId = post.id;
 
-    const body = makeElement(
-      "p",
-      "profile-post-body",
-      post.body || ""
-    );
+    if (post.body) {
+      card.append(
+        element("p", "profile-post-body", post.body)
+      );
+    }
 
-    article.append(body);
-
-    const mediaUrls = Array.isArray(post.media_urls)
+    const media = Array.isArray(post.media_urls)
       ? post.media_urls
       : [];
 
-    for (const mediaUrl of mediaUrls) {
-      const safeUrl = safeHttpUrl(mediaUrl);
-      if (!safeUrl) continue;
+    if (media.length) {
+      const gallery = element("div", "profile-post-gallery");
 
-      const image = makeElement("img", "profile-post-image");
-      image.src = safeUrl;
-      image.alt = "Post image";
-      image.loading = "lazy";
+      for (const value of media) {
+        const url = safeHttpUrl(value);
+        if (!url) continue;
 
-      article.append(image);
+        const link = element("a", "profile-post-media-link");
+        link.href = url;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+
+        const image = element("img", "profile-post-image");
+        image.src = url;
+        image.alt = "Post image";
+        image.loading = "lazy";
+
+        link.append(image);
+        gallery.append(link);
+      }
+
+      card.append(gallery);
     }
 
-    const footer = makeElement("div", "profile-post-footer");
-
+    const footer = element("div", "profile-post-footer");
     const date = new Date(post.created_at);
 
     if (!Number.isNaN(date.getTime())) {
-      const time = makeElement(
-        "time",
-        "muted",
-        date.toLocaleString()
-      );
-
+      const time = element("time", "muted", date.toLocaleString());
       time.dateTime = post.created_at;
       footer.append(time);
     }
 
-    const likeCount = likesByPost.get(post.id) || 0;
+    const count = likesByPost.get(post.id) || 0;
     const liked = viewerLikes.has(post.id);
 
-    const likes = makeElement(
-      "span",
-      "profile-post-likes",
-      `${likeCount} ${likeCount === 1 ? "like" : "likes"}`
+    footer.append(
+      element(
+        "span",
+        liked ? "profile-post-likes liked" : "profile-post-likes",
+        count + (count === 1 ? " like" : " likes")
+      )
     );
 
-    if (liked) likes.dataset.liked = "true";
-
-    footer.append(likes);
-    article.append(footer);
-
-    return article;
+    card.append(footer);
+    return card;
   }
 
   async function loadPosts() {
-    const section = $("#posts-section");
     const container = $("#posts-list");
-
-    if (!section || !container || !profile) return;
-
-    container.replaceChildren(
-      makeElement("p", "muted", "Loading posts...")
-    );
+    if (!container || !profile) return;
 
     if (profile.is_private && !canViewPrivateContent) {
       container.replaceChildren(
-        makeElement("p", "muted", "This profile is private.")
+        element(
+          "p",
+          "muted",
+          "This profile is private. Follow to request access."
+        )
       );
       return;
     }
 
+    container.replaceChildren(
+      element("p", "muted", "Loading posts...")
+    );
+
     const { data: posts, error } = await supabase
       .from("posts")
-      .select(
-        "id,author_id,body,media_urls,visibility,created_at,updated_at,edited_at,show_edit_history"
-      )
+      .select("id,author_id,body,media_urls,visibility,created_at")
       .eq("author_id", profile.id)
       .order("created_at", { ascending: false })
       .limit(30);
@@ -531,74 +504,241 @@ import { supabase } from "./supabase.js";
 
     if (!posts?.length) {
       container.replaceChildren(
-        makeElement("p", "muted", "No posts yet.")
+        element("p", "muted", "No posts yet.")
       );
       return;
     }
 
-    const postIds = posts.map((post) => post.id);
+    const ids = posts.map((post) => post.id);
 
-    const [likesResult, viewerLikesResult] = await Promise.all([
+    const [likes, mine] = await Promise.all([
       supabase
         .from("post_likes")
         .select("post_id")
-        .in("post_id", postIds),
+        .in("post_id", ids),
 
       currentUser
         ? supabase
             .from("post_likes")
             .select("post_id")
             .eq("user_id", currentUser.id)
-            .in("post_id", postIds)
+            .in("post_id", ids)
         : Promise.resolve({ data: [], error: null })
     ]);
 
-    if (likesResult.error) {
-      console.warn("Post likes could not be loaded:", likesResult.error);
+    if (likes.error) {
+      console.warn("Post likes unavailable:", likes.error);
     }
 
-    if (viewerLikesResult.error) {
-      console.warn(
-        "Your post likes could not be loaded:",
-        viewerLikesResult.error
-      );
+    if (mine.error) {
+      console.warn("Your likes unavailable:", mine.error);
     }
 
-    const likesByPost = new Map();
+    const likeCounts = new Map();
 
-    for (const like of likesResult.data || []) {
-      likesByPost.set(
-        like.post_id,
-        (likesByPost.get(like.post_id) || 0) + 1
+    for (const row of likes.data || []) {
+      likeCounts.set(
+        row.post_id,
+        (likeCounts.get(row.post_id) || 0) + 1
       );
     }
 
     const viewerLikes = new Set(
-      (viewerLikesResult.data || []).map((like) => like.post_id)
+      (mine.data || []).map((row) => row.post_id)
     );
 
     container.replaceChildren();
 
     for (const post of posts) {
       container.append(
-        renderPost(post, likesByPost, viewerLikes)
+        renderPost(post, likeCounts, viewerLikes)
       );
     }
   }
 
-  async function loadIncomingRequests() {
-    if (!isOwner || !currentUser) return;
+  function storagePathFromPublicUrl(value) {
+    if (!value || !currentUser) return null;
 
-    // Requests are queried only for the profile owner.
-    // Approval controls are not present in profile.html.
-    const { error } = await supabase
-      .from("follow_requests")
-      .select("id")
-      .eq("target_id", currentUser.id)
-      .eq("status", "pending");
+    try {
+      const url = new URL(value);
+      const marker =
+        "/storage/v1/object/public/" + MEDIA_BUCKET + "/";
 
-    if (error) {
-      console.warn("Incoming follow requests unavailable:", error);
+      const index = url.pathname.indexOf(marker);
+      if (index < 0) return null;
+
+      const path = decodeURIComponent(
+        url.pathname.slice(index + marker.length)
+      );
+
+      return path.startsWith(currentUser.id + "/")
+        ? path
+        : null;
+
+    } catch {
+      return null;
+    }
+  }
+
+  async function uploadProfileImage(file, field) {
+    if (!currentUser || !isOwner) {
+      throw new Error("Only the profile owner can upload profile images.");
+    }
+
+    if (!file || !IMAGE_TYPES[file.type]) {
+      throw new Error("Choose a JPG, PNG, WebP, or GIF image.");
+    }
+
+    if (file.size <= 0 || file.size > MAX_IMAGE_SIZE) {
+      throw new Error(
+        "Profile images must be larger than 0 bytes and 5 MB or smaller."
+      );
+    }
+
+    const extension = IMAGE_TYPES[file.type];
+
+    const path =
+      currentUser.id +
+      "/profile-" +
+      field +
+      "-" +
+      crypto.randomUUID() +
+      "." +
+      extension;
+
+    const { error: uploadError } = await supabase.storage
+      .from(MEDIA_BUCKET)
+      .upload(path, file, {
+        contentType: file.type,
+        cacheControl: "3600",
+        upsert: false
+      });
+
+    if (uploadError) throw uploadError;
+
+    const { data } = supabase.storage
+      .from(MEDIA_BUCKET)
+      .getPublicUrl(path);
+
+    const publicUrl = safeHttpUrl(data?.publicUrl);
+
+    if (!publicUrl) {
+      await supabase.storage.from(MEDIA_BUCKET).remove([path]);
+      throw new Error("Could not create the uploaded image URL.");
+    }
+
+    const column = field === "avatar"
+      ? "avatar_url"
+      : "cover_url";
+
+    const oldPath = storagePathFromPublicUrl(profile[column]);
+
+    try {
+      const { data: updated, error } = await supabase
+        .from("profiles")
+        .update({
+          [column]: publicUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", currentUser.id)
+        .select("id")
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!updated) {
+        throw new Error("The profile image could not be saved.");
+      }
+
+      profile[column] = publicUrl;
+
+      if (oldPath && oldPath !== path) {
+        const { error: removeError } = await supabase.storage
+          .from(MEDIA_BUCKET)
+          .remove([oldPath]);
+
+        if (removeError) {
+          console.warn(
+            "Previous profile image cleanup failed:",
+            removeError
+          );
+        }
+      }
+
+      renderProfile();
+
+      setActionStatus(
+        field === "avatar"
+          ? "Profile picture updated."
+          : "Cover image updated."
+      );
+
+    } catch (error) {
+      await supabase.storage.from(MEDIA_BUCKET).remove([path]);
+      throw error;
+    }
+  }
+
+  function connectUploads() {
+    const avatarButton = $("#avatar-upload-button");
+    const avatarInput = $("#avatar-file");
+    const coverButton = $("#cover-upload-button");
+    const coverInput = $("#cover-file");
+
+    if (avatarButton && avatarInput) {
+      avatarButton.addEventListener("click", () => {
+        avatarInput.click();
+      });
+
+      avatarInput.addEventListener("change", async () => {
+        const file = avatarInput.files?.[0];
+        avatarInput.value = "";
+
+        if (!file) return;
+
+        avatarButton.disabled = true;
+        setActionStatus("Uploading profile picture...");
+
+        try {
+          await uploadProfileImage(file, "avatar");
+        } catch (error) {
+          console.error("Avatar upload failed:", error);
+          setActionStatus(
+            error.message || "Profile picture upload failed.",
+            true
+          );
+        } finally {
+          avatarButton.disabled = false;
+        }
+      });
+    }
+
+    if (coverButton && coverInput) {
+      coverButton.addEventListener("click", () => {
+        coverInput.click();
+      });
+
+      coverInput.addEventListener("change", async () => {
+        const file = coverInput.files?.[0];
+        coverInput.value = "";
+
+        if (!file) return;
+
+        coverButton.disabled = true;
+        setActionStatus("Uploading cover image...");
+
+        try {
+          await uploadProfileImage(file, "cover");
+        } catch (error) {
+          console.error("Cover upload failed:", error);
+          setActionStatus(
+            error.message || "Cover image upload failed.",
+            true
+          );
+        } finally {
+          coverButton.disabled = false;
+        }
+      });
     }
   }
 
@@ -606,93 +746,73 @@ import { supabase } from "./supabase.js";
     try {
       setStatus("Loading profile...");
 
-      const { data: authData, error: authError } =
+      const { data: auth, error: authError } =
         await supabase.auth.getUser();
 
       if (authError) throw authError;
 
-      currentUser = authData.user || null;
+      currentUser = auth.user || null;
 
-      const params = new URLSearchParams(location.search);
-      const id = params.get("id");
-      const username = params.get("username");
+      const params = new URLSearchParams(window.location.search);
+      const requestedId = params.get("id");
+      const requestedUsername = params.get("username");
 
-      if (!id && !username && !currentUser) {
+      if (!requestedId && !requestedUsername && !currentUser) {
         setStatus("Sign in to view your profile.", true);
         return;
       }
 
-      if (!id && !username && currentUser) {
+      if (!requestedId && !requestedUsername && currentUser) {
         const { data, error } = await supabase
           .from("profiles")
-          .select(`${PROFILE_COLUMNS},comment_privacy`)
+          .select(PROFILE_COLUMNS)
           .eq("id", currentUser.id)
           .maybeSingle();
 
         if (error) throw error;
+        if (!data) throw new Error("Your profile could not be found.");
 
         profile = data;
         isOwner = true;
 
       } else {
-        const directoryQuery = supabase
+        let query = supabase
           .from("profile_directory")
-          .select(PROFILE_COLUMNS);
+          .select(DIRECTORY_COLUMNS);
 
-        const { data: directoryProfile, error: directoryError } =
-          await (
-            id
-              ? directoryQuery.eq("id", id)
-              : directoryQuery.eq("username", username)
-          ).maybeSingle();
+        query = requestedId
+          ? query.eq("id", requestedId)
+          : query.eq("username", requestedUsername.toLowerCase());
 
-        if (directoryError) throw directoryError;
+        const { data, error } = await query.maybeSingle();
 
-        if (!directoryProfile) {
-          setStatus(
-            "Profile not found or this profile is not available to you.",
-            true
-          );
+        if (error) throw error;
+
+        if (!data) {
+          setStatus("Profile not found.", true);
           return;
         }
 
-        profile = directoryProfile;
+        profile = data;
         isOwner = Boolean(
-          currentUser && currentUser.id === directoryProfile.id
+          currentUser && currentUser.id === profile.id
         );
-
-        if (isOwner) {
-          const { data, error } = await supabase
-            .from("profiles")
-            .select(`${PROFILE_COLUMNS},comment_privacy`)
-            .eq("id", currentUser.id)
-            .maybeSingle();
-
-          if (error) throw error;
-
-          if (data) profile = data;
-        }
-      }
-
-      if (!profile) {
-        setStatus("Profile not found.", true);
-        return;
       }
 
       await loadRelationship();
+      await loadFullProfile();
 
-      if (
-        !isOwner &&
-        profile.is_private &&
-        !canViewPrivateContent
-      ) {
-        setStatus("This profile is private. Follow to request access.");
+      if (profile.is_private && !canViewPrivateContent) {
+        setStatus(
+          "This profile is private. Follow to request access."
+        );
       } else {
         setStatus("");
       }
 
       renderProfile();
       updateButtons();
+      connectUploads();
 
       $("#follow-button")?.addEventListener(
         "click",
@@ -703,7 +823,7 @@ import { supabase } from "./supabase.js";
         "click",
         () => {
           if (isOwner) {
-            location.href = "/edit-profile.html";
+            window.location.href = "/edit-profile.html";
           }
         }
       );
@@ -713,23 +833,22 @@ import { supabase } from "./supabase.js";
         () => {
           if (!currentUser || isOwner) return;
 
-          location.href =
-            `/messages.html?user=${encodeURIComponent(profile.id)}`;
+          window.location.href =
+            "/messages.html?user=" +
+            encodeURIComponent(profile.id);
         }
       );
 
       await Promise.all([
-        loadMusic(),
         loadCounts(),
-        loadPosts(),
-        loadIncomingRequests()
+        loadPosts()
       ]);
 
     } catch (error) {
-      console.error("Profile load failed:", error);
+      console.error("Profile initialization failed:", error);
 
       setStatus(
-        error?.message || "Unable to load profile.",
+        error.message || "Unable to load profile.",
         true
       );
     }
