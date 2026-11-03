@@ -30,7 +30,8 @@
       <p class="muted">See what members are sharing.</p>
     </section>
 
-    <p id="community-status" class="status-message" role="status" aria-live="polite">
+    <p id="community-status" class="status-message"
+       role="status" aria-live="polite">
       Loading community...
     </p>
 
@@ -39,6 +40,7 @@
 
       <form id="post-form">
         <label class="sr-only" for="post-body">What's on your mind?</label>
+
         <textarea
           id="post-body"
           maxlength="5000"
@@ -61,6 +63,7 @@
 
           <label class="visibility-control" for="post-visibility">
             Post visibility
+
             <select id="post-visibility">
               <option value="public">Public</option>
               <option value="followers">Followers</option>
@@ -74,13 +77,29 @@
         </div>
 
         <p id="selected-images" class="muted"></p>
-        <p id="composer-status" class="status-message" role="status" aria-live="polite"></p>
+
+        <p id="composer-status" class="status-message"
+           role="status" aria-live="polite"></p>
       </form>
+    </section>
+
+    <section
+      id="pinned-community-section"
+      class="pinned-community-section"
+      aria-labelledby="pinned-community-title"
+      hidden
+    >
+      <div class="feed-heading">
+        <h2 id="pinned-community-title">📌 Pinned posts</h2>
+      </div>
+
+      <div id="pinned-community-feed" class="community-feed"></div>
     </section>
 
     <section class="feed-section" aria-labelledby="feed-title">
       <div class="feed-heading">
         <h2 id="feed-title">Latest posts</h2>
+
         <button id="refresh-feed" class="button secondary" type="button">
           Refresh
         </button>
