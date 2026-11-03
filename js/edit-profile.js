@@ -338,12 +338,12 @@ import { supabase } from "./supabase.js";
       );
     }
 
-    if (displayName.length > 50) {
-      throw new Error("Display name must be 50 characters or fewer.");
+    if (displayName.length > 60) {
+      throw new Error("Display name must be 60 characters or fewer.");
     }
 
-    if (bio.length > 300) {
-      throw new Error("Bio must be 300 characters or fewer.");
+    if (bio.length > 280) {
+      throw new Error("Bio must be 280 characters or fewer.");
     }
 
     if (location.length > 80) {
@@ -457,7 +457,6 @@ import { supabase } from "./supabase.js";
         throw new Error("Choose a valid background mode.");
       }
 
-      // Only use or upload a file when custom mode is selected.
       const selectedFile =
         backgroundMode === "custom" ? getSelectedFile() : null;
 
@@ -471,7 +470,6 @@ import { supabase } from "./supabase.js";
           : "Preparing your theme..."
       );
 
-      // Upload first, but only when custom mode actually needs a new image.
       if (backgroundMode === "custom" && selectedFile) {
         uploadedPath = await uploadBackground(selectedFile);
       }
@@ -484,7 +482,6 @@ import { supabase } from "./supabase.js";
       const preferencesUpdate =
         collectPreferencesUpdate(backgroundPath);
 
-      // Save profile details.
       showStatus("Saving profile details...");
 
       const { error: profileError } = await supabase
@@ -496,7 +493,6 @@ import { supabase } from "./supabase.js";
 
       profileWasUpdated = true;
 
-      // Save appearance settings.
       showStatus("Saving appearance settings...");
 
       const { error: preferencesError } = await supabase
@@ -509,7 +505,6 @@ import { supabase } from "./supabase.js";
 
       preferencesWereUpdated = true;
 
-      // Remove the previous image only after the new settings are saved.
       if (
         oldBackgroundPath &&
         oldBackgroundPath !== backgroundPath
