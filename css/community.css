@@ -415,6 +415,7 @@ select {
   }
 
   .visibility-control {
+  
     width: 100%;
     margin-left: 0;
   }
@@ -423,3 +424,40 @@ select {
     flex-direction: column;
   }
 }
+
+/* ==========================================
+   GROVE — COMMUNITY PINNED POSTS
+   ========================================== */
+
+.pinned-community-section {
+  margin: 30px 0 42px;
+  padding: 20px;
+  border: 1px solid rgba(235, 54, 237, 0.3);
+  border-radius: 16px;
+  background: rgba(133, 30, 255, 0.055);
+}
+
+.pinned-community-section .feed-heading h2 {
+  color: var(--magenta);
+}
+
+.post-card-pinned {
+  border-color: rgba(235, 54, 237, 0.35);
+  box-shadow: 0 12px 35px rgba(133, 30, 255, 0.12);
+}
+
+.community-pin-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 14px;
+  color: var(--magenta);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+}
+
+/* ==========================================
+   GROVE — COMMUNITY PIN STYLES END
+   NEXT CHUNK: DATABASE MIGRATION REVIEW
+   ========================================== */
