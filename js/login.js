@@ -10,7 +10,6 @@ import { supabase } from "./supabase.js";
   const loginPanel = $("login-panel");
   const registerPanel = $("register-panel");
   const message = $("auth-message");
-
   const showRegister = $("show-register");
   const showLogin = $("show-login");
 
@@ -30,8 +29,21 @@ import { supabase } from "./supabase.js";
 
   function setLoading(form, loading) {
     const button = form.querySelector('button[type="submit"]');
-
     if (button) button.disabled = loading;
+  }
+
+  function showPanel(panel) {
+    const register = panel === "register";
+
+    loginPanel.hidden = register;
+    registerPanel.hidden = !register;
+    showMessage("");
+
+    if (register) {
+      history.replaceState(null, "", "#register");
+    } else {
+      history.replaceState(null, "", location.pathname);
+    }
   }
 
   function validUsername(username) {
@@ -48,16 +60,17 @@ import { supabase } from "./supabase.js";
   }
 
   showRegister.addEventListener("click", () => {
-    loginPanel.hidden = true;
-    registerPanel.hidden = false;
-    showMessage("");
+    showPanel("register");
   });
 
   showLogin.addEventListener("click", () => {
-    registerPanel.hidden = true;
-    loginPanel.hidden = false;
-    showMessage("");
+    showPanel("login");
   });
+
+  // Open the correct panel when arriving through a homepage link.
+  if (location.hash === "#register") {
+    showPanel("register");
+  }
 
   // LOGIN
   loginForm.addEventListener("submit", async (event) => {
@@ -84,6 +97,7 @@ import { supabase } from "./supabase.js";
     } catch (error) {
       console.error("Grove login:", error);
       showMessage(error.message || "Unable to sign in.", true);
+
     } finally {
       setLoading(loginForm, false);
     }
@@ -146,6 +160,7 @@ import { supabase } from "./supabase.js";
     } catch (error) {
       console.error("Grove registration:", error);
       showMessage(error.message || "Unable to create your account.", true);
+
     } finally {
       setLoading(registerForm, false);
     }
