@@ -296,7 +296,6 @@ async function loadFeed() {
       pinnedPosts.map(post => post.id)
     );
 
-    // Combine both result sets so older pinned posts are still rendered.
     const allPostsById = new Map();
 
     for (const post of [...latestPosts, ...pinnedPosts]) {
@@ -326,6 +325,7 @@ async function loadFeed() {
     }
 
     const postIds = allPosts.map(post => post.id);
+
     const authorIds = [
       ...new Set(allPosts.map(post => post.author_id))
     ];
@@ -390,7 +390,6 @@ async function loadFeed() {
       commentsByPost.get(comment.post_id).push(comment);
     }
 
-    // Render pinned posts separately at the top.
     elements.pinnedFeed.replaceChildren();
 
     if (pinnedPosts.length) {
@@ -413,7 +412,6 @@ async function loadFeed() {
       elements.pinnedSection.hidden = true;
     }
 
-    // Pinned posts are not duplicated in Latest Posts.
     elements.feed.replaceChildren();
 
     if (!latestUnpinnedPosts.length) {
@@ -615,7 +613,6 @@ function createPostCard(
 
   actions.append(likeButton);
 
-  // Only the author receives pin and delete controls.
   if (post.author_id === currentUser.id) {
     const pinButton = createElement(
       "button",
