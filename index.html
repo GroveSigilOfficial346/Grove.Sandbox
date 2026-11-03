@@ -1,52 +1,42 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Grove — Coming Soon</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#050019">
+  <meta name="description" content="Grove — A world connected. Join the community.">
 
-<link rel="stylesheet" href="css/landing.css">
+  <title>Grove — A World Connected</title>
+
+  <link rel="stylesheet" href="css/landing.css">
+  <script src="js/landing.js" defer></script>
 </head>
 
 <body>
+  <main>
+    <img
+      class="neural-tree"
+      src="assets/neural-tree.svg"
+      alt="Grove neural tree logo"
+      width="240"
+      height="240"
+    >
 
-<main>
+    <h1>GROVE</h1>
 
-  <!-- GROVE NEURAL TREE LOGO -->
-  <img
-    class="neural-tree"
-    src="assets/neural-tree.svg"
-    alt="Grove neural tree logo"
-    width="240"
-    height="240"
-  >
+    <div class="line"></div>
 
-  <!-- BRAND TITLE -->
-  <h1>GROVE</h1>
+    <p>A world connected</p>
 
-  <!-- DECORATIVE DIVIDER -->
-  <div class="line"></div>
+    <div class="tagline">
+      CONNECT · CREATE · DISCOVER
+    </div>
 
-  <!-- HOMEPAGE STATUS -->
-  <p>Coming Soon</p>
-
-  <!-- BRAND TAGLINE -->
-  <div class="tagline">A WORLD CONNECTED</div>
-
-  <!-- ACCOUNT NAVIGATION -->
-  <nav class="account-navigation">
-    <button id="login-button" type="button">
-      Log In
-    </button>
-
-    <button id="join-button" type="button">
-      Join Grove
-    </button>
-  </nav>
-
-</main>
-
-<script src="js/landing.js" defer></script>
-
+    <nav class="account-navigation" aria-label="Grove navigation">
+      <button id="login-button" type="button">Log In</button>
+      <button id="join-button" type="button">Join Grove</button>
+      <button id="community-button" type="button">Community</button>
+    </nav>
+  </main>
 </body>
 </html>
