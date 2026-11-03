@@ -93,7 +93,9 @@ function renderConversationButton(conversation) {
 
   button.addEventListener("click", () => {
     openConversation(conversation.id, conversation.label)
-      .catch((error) => showError(error, "Conversation could not open."));
+      .catch((error) =>
+        showError(error, "Conversation could not open.")
+      );
   });
 
   return button;
@@ -120,7 +122,14 @@ function renderConversationList() {
   }
 }
 
-async function loadConversationList() {
+/*
+ * Options prevent the requested-user URL from recursively reopening
+ * itself when a new direct conversation is created.
+ */
+async function loadConversationList({
+  processRequestedUser = true,
+  autoOpenFirst = true
+} = {}) {
   const token = ++conversationLoadToken;
 
   const { data: memberships, error: membershipError } =
@@ -138,6 +147,16 @@ async function loadConversationList() {
   if (!ids.length) {
     conversations = [];
     renderConversationList();
+
+    if (processRequestedUser) {
+      const requestedUser =
+        new URLSearchParams(location.search).get("user");
+
+      if (requestedUser) {
+        await startOrOpenDirectConversation(requestedUser);
+      }
+    }
+
     return;
   }
 
@@ -176,7 +195,10 @@ async function loadConversationList() {
         .in("id", otherUserIds);
 
     if (profilesError) {
-      console.warn("Some conversation names could not be loaded.", profilesError);
+      console.warn(
+        "Some conversation names could not be loaded.",
+        profilesError
+      );
     } else {
       profilesById = new Map(
         (profiles || []).map((profile) => [profile.id, profile])
@@ -219,14 +241,18 @@ async function loadConversationList() {
 
   renderConversationList();
 
-  const requestedUser = new URLSearchParams(location.search).get("user");
+  if (processRequestedUser) {
+    const requestedUser =
+      new URLSearchParams(location.search).get("user");
 
-  if (requestedUser) {
-    await startOrOpenDirectConversation(requestedUser);
-    return;
+    if (requestedUser) {
+      await startOrOpenDirectConversation(requestedUser);
+      return;
+    }
   }
 
   if (
+    autoOpenFirst &&
     conversations.length &&
     !activeConversationId
   ) {
@@ -245,7 +271,7 @@ async function startOrOpenDirectConversation(targetUserId) {
 
   setStatus("Opening conversation...");
 
-  // This database function enforces message privacy and block rules.
+  // The database function enforces message privacy and block rules.
   // It also prevents duplicate direct conversations.
   const { data: conversationId, error } = await supabase.rpc(
     "open_or_create_direct_conversation",
@@ -260,7 +286,11 @@ async function startOrOpenDirectConversation(targetUserId) {
     throw new Error("The conversation could not be created.");
   }
 
-  await loadConversationList();
+  // Critical fix: do not process the URL target again here.
+  await loadConversationList({
+    processRequestedUser: false,
+    autoOpenFirst: false
+  });
 
   const existing = conversations.find(
     (conversation) => conversation.id === conversationId
@@ -375,11 +405,13 @@ async function openConversation(id, label) {
   activeConversationId = id;
   messageLoadToken++;
 
-  $("#chat-title").textContent = label || "Conversation";
-  $("#chat-subtitle").textContent = "Private conversation";
+  const title = $("#chat-title");
+  const subtitle = $("#chat-subtitle");
+
+  if (title) title.textContent = label || "Conversation";
+  if (subtitle) subtitle.textContent = "Private conversation";
 
   setComposerEnabled(true);
-
   renderConversationList();
 
   await removeActiveChannel();
@@ -453,7 +485,7 @@ async function sendMessage(event) {
   const input = $("#message-input");
   const button = $("#send-message");
 
-  if (!input || !activeConversationId) return;
+  if (!input || !button || !activeConversationId) return;
 
   const body = input.value.trim();
 
