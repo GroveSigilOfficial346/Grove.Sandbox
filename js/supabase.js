@@ -5,7 +5,7 @@ const SUPABASE_URL =
   "https://fpkrvgcpbnrusbfmhinj.supabase.co";
 
 const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwa3J2Z2NwYm5ydXNiZm1oaW5qIiwicm9sZSI6ImFub24iLCJpYXQiMTc5MjUxNzY5NiwiZXhwIjoyMTA4MDkzNjk2fQ.3CI1pHaEnpcQjnweA_g4Cmsscqp3eltMXWbPj2owHfo";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwa3J2Z2NwYm5ydXNiZm1oaW5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1MTc2OTYsImV4cCI6MjEwODA5MzY5Nn0.3CI1pHaEnpcQjnweA_g4Cmsscqp3eltMXWbPj2owHfo";
 
 const REMEMBER_KEY = "grove:remember-session";
 
@@ -17,11 +17,6 @@ function shouldRememberSession() {
   }
 }
 
-/*
-  Session storage is the default.
-  Local storage is used only when Remember me is enabled.
-*/
-
 const groveAuthStorage = {
   getItem(key) {
     try {
@@ -32,10 +27,7 @@ const groveAuthStorage = {
         );
       }
 
-      // Remove legacy persistent sessions that were saved
-      // before the Remember me option existed.
       localStorage.removeItem(key);
-
       return sessionStorage.getItem(key);
     } catch (error) {
       console.error("Grove session storage error:", error);
@@ -81,10 +73,8 @@ export const supabase = createClient(
   }
 );
 
-// Compatibility for older Grove scripts.
 window.groveClient = supabase;
 
-// Install shared account controls and the Grove background.
 installGroveShell(supabase);
 
 console.info("Grove.Sandbox connected.");
