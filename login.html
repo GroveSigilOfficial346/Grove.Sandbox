@@ -2,111 +2,120 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#050019">
   <title>Grove — Account Access</title>
 
-  <link rel="stylesheet" href="css/auth.css">
-  <script type="module" src="js/login.js"></script>
+  <link rel="stylesheet" href="css/auth.css?v=20261104-3">
+  <script type="module" src="js/login.js?v=20261104-3"></script>
 </head>
 
 <body>
+  <main class="auth-container">
 
-<main class="auth-container">
+    <img
+      src="assets/neural-tree.svg"
+      alt="Grove neural tree"
+      class="auth-logo"
+    >
 
-  <img
-    src="assets/neural-tree.svg"
-    alt="Grove neural tree"
-    class="auth-logo"
-  >
+    <h1>GROVE</h1>
+    <p class="subtitle">A WORLD CONNECTED</p>
 
-  <h1>GROVE</h1>
-  <p class="subtitle">A WORLD CONNECTED</p>
-
-  <!-- LOGIN -->
-  <section id="login-panel">
-    <h2>Welcome Back</h2>
-
-    <form id="login-form">
-      <input
-        id="login-email"
-        type="email"
-        placeholder="Email address"
-        autocomplete="email"
-        required
-      >
-
-      <input
-        id="login-password"
-        type="password"
-        placeholder="Password"
-        autocomplete="current-password"
-        required
-      >
-
-      <button type="submit">Log In</button>
-    </form>
-
-    <p class="switch">
-      New to Grove?
-      <button type="button" id="show-register">
-        Create Account
-      </button>
+    <p id="session-notice" class="session-notice" hidden>
+      You already have an active session.
+      <a href="/profile.html">Open your profile</a>
     </p>
-  </section>
 
-  <!-- REGISTRATION -->
-  <section id="register-panel" hidden>
-    <h2>Create Your Account</h2>
+    <section id="login-panel">
+      <h2>Welcome Back</h2>
 
-    <form id="register-form">
+      <form id="login-form">
+        <input
+          id="login-email"
+          type="email"
+          placeholder="Email address"
+          autocomplete="username"
+          required
+        >
 
-      <input
-        id="register-username"
-        type="text"
-        placeholder="Choose a username"
-        autocomplete="username"
-        minlength="3"
-        maxlength="30"
-        pattern="[a-zA-Z0-9_]+"
-        title="Use 3–30 letters, numbers, or underscores."
-        required
-      >
+        <input
+          id="login-password"
+          type="password"
+          placeholder="Password"
+          autocomplete="current-password"
+          required
+        >
 
-      <input
-        id="register-email"
-        type="email"
-        placeholder="Email address"
-        autocomplete="email"
-        required
-      >
+        <label class="remember-row" for="login-remember">
+          <input id="login-remember" type="checkbox">
+          <span>Remember me on this device</span>
+        </label>
 
-      <input
-        id="register-password"
-        type="password"
-        placeholder="Create password"
-        autocomplete="new-password"
-        minlength="8"
-        required
-      >
+        <button type="submit">Log In</button>
+      </form>
 
-      <button type="submit">Join Grove</button>
+      <p class="switch">
+        New to Grove?
+        <button type="button" id="show-register">
+          Create Account
+        </button>
+      </p>
+    </section>
 
-    </form>
+    <section id="register-panel" hidden>
+      <h2>Create Your Account</h2>
 
-    <p class="switch">
-      Already a member?
-      <button type="button" id="show-login">
-        Log In
-      </button>
-    </p>
-  </section>
+      <form id="register-form">
+        <input
+          id="register-username"
+          type="text"
+          placeholder="Choose a username"
+          autocomplete="username"
+          minlength="3"
+          maxlength="30"
+          pattern="[a-zA-Z0-9_]+"
+          title="Use 3–30 letters, numbers, or underscores."
+          required
+        >
 
-  <p id="auth-message" role="status" aria-live="polite"></p>
+        <input
+          id="register-email"
+          type="email"
+          placeholder="Email address"
+          autocomplete="email"
+          required
+        >
 
-  <a href="/" class="back-link">Return Home</a>
+        <input
+          id="register-password"
+          type="password"
+          placeholder="Create password"
+          autocomplete="new-password"
+          minlength="8"
+          required
+        >
 
-</main>
+        <label class="remember-row" for="register-remember">
+          <input id="register-remember" type="checkbox">
+          <span>Remember me on this device</span>
+        </label>
 
+        <button type="submit">Join Grove</button>
+      </form>
+
+      <p class="switch">
+        Already a member?
+        <button type="button" id="show-login">
+          Log In
+        </button>
+      </p>
+    </section>
+
+    <p id="auth-message" role="status" aria-live="polite"></p>
+
+    <a href="/" class="back-link">Return Home</a>
+
+  </main>
 </body>
 </html>
