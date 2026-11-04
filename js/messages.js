@@ -2,12 +2,17 @@ import { supabase } from "./supabase.js";
 
 const $ = (selector) => document.querySelector(selector);
 
+const MAX_MESSAGE_LENGTH = 5000;
+const MESSAGE_HISTORY_LIMIT = 300;
+
 let user = null;
 let activeConversationId = null;
 let activeChannel = null;
 let conversations = [];
+
 let conversationLoadToken = 0;
 let messageLoadToken = 0;
+let isSending = false;
 
 function setStatus(message, error = false) {
   const node = $("#messages-status");
@@ -27,10 +32,12 @@ function setComposerEnabled(enabled) {
   const button = $("#send-message");
 
   if (input) input.disabled = !enabled;
-  if (button) button.disabled = !enabled;
+  if (button) button.disabled = !enabled || isSending;
 }
 
 function formatTime(value) {
+  if (!value) return "";
+
   const date = new Date(value);
 
   if (Number.isNaN(date.getTime())) return "";
@@ -39,6 +46,16 @@ function formatTime(value) {
     hour: "numeric",
     minute: "2-digit"
   });
+}
+
+function formatPreview(body) {
+  if (!body) return "Start a conversation";
+
+  const normalized = String(body).replace(/\s+/g, " ").trim();
+
+  return normalized.length > 65
+    ? `${normalized.slice(0, 65)}…`
+    : normalized;
 }
 
 async function removeActiveChannel() {
@@ -78,18 +95,67 @@ function getProfileLabel(profile) {
   );
 }
 
+/* ==========================================
+   CONVERSATION LIST
+   ========================================== */
+
 function renderConversationButton(conversation) {
   const button = document.createElement("button");
 
   button.type = "button";
   button.className = "conversation-item";
-  button.textContent = conversation.label;
   button.dataset.conversationId = conversation.id;
 
   if (conversation.id === activeConversationId) {
     button.classList.add("active");
     button.setAttribute("aria-current", "true");
   }
+
+  if (conversation.hasUnread) {
+    button.classList.add("has-unread");
+  }
+
+  button.setAttribute(
+    "aria-label",
+    `${conversation.label}${conversation.hasUnread ? ", unread message" : ""}`
+  );
+
+  const content = document.createElement("span");
+  content.className = "conversation-content";
+
+  const name = document.createElement("span");
+  name.className = "conversation-name";
+  name.textContent = conversation.label;
+
+  const preview = document.createElement("span");
+  preview.className = "conversation-preview";
+
+  const lastMessage = conversation.lastMessage;
+
+  preview.textContent = lastMessage
+    ? `${lastMessage.sender_id === user.id ? "You: " : ""}${formatPreview(lastMessage.body)}`
+    : "Start a conversation";
+
+  const details = document.createElement("span");
+  details.className = "conversation-details";
+
+  const time = document.createElement("span");
+  time.className = "conversation-time";
+  time.textContent = lastMessage
+    ? formatTime(lastMessage.created_at)
+    : "";
+
+  details.append(time);
+
+  if (conversation.hasUnread) {
+    const unread = document.createElement("span");
+    unread.className = "conversation-unread";
+    unread.setAttribute("aria-label", "Unread message");
+    details.append(unread);
+  }
+
+  content.append(name, preview);
+  button.append(content, details);
 
   button.addEventListener("click", () => {
     openConversation(conversation.id, conversation.label)
@@ -110,6 +176,7 @@ function renderConversationList() {
   if (!conversations.length) {
     const empty = document.createElement("p");
 
+    empty.className = "conversation-loading";
     empty.textContent =
       "No conversations yet. Open a member profile and select Message.";
 
@@ -122,10 +189,41 @@ function renderConversationList() {
   }
 }
 
-/*
- * Options prevent the requested-user URL from recursively reopening
- * itself when a new direct conversation is created.
- */
+function updateConversationPreview(conversationId, message) {
+  const conversation = conversations.find(
+    (item) => item.id === conversationId
+  );
+
+  if (!conversation) return;
+
+  if (
+    conversation.lastMessage &&
+    new Date(conversation.lastMessage.created_at) >
+      new Date(message.created_at)
+  ) {
+    return;
+  }
+
+  conversation.lastMessage = message;
+
+  conversation.hasUnread =
+    message.sender_id !== user.id &&
+    activeConversationId !== conversationId;
+
+  conversations.sort((a, b) => {
+    const aTime = a.lastMessage?.created_at || a.updated_at;
+    const bTime = b.lastMessage?.created_at || b.updated_at;
+
+    return new Date(bTime) - new Date(aTime);
+  });
+
+  renderConversationList();
+}
+
+/* ==========================================
+   LOAD CONVERSATIONS
+   ========================================== */
+
 async function loadConversationList({
   processRequestedUser = true,
   autoOpenFirst = true
@@ -208,6 +306,48 @@ async function loadConversationList({
 
   if (token !== conversationLoadToken) return;
 
+  /*
+   * Fetch the latest message in each conversation.
+   * Individual conversation queries ensure one busy conversation
+   * cannot hide the preview for another conversation.
+   */
+  const latestMessageResults = await Promise.all(
+    ids.map(async (conversationId) => {
+      const { data, error } = await supabase
+        .from("conversation_messages")
+        .select(
+          "id,conversation_id,sender_id,body,created_at,deleted_for_everyone_at"
+        )
+        .eq("conversation_id", conversationId)
+        .is("deleted_for_everyone_at", null)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (error) {
+        console.warn(
+          "Could not load latest conversation message.",
+          error
+        );
+        return [conversationId, null];
+      }
+
+      return [conversationId, data?.[0] || null];
+    })
+  );
+
+  if (token !== conversationLoadToken) return;
+
+  const latestMessageByConversation = new Map(
+    latestMessageResults
+  );
+
+  const membershipByConversation = new Map(
+    (memberships || []).map((membership) => [
+      membership.conversation_id,
+      membership
+    ])
+  );
+
   conversations = (rows || []).map((conversation) => {
     const conversationMembers = (members || []).filter(
       (member) => member.conversation_id === conversation.id
@@ -233,10 +373,32 @@ async function loadConversationList({
 
     if (!label) label = "Grove conversation";
 
+    const membership = membershipByConversation.get(conversation.id);
+    const lastMessage = latestMessageByConversation.get(conversation.id);
+
+    const hasUnread = Boolean(
+      lastMessage &&
+      lastMessage.sender_id !== user.id &&
+      (
+        !membership?.last_read_at ||
+        new Date(lastMessage.created_at) >
+          new Date(membership.last_read_at)
+      )
+    );
+
     return {
       ...conversation,
-      label
+      label,
+      lastMessage,
+      hasUnread
     };
+  });
+
+  conversations.sort((a, b) => {
+    const aTime = a.lastMessage?.created_at || a.updated_at;
+    const bTime = b.lastMessage?.created_at || b.updated_at;
+
+    return new Date(bTime) - new Date(aTime);
   });
 
   renderConversationList();
@@ -263,6 +425,10 @@ async function loadConversationList({
   }
 }
 
+/* ==========================================
+   OPEN OR CREATE DIRECT CONVERSATION
+   ========================================== */
+
 async function startOrOpenDirectConversation(targetUserId) {
   if (!targetUserId || targetUserId === user.id) {
     setStatus("Choose another member to message.", true);
@@ -271,8 +437,6 @@ async function startOrOpenDirectConversation(targetUserId) {
 
   setStatus("Opening conversation...");
 
-  // The database function enforces message privacy and block rules.
-  // It also prevents duplicate direct conversations.
   const { data: conversationId, error } = await supabase.rpc(
     "open_or_create_direct_conversation",
     {
@@ -286,7 +450,6 @@ async function startOrOpenDirectConversation(targetUserId) {
     throw new Error("The conversation could not be created.");
   }
 
-  // Critical fix: do not process the URL target again here.
   await loadConversationList({
     processRequestedUser: false,
     autoOpenFirst: false
@@ -306,6 +469,10 @@ async function startOrOpenDirectConversation(targetUserId) {
   await openConversation(conversationId, label);
   setStatus("");
 }
+
+/* ==========================================
+   MESSAGE RENDERING
+   ========================================== */
 
 function renderMessage(message) {
   const article = document.createElement("article");
@@ -336,6 +503,29 @@ function scrollMessagesToBottom() {
   list.scrollTop = list.scrollHeight;
 }
 
+function appendMessageToView(message) {
+  const list = $("#message-list");
+  if (!list) return;
+
+  if (
+    list.querySelector(
+      `[data-message-id="${message.id}"]`
+    )
+  ) {
+    return;
+  }
+
+  const empty = list.querySelector(".empty-chat");
+  if (empty) empty.remove();
+
+  list.append(renderMessage(message));
+  scrollMessagesToBottom();
+}
+
+/* ==========================================
+   READ MARKERS
+   ========================================== */
+
 async function updateReadMarker(conversationId) {
   const { error } = await supabase
     .from("conversation_members")
@@ -348,7 +538,20 @@ async function updateReadMarker(conversationId) {
   if (error) {
     console.warn("Could not update message read marker.", error);
   }
+
+  const conversation = conversations.find(
+    (item) => item.id === conversationId
+  );
+
+  if (conversation) {
+    conversation.hasUnread = false;
+    renderConversationList();
+  }
 }
+
+/* ==========================================
+   LOAD MESSAGE HISTORY
+   ========================================== */
 
 async function loadMessages() {
   if (!activeConversationId) return;
@@ -364,7 +567,7 @@ async function loadMessages() {
     .eq("conversation_id", conversationId)
     .is("deleted_for_everyone_at", null)
     .order("created_at", { ascending: true })
-    .limit(300);
+    .limit(MESSAGE_HISTORY_LIMIT);
 
   if (error) throw error;
 
@@ -381,12 +584,14 @@ async function loadMessages() {
   list.replaceChildren();
 
   if (!data?.length) {
-    const empty = document.createElement("p");
+    const empty = document.createElement("div");
 
     empty.className = "empty-chat";
-    empty.textContent =
-      "This is the beginning of the conversation.";
 
+    const heading = document.createElement("h3");
+    heading.textContent = "This is the beginning of the conversation.";
+
+    empty.append(heading);
     list.append(empty);
   } else {
     for (const message of data) {
@@ -398,6 +603,10 @@ async function loadMessages() {
 
   await updateReadMarker(conversationId);
 }
+
+/* ==========================================
+   OPEN CONVERSATION AND REALTIME
+   ========================================== */
 
 async function openConversation(id, label) {
   if (!id) return;
@@ -418,7 +627,6 @@ async function openConversation(id, label) {
 
   await loadMessages();
 
-  // Do not attach a channel if the user switched conversations while loading.
   if (activeConversationId !== id) return;
 
   const channel = supabase
@@ -438,31 +646,18 @@ async function openConversation(id, label) {
 
         if (
           !message ||
-          message.sender_id === user.id ||
           message.deleted_for_everyone_at
         ) {
           return;
         }
 
-        const list = $("#message-list");
-        if (!list) return;
+        updateConversationPreview(id, message);
 
-        // Avoid rendering a duplicate if the message was already loaded.
-        if (
-          list.querySelector(
-            `[data-message-id="${message.id}"]`
-          )
-        ) {
-          return;
+        appendMessageToView(message);
+
+        if (message.sender_id !== user.id) {
+          await updateReadMarker(id);
         }
-
-        const empty = list.querySelector(".empty-chat");
-        if (empty) empty.remove();
-
-        list.append(renderMessage(message));
-        scrollMessagesToBottom();
-
-        await updateReadMarker(id);
       }
     )
     .subscribe((status) => {
@@ -470,14 +665,20 @@ async function openConversation(id, label) {
 
       if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
         setStatus(
-          "Live updates are temporarily unavailable. You can still refresh the conversation.",
+          "Live updates are temporarily unavailable. Refresh the conversation to check for new messages.",
           true
         );
+      } else if (status === "SUBSCRIBED") {
+        setStatus("");
       }
     });
 
   activeChannel = channel;
 }
+
+/* ==========================================
+   SEND MESSAGE
+   ========================================== */
 
 async function sendMessage(event) {
   event.preventDefault();
@@ -485,46 +686,59 @@ async function sendMessage(event) {
   const input = $("#message-input");
   const button = $("#send-message");
 
-  if (!input || !button || !activeConversationId) return;
+  if (!input || !button || !activeConversationId || isSending) {
+    return;
+  }
 
   const body = input.value.trim();
 
   if (!body) return;
 
-  if (body.length > 5000) {
+  if (body.length > MAX_MESSAGE_LENGTH) {
     setStatus("Messages must be 5,000 characters or fewer.", true);
     return;
   }
 
   const conversationId = activeConversationId;
 
-  button.disabled = true;
+  isSending = true;
+  setComposerEnabled(false);
   setStatus("Sending...");
 
   try {
-    const { error } = await supabase
+    const { data, error } = await supabase
       .from("conversation_messages")
       .insert({
         conversation_id: conversationId,
         sender_id: user.id,
         body
-      });
+      })
+      .select(
+        "id,conversation_id,sender_id,body,created_at,deleted_for_everyone_at"
+      )
+      .single();
 
     if (error) throw error;
 
     input.value = "";
 
-    if (activeConversationId === conversationId) {
-      await loadMessages();
+    if (activeConversationId === conversationId && data) {
+      appendMessageToView(data);
+      updateConversationPreview(conversationId, data);
     }
 
     setStatus("");
   } catch (error) {
     showError(error, "Your message could not be sent.");
   } finally {
-    button.disabled = !activeConversationId;
+    isSending = false;
+    setComposerEnabled(Boolean(activeConversationId));
   }
 }
+
+/* ==========================================
+   INITIALIZATION
+   ========================================== */
 
 async function initialize() {
   try {
@@ -564,6 +778,10 @@ async function initialize() {
     showError(error, "Messages could not load.");
   }
 }
+
+/* ==========================================
+   CLEANUP
+   ========================================== */
 
 window.addEventListener("beforeunload", () => {
   if (activeChannel) {
