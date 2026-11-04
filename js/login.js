@@ -3,7 +3,7 @@ import { supabase } from "./supabase.js";
 (() => {
   "use strict";
 
-  const $ = (id) => document.getElementById(id);
+  const $ = id => document.getElementById(id);
 
   const loginForm = $("login-form");
   const registerForm = $("register-form");
@@ -12,11 +12,18 @@ import { supabase } from "./supabase.js";
   const message = $("auth-message");
   const showRegister = $("show-register");
   const showLogin = $("show-login");
+  const sessionNotice = $("session-notice");
+
+  const REMEMBER_KEY = "grove:remember-session";
 
   if (
-    !loginForm || !registerForm ||
-    !loginPanel || !registerPanel ||
-    !message || !showRegister || !showLogin
+    !loginForm ||
+    !registerForm ||
+    !loginPanel ||
+    !registerPanel ||
+    !message ||
+    !showRegister ||
+    !showLogin
   ) {
     console.error("Grove: Account page elements are missing.");
     return;
@@ -29,7 +36,28 @@ import { supabase } from "./supabase.js";
 
   function setLoading(form, loading) {
     const button = form.querySelector('button[type="submit"]');
+
     if (button) button.disabled = loading;
+  }
+
+  function saveRememberChoice(checked) {
+    try {
+      if (checked) {
+        localStorage.setItem(REMEMBER_KEY, "true");
+      } else {
+        localStorage.removeItem(REMEMBER_KEY);
+      }
+    } catch (error) {
+      console.error("Grove could not save Remember me:", error);
+    }
+  }
+
+  function loadRememberChoice() {
+    try {
+      return localStorage.getItem(REMEMBER_KEY) === "true";
+    } catch {
+      return false;
+    }
   }
 
   function showPanel(panel) {
@@ -37,6 +65,7 @@ import { supabase } from "./supabase.js";
 
     loginPanel.hidden = register;
     registerPanel.hidden = !register;
+
     showMessage("");
 
     if (register) {
@@ -67,26 +96,67 @@ import { supabase } from "./supabase.js";
     showPanel("login");
   });
 
-  // Open the correct panel when arriving through a homepage link.
+  $("login-remember").checked = loadRememberChoice();
+  $("register-remember").checked = loadRememberChoice();
+
   if (location.hash === "#register") {
     showPanel("register");
   }
 
+  // Do not redirect an existing session away from registration.
+  async function checkExistingSession() {
+    try {
+      const { data, error } = await supabase.auth.getSession();
+
+      if (error) throw error;
+
+      if (data.session && sessionNotice) {
+        sessionNotice.hidden = false;
+
+        if (location.hash === "#register") {
+          showMessage(
+            "You are currently signed in. Submitting a new registration will switch away from that account."
+          );
+        } else {
+          showMessage(
+            "You are already signed in. You can open your profile or sign in to another account."
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Grove session check:", error);
+    }
+  }
+
   // LOGIN
-  loginForm.addEventListener("submit", async (event) => {
+  loginForm.addEventListener("submit", async event => {
     event.preventDefault();
 
     const email = $("login-email").value.trim();
     const password = $("login-password").value;
+    const remember = $("login-remember").checked;
+
+    saveRememberChoice(remember);
 
     setLoading(loginForm, true);
     showMessage("Signing in...");
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+      // Clear a different account's local session before signing in.
+      const { data: existing } = await supabase.auth.getSession();
+
+      if (existing?.session) {
+        const { error: signOutError } =
+          await supabase.auth.signOut({ scope: "local" });
+
+        if (signOutError) throw signOutError;
+      }
+
+      const { data, error } =
+        await supabase.auth.signInWithPassword({
+          email,
+          password
+        });
 
       if (error) throw error;
       if (!data.user) throw new Error("Authentication failed.");
@@ -104,12 +174,15 @@ import { supabase } from "./supabase.js";
   });
 
   // REGISTRATION
-  registerForm.addEventListener("submit", async (event) => {
+  registerForm.addEventListener("submit", async event => {
     event.preventDefault();
 
-    const username = $("register-username").value.trim().toLowerCase();
+    const username =
+      $("register-username").value.trim().toLowerCase();
+
     const email = $("register-email").value.trim();
     const password = $("register-password").value;
+    const remember = $("register-remember").checked;
 
     if (!validUsername(username)) {
       showMessage(
@@ -127,10 +200,22 @@ import { supabase } from "./supabase.js";
       return;
     }
 
+    saveRememberChoice(remember);
+
     setLoading(registerForm, true);
     showMessage("Creating your Grove account...");
 
     try {
+      // A new registration must not inherit another account's session.
+      const { data: existing } = await supabase.auth.getSession();
+
+      if (existing?.session) {
+        const { error: signOutError } =
+          await supabase.auth.signOut({ scope: "local" });
+
+        if (signOutError) throw signOutError;
+      }
+
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -139,7 +224,8 @@ import { supabase } from "./supabase.js";
             username,
             display_name: username
           },
-          emailRedirectTo: `${window.location.origin}/profile.html`
+          emailRedirectTo:
+            `${window.location.origin}/profile.html`
         }
       });
 
@@ -156,6 +242,7 @@ import { supabase } from "./supabase.js";
       );
 
       registerForm.reset();
+      $("register-remember").checked = remember;
 
     } catch (error) {
       console.error("Grove registration:", error);
@@ -166,20 +253,7 @@ import { supabase } from "./supabase.js";
     }
   });
 
-  // Existing authenticated session
-  (async () => {
-    try {
-      const { data, error } = await supabase.auth.getSession();
-
-      if (error) throw error;
-
-      if (data.session) {
-        window.location.replace("/profile.html");
-      }
-    } catch (error) {
-      console.error("Grove session check:", error);
-    }
-  })();
+  checkExistingSession();
 
   console.info("Grove account access initialized.");
 })();
