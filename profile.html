@@ -5,13 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#050019">
   <meta name="description" content="View your Grove member profile.">
+
   <title>Grove Profile</title>
 
-  <link rel="stylesheet" href="css/profile.css">
-  <link rel="stylesheet" href="css/profile-pins.css">
+  <link rel="stylesheet" href="css/profile.css?v=20261104-2">
+  <link rel="stylesheet" href="css/profile-pins.css?v=20261104-2">
 
-  <script type="module" src="js/profile-view.js"></script>
-  <script type="module" src="js/profile-pins.js"></script>
+  <script type="module" src="js/profile-view.js?v=20261104-2"></script>
+  <script type="module" src="js/profile-pins.js?v=20261104-2"></script>
+  <script type="module" src="js/profile-mobile-compat.js?v=20261104-2"></script>
 </head>
 
 <body>
@@ -34,16 +36,15 @@
       class="status-message"
       role="status"
       aria-live="polite"
-    >
-      Loading profile...
-    </p>
+    >Loading profile...</p>
 
     <section class="profile-card">
 
       <div
         id="cover"
         class="profile-cover"
-        aria-label="Profile cover"
+        role="img"
+        aria-label="Profile cover image"
       ></div>
 
       <div class="profile-main">
@@ -53,7 +54,8 @@
           <div
             id="avatar"
             class="profile-avatar"
-            aria-label="Profile avatar"
+            role="img"
+            aria-label="Profile picture"
           >G</div>
 
           <div class="profile-identity">
@@ -80,27 +82,21 @@
             class="button primary"
             type="button"
             hidden
-          >
-            Follow
-          </button>
+          >Follow</button>
 
           <button
             id="message-button"
             class="button secondary"
             type="button"
             hidden
-          >
-            Message
-          </button>
+          >Message</button>
 
           <button
             id="edit-profile-button"
             class="button secondary"
             type="button"
             hidden
-          >
-            Edit profile
-          </button>
+          >Edit profile</button>
 
         </div>
 
@@ -110,9 +106,7 @@
             id="avatar-upload-button"
             class="button secondary"
             type="button"
-          >
-            Change avatar
-          </button>
+          >Change avatar</button>
 
           <input
             id="avatar-file"
@@ -125,9 +119,7 @@
             id="cover-upload-button"
             class="button secondary"
             type="button"
-          >
-            Change cover
-          </button>
+          >Change cover</button>
 
           <input
             id="cover-file"
