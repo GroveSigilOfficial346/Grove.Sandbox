@@ -1,10 +1,9 @@
-/* =========================================
-   GROVE — AUTHENTICATION PAGE
-   File: css/auth.css
-========================================= */
-
 * {
   box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
 }
 
 body {
@@ -27,13 +26,14 @@ body {
 
 .auth-container {
   width: 100%;
-  max-width: 390px;
+  max-width: 410px;
   text-align: center;
   padding: 32px 26px;
-  border: 1px solid #851eff44;
+  border: 1px solid #851eff55;
   border-radius: 18px;
-  background: #0b0620cc;
+  background: rgba(11, 6, 32, .88);
   box-shadow: 0 0 40px #851eff18;
+  backdrop-filter: blur(14px);
 }
 
 .auth-logo {
@@ -60,7 +60,7 @@ h1 {
 
 .subtitle {
   margin: 0 0 34px;
-  color: #8179a7;
+  color: #aaa0c8;
   font-size: 10px;
   letter-spacing: 3px;
 }
@@ -77,9 +77,10 @@ form {
   gap: 14px;
 }
 
-input {
+input:not([type="checkbox"]) {
   width: 100%;
-  padding: 15px;
+  min-height: 48px;
+  padding: 14px 15px;
   color: #f7f5ff;
   background: #14102a;
   border: 1px solid #49316c;
@@ -93,19 +94,45 @@ input:focus {
   box-shadow: 0 0 10px #851eff33;
 }
 
-button {
+.remember-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 3px 2px;
+  color: #c9c0df;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.remember-row input {
+  flex: 0 0 auto;
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: #a855f7;
+}
+
+form > button {
+  min-height: 48px;
   padding: 14px;
   border: 0;
   border-radius: 8px;
   color: white;
   background: linear-gradient(90deg, #851eff, #b52de8);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   cursor: pointer;
 }
 
 button:hover {
   filter: brightness(1.15);
+}
+
+button:disabled {
+  opacity: .55;
+  cursor: wait;
 }
 
 .switch {
@@ -116,27 +143,43 @@ button:hover {
 
 .switch button {
   padding: 0;
+  border: 0;
   color: #05c9f4;
   background: none;
   font-weight: 600;
+  cursor: pointer;
 }
 
 #auth-message {
   min-height: 20px;
   margin-top: 20px;
-  color: #ff8585;
+  color: #05c9f4;
   font-size: 13px;
+  line-height: 1.5;
   overflow-wrap: anywhere;
 }
 
-#auth-message[data-type="success"] {
-  color: #7bd7a2;
+.session-notice {
+  margin: 0 0 18px;
+  padding: 11px;
+  border: 1px solid rgba(5,201,244,.25);
+  border-radius: 9px;
+  background: rgba(5,201,244,.07);
+  color: #c9c0df;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.session-notice a {
+  display: inline-block;
+  margin-left: 4px;
+  color: #05c9f4;
 }
 
 .back-link {
   display: inline-block;
   margin-top: 18px;
-  color: #8179a7;
+  color: #aaa0c8;
   font-size: 12px;
   text-decoration: none;
 }
@@ -147,4 +190,18 @@ button:hover {
 
 [hidden] {
   display: none !important;
+}
+
+@media (max-width: 420px) {
+  body {
+    padding: 14px;
+  }
+
+  .auth-container {
+    padding: 27px 19px;
+  }
+
+  h1 {
+    font-size: 33px;
+  }
 }
