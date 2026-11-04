@@ -4,85 +4,140 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#050019">
+  <meta name="description" content="Private messages on Grove.">
 
   <title>Messages | Grove</title>
 
   <link rel="stylesheet" href="css/messages.css">
 
-  <script
-    type="module"
-    src="js/messages.js">
-  </script>
+  <script type="module" src="js/messages.js"></script>
 </head>
 
 <body>
   <main class="messages-app">
 
+    <!-- HEADER -->
     <header class="messages-header">
       <a href="/" class="brand">GROVE</a>
 
-      <h1>Messages</h1>
+      <div class="header-title">
+        <span class="header-eyebrow">GROVE NETWORK</span>
+        <h1>Messages</h1>
+      </div>
 
-      <a href="/profile.html">My profile</a>
+      <nav class="messages-navigation" aria-label="Account navigation">
+        <a href="/community.html">Community</a>
+        <a href="/profile.html">My profile</a>
+      </nav>
     </header>
 
-    <p id="messages-status" role="status"></p>
+    <!-- GLOBAL STATUS -->
+    <p
+      id="messages-status"
+      class="messages-status"
+      role="status"
+      aria-live="polite">
+    </p>
 
+    <!-- MESSAGING WORKSPACE -->
     <section class="messages-layout">
 
+      <!-- CONVERSATION SIDEBAR -->
       <aside class="conversation-sidebar">
-        <h2>Conversations</h2>
 
-        <div id="conversation-list" aria-live="polite">
-          <p>Loading conversations...</p>
-        </div>
-      </aside>
-
-      <section class="chat-panel">
-
-        <div class="chat-heading">
-          <h2 id="chat-title">
-            Choose a conversation
-          </h2>
-
-          <span id="chat-subtitle"></span>
+        <div class="sidebar-heading">
+          <div>
+            <span class="section-eyebrow">YOUR INBOX</span>
+            <h2>Conversations</h2>
+          </div>
         </div>
 
         <div
-          id="message-list"
-          class="message-list"
+          id="conversation-list"
+          class="conversation-list"
+          aria-label="Your conversations"
           aria-live="polite">
 
-          <p class="empty-chat">
-            Your conversations will appear here.
+          <p class="conversation-loading">
+            Loading conversations...
           </p>
 
         </div>
 
+      </aside>
+
+      <!-- CHAT PANEL -->
+      <section class="chat-panel">
+
+        <!-- CHAT HEADER -->
+        <header class="chat-heading">
+
+          <div class="chat-heading-content">
+            <span class="chat-status-indicator"></span>
+
+            <div class="chat-heading-text">
+              <h2 id="chat-title">Choose a conversation</h2>
+              <span id="chat-subtitle">
+                Your private Grove inbox
+              </span>
+            </div>
+          </div>
+
+        </header>
+
+        <!-- MESSAGE HISTORY -->
+        <div
+          id="message-list"
+          class="message-list"
+          aria-live="polite"
+          aria-label="Messages">
+
+          <div class="empty-chat">
+            <span class="empty-chat-icon">✉</span>
+            <h3>Your conversations start here</h3>
+            <p>
+              Choose a conversation to read messages
+              or start a new one from a member's profile.
+            </p>
+          </div>
+
+        </div>
+
+        <!-- MESSAGE COMPOSER -->
         <form id="message-form" class="message-form">
 
           <label class="sr-only" for="message-input">
             Write a message
           </label>
 
-          <textarea
-            id="message-input"
-            maxlength="5000"
-            rows="2"
-            placeholder="Write a message..."
-            required>
-          </textarea>
+          <div class="composer-input-wrap">
+            <textarea
+              id="message-input"
+              maxlength="5000"
+              rows="1"
+              placeholder="Write a message..."
+              required>
+            </textarea>
+          </div>
 
           <button
             type="submit"
-            id="send-message">
-            Send
+            id="send-message"
+            class="send-button"
+            disabled>
+            <span>Send</span>
+            <span aria-hidden="true">➤</span>
           </button>
 
         </form>
 
+        <p class="composer-note">
+          Private conversations on Grove
+        </p>
+
       </section>
     </section>
+
   </main>
 </body>
 </html>
