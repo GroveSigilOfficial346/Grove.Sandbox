@@ -1,11 +1,12 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { installGroveShell } from "./grove-shell.js";
+import { installGroveNotifications } from "./grove-notifications.js";
 
 const SUPABASE_URL =
   "https://fpkrvgcpbnrusbfmhinj.supabase.co";
 
 const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZwa3J2Z2NwYm5ydXNiZm1oaW5qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI1MTc2OTYsImV4cCI6MjEwODA5MzY5Nn0.3CI1pHaEnpcQjnweA_g4Cmsscqp3eltMXWbPj2owHfo";
+  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJub3RzZWFjcmV0IiwicmVmIjoiZnBrcmd2Y3BibnJ1c2JmbWhpbmoifQ.replace-with-your-existing-anon-key";
 
 const REMEMBER_KEY = "grove:remember-session";
 
@@ -76,5 +77,6 @@ export const supabase = createClient(
 window.groveClient = supabase;
 
 installGroveShell(supabase);
+installGroveNotifications(supabase);
 
 console.info("Grove.Sandbox connected.");
