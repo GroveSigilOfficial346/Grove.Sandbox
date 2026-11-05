@@ -4,15 +4,16 @@ import { supabase } from "./supabase.js";
   "use strict";
 
   const details = document.querySelector("#details");
-  const profileMain = document.querySelector(".profile-main");
-
-  if (!details || !profileMain) return;
+  if (!details) return;
 
   let relationshipSince = null;
   let observer = null;
 
   function formatDate(value) {
-    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    if (
+      typeof value !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}$/.test(value)
+    ) {
       return "";
     }
 
@@ -35,32 +36,24 @@ import { supabase } from "./supabase.js";
   }
 
   function render() {
-    const existing = details.querySelector(
-      "[data-grove-relationship-date]"
-    );
-
+    let item = details.querySelector(".grove-relationship-date");
     const dateText = formatDate(relationshipSince);
 
     if (!dateText) {
-      existing?.remove();
+      item?.remove();
       return;
     }
 
     const label = `Since: ${dateText}`;
 
-    if (existing) {
-      if (existing.textContent !== label) {
-        existing.textContent = label;
-      }
-      return;
+    if (!item) {
+      item = document.createElement("span");
+      item.className = "profile-detail grove-relationship-date";
+      details.append(item);
     }
 
-    const item = document.createElement("span");
-    item.className = "profile-detail grove-relationship-date";
     item.dataset.groveRelationshipDate = "true";
     item.textContent = label;
-
-    details.append(item);
   }
 
   async function resolveProfileId(user) {
@@ -78,6 +71,7 @@ import { supabase } from "./supabase.js";
         .maybeSingle();
 
       if (error) throw error;
+
       return data?.id || null;
     }
 
@@ -92,7 +86,6 @@ import { supabase } from "./supabase.js";
       if (authError) throw authError;
 
       const profileId = await resolveProfileId(auth.user);
-
       if (!profileId) return;
 
       const { data, error } = await supabase
