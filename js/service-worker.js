@@ -1,7 +1,7 @@
 "use strict";
 
 self.addEventListener("install", event => {
-  self.skipWaiting();
+  event.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener("activate", event => {
@@ -15,21 +15,18 @@ self.addEventListener("push", event => {
     payload = event.data ? event.data.json() : {};
   } catch {
     payload = {
-      title: "Grove",
-      body: event.data?.text() || "You have a new notification."
+      body: event.data ? event.data.text() : "You have a new Grove notification."
     };
   }
 
   const title = payload.title || "Grove";
-
   const options = {
     body: payload.body || "You have a new notification.",
-    icon: payload.icon || "/assets/neural-tree.svg",
-    badge: payload.badge || "/assets/neural-tree.svg",
+    icon: "/assets/neural-tree.svg",
+    badge: "/assets/neural-tree.svg",
     tag: payload.tag || "grove-notification",
-    renotify: false,
     data: {
-      url: payload.url || "/settings.html"
+      url: payload.url || "/"
     }
   };
 
@@ -41,8 +38,10 @@ self.addEventListener("push", event => {
 self.addEventListener("notificationclick", event => {
   event.notification.close();
 
-  const destination =
-    event.notification.data?.url || "/settings.html";
+  const target = new URL(
+    event.notification.data?.url || "/",
+    self.location.origin
+  ).href;
 
   event.waitUntil(
     self.clients.matchAll({
@@ -50,13 +49,14 @@ self.addEventListener("notificationclick", event => {
       includeUncontrolled: true
     }).then(clients => {
       for (const client of clients) {
-        if ("focus" in client) {
-          client.navigate(destination);
+        if (client.url === target && "focus" in client) {
           return client.focus();
         }
       }
 
-      return self.clients.openWindow(destination);
+      if (self.clients.openWindow) {
+        return self.clients.openWindow(target);
+      }
     })
   );
 });
