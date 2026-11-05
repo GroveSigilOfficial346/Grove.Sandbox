@@ -3,12 +3,14 @@
   --night: #050019;
   --panel: #100b25;
   --panel-soft: #17102f;
+  --panel-hover: #21143d;
   --violet: #851eff;
   --magenta: #eb36ed;
   --cyan: #05c9f4;
   --white: #f7f5ff;
   --muted: #aaa3c4;
   --border: rgba(190, 155, 255, 0.17);
+  --border-bright: rgba(133, 30, 255, 0.42);
   --danger: #ff8585;
   --success: #7bd7a2;
 }
@@ -25,6 +27,7 @@ html {
 body {
   margin: 0;
   min-height: 100vh;
+  overflow-x: hidden;
   background:
     radial-gradient(
       ellipse at top,
@@ -33,7 +36,13 @@ body {
     ),
     var(--night);
   color: var(--white);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family:
+    Inter,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
 }
 
 button,
@@ -63,7 +72,7 @@ a {
 }
 
 /* ==========================================
-   HEADER AND NAVIGATION
+   HEADER
    ========================================== */
 
 .site-header {
@@ -105,12 +114,25 @@ a {
    ========================================== */
 
 .community-container {
-  width: min(760px, calc(100% - 32px));
-  margin: 48px auto 80px;
+  width: min(820px, calc(100% - 32px));
+  margin: 42px auto 80px;
 }
 
 .community-heading {
-  margin-bottom: 28px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 24px;
+}
+
+.community-heading h1 {
+  margin: 0 0 8px;
+  font-size: clamp(2rem, 6vw, 3rem);
+}
+
+.community-heading p {
+  margin-top: 0;
 }
 
 .eyebrow {
@@ -118,17 +140,6 @@ a {
   font-size: 0.72rem;
   font-weight: 700;
   letter-spacing: 0.2em;
-}
-
-h1,
-h2,
-p {
-  margin-top: 0;
-}
-
-h1 {
-  margin-bottom: 8px;
-  font-size: clamp(2rem, 6vw, 3rem);
 }
 
 h2 {
@@ -153,41 +164,8 @@ h2 {
 }
 
 /* ==========================================
-   POST COMPOSER
+   BUTTONS
    ========================================== */
-
-.composer {
-  padding: 22px;
-  margin-bottom: 36px;
-}
-
-.composer textarea {
-  display: block;
-  width: 100%;
-  min-height: 110px;
-  resize: vertical;
-  padding: 14px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  outline: none;
-  background: rgba(5, 0, 25, 0.72);
-  color: var(--white);
-  line-height: 1.6;
-}
-
-.composer textarea:focus,
-select:focus,
-.comment-form input:focus {
-  border-color: var(--cyan);
-}
-
-.composer-options {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 14px;
-}
 
 .file-button,
 .button {
@@ -198,8 +176,9 @@ select:focus,
   padding: 9px 15px;
   border: 1px solid var(--border);
   border-radius: 9px;
-  font-weight: 700;
+  color: var(--white);
   font-size: 0.88rem;
+  font-weight: 700;
   transition:
     border-color 0.2s ease,
     background 0.2s ease,
@@ -212,7 +191,6 @@ select:focus,
 }
 
 .button {
-  color: var(--white);
   background: var(--panel-soft);
 }
 
@@ -242,6 +220,52 @@ select:focus,
   color: var(--danger);
 }
 
+.share-grove-button {
+  flex: 0 0 auto;
+}
+
+/* ==========================================
+   POST COMPOSER
+   ========================================== */
+
+.composer {
+  padding: 22px;
+  margin-bottom: 36px;
+}
+
+.composer h2 {
+  margin-top: 0;
+}
+
+.composer textarea {
+  display: block;
+  width: 100%;
+  min-height: 110px;
+  resize: vertical;
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  outline: none;
+  background: rgba(5, 0, 25, 0.72);
+  color: var(--white);
+  line-height: 1.6;
+}
+
+.composer textarea:focus,
+select:focus,
+.comment-form input:focus,
+.post-edit-form textarea:focus {
+  border-color: var(--cyan);
+}
+
+.composer-options {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 14px;
+}
+
 .visibility-control {
   display: flex;
   align-items: center;
@@ -252,7 +276,7 @@ select:focus,
 }
 
 select {
-  max-width: 150px;
+  max-width: 160px;
   padding: 9px;
   border: 1px solid var(--border);
   border-radius: 8px;
@@ -273,7 +297,7 @@ select {
 }
 
 /* ==========================================
-   FEED HEADINGS AND POST LISTS
+   FEED
    ========================================== */
 
 .feed-heading {
@@ -294,12 +318,21 @@ select {
 }
 
 .post-card {
+  min-width: 0;
   padding: 20px;
   overflow-wrap: anywhere;
+  scroll-margin-top: 20px;
+}
+
+.post-highlight {
+  border-color: var(--cyan);
+  box-shadow:
+    0 0 0 2px rgba(5, 201, 244, 0.2),
+    0 12px 40px rgba(5, 201, 244, 0.08);
 }
 
 /* ==========================================
-   PINNED COMMUNITY POSTS
+   PINNED POSTS
    ========================================== */
 
 .pinned-community-section {
@@ -331,7 +364,7 @@ select {
 }
 
 /* ==========================================
-   POST HEADER AND MEMBER IDENTITY
+   POST HEADER
    ========================================== */
 
 .post-header {
@@ -367,7 +400,8 @@ select {
   overflow-wrap: anywhere;
 }
 
-.post-author:hover {
+.post-author:hover,
+.post-external-link:hover {
   color: var(--cyan);
 }
 
@@ -379,7 +413,7 @@ select {
 }
 
 /* ==========================================
-   POST CONTENT AND IMAGES
+   POST TEXT AND LINKS
    ========================================== */
 
 .post-body {
@@ -387,6 +421,18 @@ select {
   line-height: 1.65;
   white-space: pre-wrap;
 }
+
+.post-external-link {
+  color: var(--cyan);
+  text-decoration: underline;
+  text-decoration-color: rgba(5, 201, 244, 0.4);
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+
+/* ==========================================
+   POST IMAGES
+   ========================================== */
 
 .post-images {
   display: grid;
@@ -425,7 +471,7 @@ select {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: 9px;
   padding-top: 16px;
   margin-top: 16px;
   border-top: 1px solid var(--border);
@@ -440,6 +486,11 @@ select {
 .post-actions .liked {
   color: var(--magenta);
   border-color: var(--magenta);
+}
+
+.post-actions .reposted {
+  color: var(--cyan);
+  border-color: var(--cyan);
 }
 
 /* ==========================================
@@ -491,7 +542,69 @@ select {
 }
 
 /* ==========================================
-   EMPTY STATES AND ACCESSIBILITY
+   EDIT POST DIALOG
+   ========================================== */
+
+.post-edit-dialog {
+  width: min(560px, calc(100% - 24px));
+  max-width: 560px;
+  max-height: 85vh;
+  max-height: 85dvh;
+  padding: 0;
+  overflow: auto;
+  border: 1px solid var(--border-bright);
+  border-radius: 16px;
+  background: var(--panel);
+  color: var(--white);
+  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.55);
+}
+
+.post-edit-dialog::backdrop {
+  background: rgba(3, 0, 15, 0.78);
+  backdrop-filter: blur(5px);
+}
+
+.post-edit-form {
+  display: grid;
+  gap: 14px;
+  padding: 22px;
+}
+
+.post-edit-form h2 {
+  margin: 0;
+}
+
+.post-edit-form textarea {
+  width: 100%;
+  min-height: 150px;
+  resize: vertical;
+  padding: 13px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  outline: none;
+  background: var(--night);
+  color: var(--white);
+  line-height: 1.6;
+}
+
+.post-edit-form select {
+  width: 100%;
+  max-width: none;
+}
+
+.post-edit-form .status-message {
+  margin: 0;
+}
+
+.post-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+/* ==========================================
+   EMPTY STATES
    ========================================== */
 
 .empty-state {
@@ -521,22 +634,38 @@ select {
 }
 
 /* ==========================================
-   RESPONSIVE LAYOUT
+   RESPONSIVE
    ========================================== */
 
-@media (max-width: 560px) {
+@media (max-width: 650px) {
   .site-header {
     align-items: flex-start;
     flex-direction: column;
+    gap: 13px;
+    padding: 15px 18px;
   }
 
   .site-header nav {
     gap: 14px;
   }
 
+  .site-header nav a {
+    font-size: 0.82rem;
+  }
+
   .community-container {
     width: calc(100% - 24px);
-    margin-top: 30px;
+    margin-top: 26px;
+  }
+
+  .community-heading {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .share-grove-button {
+    width: 100%;
   }
 
   .composer,
@@ -569,6 +698,21 @@ select {
   .post-actions .button {
     flex: 0 1 auto;
   }
+
+  .post-edit-form {
+    padding: 16px;
+  }
+}
+
+@media (max-width: 380px) {
+  .post-actions .button {
+    padding: 7px 9px;
+    font-size: 0.74rem;
+  }
+
+  .post-meta {
+    font-size: 0.7rem;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -585,7 +729,4 @@ select {
   }
 }
 
-/* ==========================================
-   GROVE COMMUNITY CSS END
-   NEXT: COMMUNITY JAVASCRIPT AUDIT
-   ========================================== */
+/* GROVE COMMUNITY CSS END */
