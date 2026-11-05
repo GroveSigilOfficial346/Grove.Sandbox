@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#050019">
+  <meta name="description" content="Discover and connect with Grove members.">
+  <title>Discover Members | Grove</title>
+
+  <link rel="stylesheet" href="css/discover.css">
+  <script type="module" src="js/discover.js"></script>
+</head>
+
+<body>
+  <header class="discover-header">
+    <a class="brand" href="/">GROVE</a>
+
+    <nav aria-label="Main navigation">
+      <a href="/">Home</a>
+      <a href="/community.html">Community</a>
+      <a href="/discover.html" aria-current="page">Discover</a>
+      <a href="/profile.html">Profile</a>
+      <a href="/messages.html">Messages</a>
+    </nav>
+  </header>
+
+  <main class="discover-main">
+    <section class="discover-intro">
+      <p class="eyebrow">GROVE NETWORK</p>
+      <h1>Discover members</h1>
+      <p>Find people by their name or username and connect with them.</p>
+    </section>
+
+    <section class="discover-search-panel" aria-label="Member search">
+      <label for="member-search">Search Grove members</label>
+
+      <div class="search-input-wrap">
+        <span aria-hidden="true">⌕</span>
+        <input
+          id="member-search"
+          type="search"
+          placeholder="Search by name or @username..."
+          autocomplete="off"
+          maxlength="60"
+          spellcheck="false"
+        >
+        <button id="clear-search" type="button" aria-label="Clear search">
+          ×
+        </button>
+      </div>
+
+      <p class="search-hint">
+        Results update as you type. Partial names and usernames work.
+      </p>
+    </section>
+
+    <section class="discover-results-section">
+      <div class="results-heading">
+        <h2>Members</h2>
+        <span id="result-count" aria-live="polite"></span>
+      </div>
+
+      <p id="discover-status" class="discover-status" role="status" aria-live="polite">
+        Start typing to discover members.
+      </p>
+
+      <div id="member-results" class="member-results"></div>
+    </section>
+  </main>
+</body>
+</html>
