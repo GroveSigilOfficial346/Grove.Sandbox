@@ -5,19 +5,29 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#050019">
   <meta name="description" content="Private messages on Grove.">
+
   <title>Messages | Grove</title>
 
-  <link rel="stylesheet" href="css/messages.css">
-  <link rel="stylesheet" href="css/messages-composer-fix.css">
+  <link rel="icon" type="image/svg+xml" href="/assets/neural-tree.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-  <script type="module" src="js/messages.js"></script>
+  <link rel="stylesheet" href="/css/messages.css">
+  <link rel="stylesheet" href="/css/messages-composer-fix.css">
+  <link rel="stylesheet" href="/css/grove-ui.css?v=20261105-1">
+
+  <script type="module" src="/js/messages.js"></script>
 </head>
 
 <body>
   <main class="messages-app">
 
     <header class="messages-header">
-      <a href="/" class="brand">GROVE</a>
+      <a href="/" class="brand" aria-label="Grove home">
+        <img src="/assets/neural-tree.svg" alt="">
+        <span>GROVE</span>
+      </a>
 
       <div class="header-title">
         <span class="header-eyebrow">GROVE NETWORK</span>
