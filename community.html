@@ -7,8 +7,8 @@
   <meta name="description" content="Connect with the Grove community.">
   <title>Grove Community</title>
 
-  <link rel="stylesheet" href="css/community.css">
-  <script type="module" src="js/community.js"></script>
+  <link rel="stylesheet" href="css/community.css?v=20261105-2">
+  <script type="module" src="js/community.js?v=20261105-2"></script>
 </head>
 
 <body>
@@ -24,28 +24,41 @@
   </header>
 
   <main class="community-container">
+
     <section class="community-heading">
-      <p class="eyebrow">GROVE NETWORK</p>
-      <h1>Community</h1>
-      <p class="muted">See what members are sharing.</p>
+      <div>
+        <p class="eyebrow">GROVE NETWORK</p>
+        <h1>Community</h1>
+        <p class="muted">See what members are sharing.</p>
+      </div>
+
+      <button
+        id="share-grove"
+        class="button secondary share-grove-button"
+        type="button"
+      >↗ Share Grove</button>
     </section>
 
-    <p id="community-status" class="status-message"
-       role="status" aria-live="polite">
-      Loading community...
-    </p>
+    <p
+      id="community-status"
+      class="status-message"
+      role="status"
+      aria-live="polite"
+    >Loading community...</p>
 
     <section class="composer panel" aria-labelledby="composer-title">
       <h2 id="composer-title">Create a post</h2>
 
       <form id="post-form">
-        <label class="sr-only" for="post-body">What's on your mind?</label>
+        <label class="sr-only" for="post-body">
+          What's on your mind?
+        </label>
 
         <textarea
           id="post-body"
           maxlength="5000"
           rows="4"
-          placeholder="What's on your mind?"
+          placeholder="What's on your mind? Paste a link from another platform to share it with Grove."
         ></textarea>
 
         <div class="composer-options">
@@ -56,7 +69,7 @@
           <input
             id="post-images"
             type="file"
-            accept="image/*"
+            accept="image/jpeg,image/png,image/webp,image/gif"
             multiple
             hidden
           >
@@ -71,15 +84,21 @@
             </select>
           </label>
 
-          <button id="publish-post" class="button primary" type="submit">
-            Publish
-          </button>
+          <button
+            id="publish-post"
+            class="button primary"
+            type="submit"
+          >Publish</button>
         </div>
 
         <p id="selected-images" class="muted"></p>
 
-        <p id="composer-status" class="status-message"
-           role="status" aria-live="polite"></p>
+        <p
+          id="composer-status"
+          class="status-message"
+          role="status"
+          aria-live="polite"
+        ></p>
       </form>
     </section>
 
@@ -100,15 +119,22 @@
       <div class="feed-heading">
         <h2 id="feed-title">Latest posts</h2>
 
-        <button id="refresh-feed" class="button secondary" type="button">
-          Refresh
-        </button>
+        <button
+          id="refresh-feed"
+          class="button secondary"
+          type="button"
+        >Refresh</button>
       </div>
 
-      <div id="community-feed" class="community-feed" aria-live="polite">
+      <div
+        id="community-feed"
+        class="community-feed"
+        aria-live="polite"
+      >
         <p class="muted">Loading posts...</p>
       </div>
     </section>
+
   </main>
 </body>
 </html>
