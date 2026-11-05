@@ -4,12 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#050019">
-  <meta name="description" content="Manage your Grove account and notification settings.">
+  <meta name="description" content="Manage your Grove account, notifications and blocked members.">
 
   <title>Settings | Grove</title>
 
+  <link rel="icon" type="image/svg+xml" href="/assets/neural-tree.svg">
   <link rel="stylesheet" href="css/settings.css">
+  <link rel="stylesheet" href="css/blocked-members.css?v=20261105-1">
+
   <script type="module" src="js/settings.js"></script>
+  <script type="module" src="js/blocked-members.js?v=20261105-1"></script>
 </head>
 
 <body>
@@ -30,7 +34,7 @@
     <header class="settings-heading">
       <p class="eyebrow">YOUR ACCOUNT</p>
       <h1>Settings</h1>
-      <p>Control how Grove reaches you.</p>
+      <p>Control your account, privacy and notifications.</p>
     </header>
 
     <p id="settings-status" role="status" aria-live="polite"></p>
@@ -38,54 +42,36 @@
     <section class="settings-panel">
       <h2>Notification preferences</h2>
       <p class="settings-description">
-        Choose which activity appears in your Grove notification center.
+        Choose which activity appears in your Grove notification system.
       </p>
 
       <label class="setting-row">
-        <span>
-          <strong>Messages</strong>
-          <small>New direct messages</small>
-        </span>
+        <span><strong>Messages</strong><small>New direct messages</small></span>
         <input id="notify-messages" type="checkbox" checked>
       </label>
 
       <label class="setting-row">
-        <span>
-          <strong>Follows</strong>
-          <small>New followers and follow requests</small>
-        </span>
+        <span><strong>Follows</strong><small>New followers and follow requests</small></span>
         <input id="notify-follows" type="checkbox" checked>
       </label>
 
       <label class="setting-row">
-        <span>
-          <strong>Likes</strong>
-          <small>Likes on your posts</small>
-        </span>
+        <span><strong>Likes</strong><small>Likes on your posts</small></span>
         <input id="notify-likes" type="checkbox" checked>
       </label>
 
       <label class="setting-row">
-        <span>
-          <strong>Comments</strong>
-          <small>Comments on your posts</small>
-        </span>
+        <span><strong>Comments</strong><small>Comments on your posts</small></span>
         <input id="notify-comments" type="checkbox" checked>
       </label>
 
       <label class="setting-row">
-        <span>
-          <strong>Nudges</strong>
-          <small>Grove pokes and check-ins</small>
-        </span>
+        <span><strong>Nudges</strong><small>Grove pokes and check-ins</small></span>
         <input id="notify-nudges" type="checkbox" checked>
       </label>
 
       <label class="setting-row">
-        <span>
-          <strong>Mentions</strong>
-          <small>When someone mentions you</small>
-        </span>
+        <span><strong>Mentions</strong><small>When someone mentions you</small></span>
         <input id="notify-mentions" type="checkbox" checked>
       </label>
     </section>
@@ -99,7 +85,7 @@
       <label class="setting-row">
         <span>
           <strong>Play notification sound</strong>
-          <small>Sound is played only after you interact with the page.</small>
+          <small>Sound plays after you interact with the page.</small>
         </span>
         <input id="sound-enabled" type="checkbox" checked>
       </label>
@@ -124,8 +110,7 @@
     <section class="settings-panel">
       <h2>Device notifications</h2>
       <p class="settings-description">
-        Allow Grove to send alerts to this browser or device, even when
-        Grove is not open.
+        Allow Grove to send alerts to this browser or device.
       </p>
 
       <p id="device-status" class="device-status">
@@ -144,15 +129,31 @@
 
       <p class="settings-note">
         Browser and operating-system permissions are controlled outside
-        Grove. If you block notifications there, you must restore permission
-        in your browser settings before Grove can enable them again.
+        Grove. Remote push delivery also requires Grove's push sender.
       </p>
+    </section>
+
+    <section class="settings-panel" id="blocked-members-panel">
+      <h2>Blocked members</h2>
+      <p class="settings-description">
+        Review accounts you have blocked. Unblocking restores the ability
+        to interact, subject to each member's privacy and messaging settings.
+      </p>
+
+      <p
+        id="blocked-members-status"
+        class="blocked-members-status"
+        role="status"
+        aria-live="polite"
+      >Loading blocked members...</p>
+
+      <div id="blocked-members-list" class="blocked-members-list"></div>
     </section>
 
     <section class="settings-panel">
       <h2>Account</h2>
       <p class="settings-description">
-        Your notification preferences are saved to the signed-in account.
+        Manage your account and profile.
       </p>
 
       <a class="button secondary" href="/profile.html">Back to profile</a>
