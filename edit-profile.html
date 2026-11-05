@@ -6,8 +6,11 @@
   <meta name="theme-color" content="#050019">
   <meta name="description" content="Customize your Grove profile.">
   <title>Edit Profile | Grove</title>
+
   <link rel="stylesheet" href="css/profile.css">
+
   <script type="module" src="js/edit-profile.js"></script>
+  <script type="module" src="js/relationship-status.js"></script>
 </head>
 <body>
 
@@ -18,6 +21,7 @@
       <a href="/community.html">Community</a>
       <a href="/profile.html">Profile</a>
       <a href="/messages.html">Messages</a>
+      <a href="/settings.html">Settings</a>
     </nav>
   </header>
 
@@ -90,6 +94,32 @@
 
         <hr>
 
+        <h2>Relationship status</h2>
+        <p class="field-hint">
+          Optional. Your selection is saved to your profile immediately.
+        </p>
+
+        <label for="edit-relationship-status">Your status</label>
+        <select id="edit-relationship-status">
+          <option value="not_set">Not set</option>
+          <option value="single">Single</option>
+          <option value="in_relationship">In a relationship</option>
+          <option value="engaged">Engaged</option>
+          <option value="married">Married</option>
+          <option value="complicated">It's complicated</option>
+          <option value="open_relationship">In an open relationship</option>
+          <option value="prefer_not_to_say">Prefer not to say</option>
+        </select>
+
+        <p
+          id="relationship-status-message"
+          class="field-hint"
+          role="status"
+          aria-live="polite"
+        ></p>
+
+        <hr>
+
         <h2>Privacy</h2>
 
         <label class="setting-row" for="edit-private">
@@ -110,7 +140,9 @@
         <hr>
 
         <h2>Profile music</h2>
-        <p class="field-hint">Use a direct audio-file URL. Streaming-service page links may not play in an audio player.</p>
+        <p class="field-hint">
+          Use a direct audio-file URL. Streaming-service page links may not play in an audio player.
+        </p>
 
         <label for="edit-music-title">Track title</label>
         <input
