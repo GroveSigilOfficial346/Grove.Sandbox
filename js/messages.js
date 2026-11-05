@@ -8,6 +8,8 @@ const MESSAGE_HISTORY_LIMIT = 300;
 let user = null;
 let activeConversationId = null;
 let activeChannel = null;
+let activeChannelConversationId = null;
+let openingConversationId = null;
 let conversations = [];
 
 let conversationLoadToken = 0;
@@ -59,10 +61,14 @@ function formatPreview(body) {
 }
 
 async function removeActiveChannel() {
-  if (!activeChannel) return;
+  if (!activeChannel) {
+    activeChannelConversationId = null;
+    return;
+  }
 
   const channel = activeChannel;
   activeChannel = null;
+  activeChannelConversationId = null;
 
   try {
     await supabase.removeChannel(channel);
@@ -252,6 +258,13 @@ async function loadConversationList({
 
       if (requestedUser) {
         await startOrOpenDirectConversation(requestedUser);
+      } else if (
+        new URLSearchParams(location.search).get("conversation")
+      ) {
+        setStatus(
+          "That conversation is not available in this account.",
+          true
+        );
       }
     }
 
@@ -402,6 +415,18 @@ async function loadConversationList({
   });
 
   renderConversationList();
+
+  /*
+   * A shared/group conversation URL takes priority over the
+   * automatic first-conversation behavior. messages-extras.js
+   * handles opening that requested conversation from the inbox.
+   */
+  const requestedConversation =
+    new URLSearchParams(location.search).get("conversation");
+
+  if (requestedConversation) {
+    return;
+  }
 
   if (processRequestedUser) {
     const requestedUser =
@@ -611,6 +636,21 @@ async function loadMessages() {
 async function openConversation(id, label) {
   if (!id) return;
 
+  /*
+   * Prevent duplicate opens of the same conversation while its
+   * history or Realtime subscription is already being initialized.
+   */
+  if (
+    activeConversationId === id &&
+    (
+      openingConversationId === id ||
+      activeChannelConversationId === id
+    )
+  ) {
+    return;
+  }
+
+  openingConversationId = id;
   activeConversationId = id;
   messageLoadToken++;
 
@@ -623,57 +663,65 @@ async function openConversation(id, label) {
   setComposerEnabled(true);
   renderConversationList();
 
-  await removeActiveChannel();
+  try {
+    await removeActiveChannel();
 
-  await loadMessages();
+    await loadMessages();
 
-  if (activeConversationId !== id) return;
+    if (activeConversationId !== id) return;
 
-  const channel = supabase
-    .channel(`grove-chat-${id}-${user.id}`)
-    .on(
-      "postgres_changes",
-      {
-        event: "INSERT",
-        schema: "public",
-        table: "conversation_messages",
-        filter: `conversation_id=eq.${id}`
-      },
-      async (payload) => {
+    const channel = supabase
+      .channel(`grove-chat-${id}-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "conversation_messages",
+          filter: `conversation_id=eq.${id}`
+        },
+        async (payload) => {
+          if (activeConversationId !== id) return;
+
+          const message = payload.new;
+
+          if (
+            !message ||
+            message.deleted_for_everyone_at
+          ) {
+            return;
+          }
+
+          updateConversationPreview(id, message);
+
+          appendMessageToView(message);
+
+          if (message.sender_id !== user.id) {
+            await updateReadMarker(id);
+          }
+        }
+      )
+      .subscribe((status) => {
         if (activeConversationId !== id) return;
 
-        const message = payload.new;
-
-        if (
-          !message ||
-          message.deleted_for_everyone_at
-        ) {
-          return;
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          setStatus(
+            "Live updates are temporarily unavailable. Refresh the conversation to check for new messages.",
+            true
+          );
+        } else if (status === "SUBSCRIBED") {
+          setStatus("");
         }
+      });
 
-        updateConversationPreview(id, message);
+    activeChannel = channel;
+    activeChannelConversationId = id;
 
-        appendMessageToView(message);
-
-        if (message.sender_id !== user.id) {
-          await updateReadMarker(id);
-        }
-      }
-    )
-    .subscribe((status) => {
-      if (activeConversationId !== id) return;
-
-      if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
-        setStatus(
-          "Live updates are temporarily unavailable. Refresh the conversation to check for new messages.",
-          true
-        );
-      } else if (status === "SUBSCRIBED") {
-        setStatus("");
-      }
-    });
-
-  activeChannel = channel;
+  } finally {
+    if (openingConversationId === id) {
+      openingConversationId = null;
+    }
+  }
 }
 
 /* ==========================================
