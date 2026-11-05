@@ -77,13 +77,23 @@ export const supabase = createClient(
 
 window.groveClient = supabase;
 
-// Notification layout overrides. The notification module itself remains intact.
-const notificationStyles = document.createElement("link");
-notificationStyles.rel = "stylesheet";
-notificationStyles.href = "/css/grove-notification-layout.css?v=20261105-1";
-document.head.append(notificationStyles);
-
+// Keep the Grove shell available across the platform.
 installGroveShell(supabase);
-installGroveNotifications(supabase);
+
+// Do not inject notifications into the landing-page account buttons.
+const isLandingPage = Boolean(
+  document.querySelector("main .account-navigation")
+);
+
+if (!isLandingPage) {
+  const notificationStyles = document.createElement("link");
+  notificationStyles.rel = "stylesheet";
+  notificationStyles.href =
+    "/css/grove-notification-layout.css?v=20261105-2";
+
+  document.head.append(notificationStyles);
+
+  installGroveNotifications(supabase);
+}
 
 console.info("Grove.Sandbox connected.");
