@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#050019">
+  <title>Following | Grove</title>
+  <link rel="stylesheet" href="css/news-feed.css">
+  <script type="module" src="js/news-feed.js"></script>
+</head>
+<body>
+  <header class="feed-header">
+    <a class="brand" href="/">GROVE</a>
+    <nav aria-label="Main navigation">
+      <a href="/">Home</a>
+      <a href="/community.html">Community</a>
+      <a href="/news-feed.html" aria-current="page">Following</a>
+      <a href="/discover.html">Discover</a>
+      <a href="/profile.html">Profile</a>
+      <a href="/messages.html">Messages</a>
+    </nav>
+  </header>
+
+  <main class="feed-main">
+    <section class="feed-intro">
+      <p class="eyebrow">YOUR GROVE NETWORK</p>
+      <h1>Following</h1>
+      <p>Updates from members you've connected with.</p>
+    </section>
+
+    <section class="feed-toolbar">
+      <div>
+        <strong id="feed-count">Following feed</strong>
+        <span id="feed-description">Your posts and accepted connections</span>
+      </div>
+      <button id="refresh-feed" type="button">↻ Refresh</button>
+    </section>
+
+    <p id="feed-status" class="feed-status" role="status" aria-live="polite">
+      Loading your feed...
+    </p>
+
+    <section id="following-feed" class="following-feed"></section>
+
+    <section id="feed-empty" class="feed-empty" hidden>
+      <div class="empty-symbol">✧</div>
+      <h2>Your network starts here</h2>
+      <p>
+        Follow members to see their updates here.
+        You can also discover new people on Grove.
+      </p>
+      <a href="/discover.html" class="primary-link">Discover members</a>
+    </section>
+
+    <div class="feed-bottom-links">
+      <a href="/community.html">Explore all Community posts</a>
+      <a href="/discover.html">Find more members</a>
+    </div>
+  </main>
+</body>
+</html>
