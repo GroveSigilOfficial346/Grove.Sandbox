@@ -1,5 +1,3 @@
-import "./supabase.js";
-
 (() => {
   "use strict";
 
