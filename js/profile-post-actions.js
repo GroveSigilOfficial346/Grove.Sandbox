@@ -14,6 +14,12 @@ import { supabase } from "./supabase.js";
   let editSaveButton = null;
   let activePostId = null;
 
+  let likedPostIds = new Set();
+  let repostedPostIds = new Set();
+  let interactionRefreshRunning = false;
+  let interactionRefreshQueued = false;
+  let refreshSequence = 0;
+
   const $ = selector => document.querySelector(selector);
 
   function element(tag, className, text) {
@@ -55,7 +61,6 @@ import { supabase } from "./supabase.js";
         });
 
         return;
-
       } catch (error) {
         if (error?.name === "AbortError") return;
         console.warn("Native share failed:", error);
@@ -69,17 +74,15 @@ import { supabase } from "./supabase.js";
 
       await navigator.clipboard.writeText(url);
       setStatus("Post link copied. You can share it anywhere.");
-
     } catch (error) {
       console.warn("Copy failed:", error);
-
       window.prompt("Copy this post link:", url);
     }
   }
 
-  /* ----------------------------------------
+  /* ==========================================
      PROFILE RESOLUTION
-     ---------------------------------------- */
+     ========================================== */
 
   async function resolveProfile() {
     const { data, error } = await supabase.auth.getUser();
@@ -121,9 +124,9 @@ import { supabase } from "./supabase.js";
     );
   }
 
-  /* ----------------------------------------
-     EDIT DIALOG
-     ---------------------------------------- */
+  /* ==========================================
+     POST EDITOR
+     ========================================== */
 
   function createEditDialog() {
     if (editDialog) return;
@@ -133,9 +136,7 @@ import { supabase } from "./supabase.js";
     const form = element("form", "profile-post-edit-form");
     form.method = "dialog";
 
-    form.append(
-      element("h2", "", "Edit post")
-    );
+    form.append(element("h2", "", "Edit post"));
 
     editBody = document.createElement("textarea");
     editBody.rows = 6;
@@ -163,11 +164,7 @@ import { supabase } from "./supabase.js";
 
     const actions = element("div", "profile-post-edit-actions");
 
-    const cancel = element(
-      "button",
-      "button secondary",
-      "Cancel"
-    );
+    const cancel = element("button", "button secondary", "Cancel");
     cancel.type = "button";
     cancel.addEventListener("click", () => editDialog.close());
 
@@ -179,22 +176,14 @@ import { supabase } from "./supabase.js";
     editSaveButton.type = "submit";
 
     actions.append(cancel, editSaveButton);
-
-    form.append(
-      editBody,
-      editVisibility,
-      editStatus,
-      actions
-    );
+    form.append(editBody, editVisibility, editStatus, actions);
 
     form.addEventListener("submit", saveEditedPost);
 
     editDialog.append(form);
 
     editDialog.addEventListener("click", event => {
-      if (event.target === editDialog) {
-        editDialog.close();
-      }
+      if (event.target === editDialog) editDialog.close();
     });
 
     document.body.append(editDialog);
@@ -222,10 +211,7 @@ import { supabase } from "./supabase.js";
         .maybeSingle();
 
       if (error) throw error;
-
-      if (!post) {
-        throw new Error("This post could not be found.");
-      }
+      if (!post) throw new Error("This post could not be found.");
 
       editBody.value = post.body || "";
       editVisibility.value = post.visibility || "public";
@@ -233,7 +219,6 @@ import { supabase } from "./supabase.js";
 
       editSaveButton.disabled = false;
       editBody.focus();
-
     } catch (error) {
       console.error("Could not open post editor:", error);
 
@@ -298,9 +283,7 @@ import { supabase } from "./supabase.js";
 
       editDialog.close();
       setStatus("Post updated.");
-
       window.location.reload();
-
     } catch (error) {
       console.error("Post update failed:", error);
 
@@ -312,18 +295,16 @@ import { supabase } from "./supabase.js";
     }
   }
 
-  /* ----------------------------------------
-     DELETE POST
-     ---------------------------------------- */
+  /* ==========================================
+     DELETE OWN POSTS
+     ========================================== */
 
   async function deletePost(postId, button) {
     if (!currentUser || !isOwnProfile()) return;
 
-    const confirmed = window.confirm(
+    if (!window.confirm(
       "Delete this post? This cannot be undone."
-    );
-
-    if (!confirmed) return;
+    )) return;
 
     button.disabled = true;
     setStatus("Deleting post...");
@@ -369,7 +350,6 @@ import { supabase } from "./supabase.js";
 
       setStatus("Post deleted.");
       window.location.reload();
-
     } catch (error) {
       console.error("Post deletion failed:", error);
 
@@ -382,12 +362,66 @@ import { supabase } from "./supabase.js";
     }
   }
 
-  /* ----------------------------------------
+  /* ==========================================
+     LIKE / UNLIKE
+     Works on own posts and reposted posts.
+     ========================================== */
+
+  async function toggleLike(postId, button) {
+    if (!currentUser) {
+      window.location.href = "/login.html";
+      return;
+    }
+
+    button.disabled = true;
+
+    try {
+      if (likedPostIds.has(postId)) {
+        const { error } = await supabase
+          .from("post_likes")
+          .delete()
+          .eq("post_id", postId)
+          .eq("user_id", currentUser.id);
+
+        if (error) throw error;
+
+        likedPostIds.delete(postId);
+      } else {
+        const { error } = await supabase
+          .from("post_likes")
+          .insert({
+            post_id: postId,
+            user_id: currentUser.id
+          });
+
+        if (error) throw error;
+
+        likedPostIds.add(postId);
+      }
+
+      await refreshInteractionState();
+    } catch (error) {
+      console.error("Profile like update failed:", error);
+
+      setStatus(
+        error.message || "Could not update your like.",
+        true
+      );
+
+      button.disabled = false;
+    }
+  }
+
+  /* ==========================================
      REPOST / UNREPOST
-     ---------------------------------------- */
+     Self-reposts are intentionally permitted.
+     ========================================== */
 
   async function toggleRepost(postId, button) {
-    if (!currentUser || isOwnProfile()) return;
+    if (!currentUser) {
+      window.location.href = "/login.html";
+      return;
+    }
 
     button.disabled = true;
     setStatus("Updating repost...");
@@ -411,8 +445,8 @@ import { supabase } from "./supabase.js";
 
         if (error) throw error;
 
+        repostedPostIds.delete(postId);
         setStatus("Repost removed.");
-
       } else {
         const { error } = await supabase
           .from("post_reposts")
@@ -423,11 +457,11 @@ import { supabase } from "./supabase.js";
 
         if (error) throw error;
 
+        repostedPostIds.add(postId);
         setStatus("Post reposted to your profile.");
       }
 
-      window.location.reload();
-
+      await refreshInteractionState();
     } catch (error) {
       console.error("Profile repost failed:", error);
 
@@ -440,9 +474,164 @@ import { supabase } from "./supabase.js";
     }
   }
 
-  /* ----------------------------------------
-     ADD POST ACTIONS TO RENDERED CARDS
-     ---------------------------------------- */
+  /* ==========================================
+     SHARED INTERACTION STATE
+     ========================================== */
+
+  async function refreshInteractionState() {
+    if (interactionRefreshRunning) {
+      interactionRefreshQueued = true;
+      return;
+    }
+
+    interactionRefreshRunning = true;
+    const sequence = ++refreshSequence;
+
+    try {
+      const cards = [
+        ...document.querySelectorAll(
+          ".profile-post[data-post-id], .profile-repost-card[data-post-id]"
+        )
+      ];
+
+      const ids = [
+        ...new Set(
+          cards
+            .map(card => card.dataset.postId)
+            .filter(Boolean)
+        )
+      ];
+
+      if (!ids.length) return;
+
+      const [likesResult, mineResult, repostsResult] =
+        await Promise.all([
+          supabase
+            .from("post_likes")
+            .select("post_id,user_id")
+            .in("post_id", ids),
+
+          currentUser
+            ? supabase
+                .from("post_likes")
+                .select("post_id")
+                .eq("user_id", currentUser.id)
+                .in("post_id", ids)
+            : Promise.resolve({ data: [], error: null }),
+
+          currentUser
+            ? supabase
+                .from("post_reposts")
+                .select("post_id")
+                .eq("reposter_id", currentUser.id)
+                .in("post_id", ids)
+            : Promise.resolve({ data: [], error: null })
+        ]);
+
+      if (sequence !== refreshSequence) return;
+
+      const counts = new Map();
+
+      for (const like of likesResult.data || []) {
+        counts.set(
+          like.post_id,
+          (counts.get(like.post_id) || 0) + 1
+        );
+      }
+
+      if (mineResult.error) throw mineResult.error;
+      if (repostsResult.error) throw repostsResult.error;
+
+      likedPostIds = new Set(
+        (mineResult.data || []).map(row => row.post_id)
+      );
+
+      repostedPostIds = new Set(
+        (repostsResult.data || []).map(row => row.post_id)
+      );
+
+      for (const card of cards) {
+        const postId = card.dataset.postId;
+        const count = counts.get(postId) || 0;
+        const liked = likedPostIds.has(postId);
+        const reposted = repostedPostIds.has(postId);
+
+        const countNode = card.querySelector(".profile-post-likes");
+
+        if (countNode) {
+          countNode.textContent =
+            count + (count === 1 ? " like" : " likes");
+
+          countNode.classList.toggle("liked", liked);
+        }
+
+        const likeButton = card.querySelector(
+          '[data-profile-action="like"]'
+        );
+
+        if (likeButton) {
+          likeButton.textContent =
+            `${liked ? "♥ Liked" : "♡ Like"} · ${count}`;
+
+          likeButton.classList.toggle("liked", liked);
+          likeButton.setAttribute(
+            "aria-pressed",
+            liked ? "true" : "false"
+          );
+
+          likeButton.disabled = false;
+        }
+
+        const repostButton = card.querySelector(
+          '[data-profile-action="repost"]'
+        );
+
+        if (repostButton) {
+          repostButton.textContent = reposted
+            ? "↻ Reposted"
+            : "↻ Repost";
+
+          repostButton.classList.toggle("reposted", reposted);
+          repostButton.setAttribute(
+            "aria-pressed",
+            reposted ? "true" : "false"
+          );
+
+          repostButton.disabled = false;
+        }
+      }
+    } catch (error) {
+      console.error("Profile interaction refresh failed:", error);
+      setStatus(
+        error.message || "Could not refresh post interactions.",
+        true
+      );
+    } finally {
+      interactionRefreshRunning = false;
+
+      if (interactionRefreshQueued) {
+        interactionRefreshQueued = false;
+        refreshInteractionState();
+      }
+    }
+  }
+
+  /* ==========================================
+     ACTION BUTTONS
+     ========================================== */
+
+  function makeButton(label, actionName, handler, className = "button secondary") {
+    const button = element("button", className, label);
+
+    button.type = "button";
+    button.dataset.profileAction = actionName;
+
+    button.addEventListener("click", () => {
+      handler(button);
+    });
+
+    return button;
+  }
 
   function addActionsToCard(card) {
     if (!card || card.dataset.profileActionsReady === "true") {
@@ -450,71 +639,71 @@ import { supabase } from "./supabase.js";
     }
 
     const postId = card.dataset.postId;
-
     if (!postId) return;
 
-    const footer = card.querySelector(".profile-post-footer");
+    const footer = card.querySelector(
+      ".profile-post-footer, .profile-repost-footer"
+    );
 
     if (!footer) return;
 
-    const actions = element(
-      "div",
-      "profile-post-management"
-    );
-
+    const actions = element("div", "profile-post-management");
     actions.dataset.profileActions = "true";
 
-    const share = element(
-      "button",
-      "button secondary",
-      "↗ Share"
-    );
-    share.type = "button";
+    if (currentUser) {
+      const like = makeButton(
+        "♡ Like",
+        "like",
+        button => toggleLike(postId, button)
+      );
 
-    share.addEventListener("click", () => {
-      sharePost(postId);
-    });
+      const repost = makeButton(
+        "↻ Repost",
+        "repost",
+        button => toggleRepost(postId, button)
+      );
+
+      actions.append(like, repost);
+    }
+
+    const share = makeButton(
+      "↗ Share",
+      "share",
+      () => sharePost(postId)
+    );
 
     actions.append(share);
 
-    if (isOwnProfile() && currentUser) {
-      const edit = element(
-        "button",
-        "button secondary",
-        "Edit"
+    const discussion = element(
+      "a",
+      "button secondary",
+      "View discussion"
+    );
+
+    discussion.href = postUrl(postId);
+    discussion.dataset.profileAction = "discussion";
+
+    actions.append(discussion);
+
+    if (
+      currentUser &&
+      isOwnProfile() &&
+      card.classList.contains("profile-post")
+    ) {
+      const edit = makeButton(
+        "Edit",
+        "edit",
+        () => openEditDialog(postId)
       );
-      edit.type = "button";
 
-      edit.addEventListener("click", () => {
-        openEditDialog(postId);
-      });
-
-      const remove = element(
-        "button",
-        "button danger",
-        "Delete"
+      const remove = makeButton(
+        "Delete",
+        "delete",
+        button => deletePost(postId, button),
+        "button danger"
       );
-      remove.type = "button";
-
-      remove.addEventListener("click", () => {
-        deletePost(postId, remove);
-      });
 
       actions.append(edit, remove);
-
-    } else if (currentUser) {
-      const repost = element(
-        "button",
-        "button secondary",
-        "↻ Repost"
-      );
-      repost.type = "button";
-
-      repost.addEventListener("click", () => {
-        toggleRepost(postId, repost);
-      });
-
-      actions.append(repost);
     }
 
     footer.append(actions);
@@ -526,25 +715,33 @@ import { supabase } from "./supabase.js";
 
     if (
       root instanceof Element &&
-      root.matches(".profile-post[data-post-id]")
+      root.matches(
+        ".profile-post[data-post-id], .profile-repost-card[data-post-id]"
+      )
     ) {
       cards.push(root);
     }
 
     if (root.querySelectorAll) {
       cards.push(
-        ...root.querySelectorAll(".profile-post[data-post-id]")
+        ...root.querySelectorAll(
+          ".profile-post[data-post-id], .profile-repost-card[data-post-id]"
+        )
       );
     }
 
     for (const card of cards) {
       addActionsToCard(card);
     }
+
+    if (cards.length) {
+      refreshInteractionState();
+    }
   }
 
-  /* ----------------------------------------
-     INITIALIZE / WATCH DYNAMIC POST CARDS
-     ---------------------------------------- */
+  /* ==========================================
+     INITIALIZE / WATCH PROFILE CONTENT
+     ========================================== */
 
   async function initialize() {
     try {
@@ -555,13 +752,18 @@ import { supabase } from "./supabase.js";
       scanCards();
 
       const observer = new MutationObserver(records => {
+        let addedCards = false;
+
         for (const record of records) {
           for (const node of record.addedNodes) {
             if (node instanceof Element) {
               scanCards(node);
+              addedCards = true;
             }
           }
         }
+
+        if (addedCards) refreshInteractionState();
       });
 
       observer.observe(document.body, {
@@ -571,6 +773,7 @@ import { supabase } from "./supabase.js";
 
     } catch (error) {
       console.error("Profile post controls failed:", error);
+
       setStatus(
         error.message || "Post controls could not be initialized.",
         true
