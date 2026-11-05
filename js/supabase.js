@@ -5,8 +5,10 @@ import { installGroveNotifications } from "./grove-notifications.js";
 const SUPABASE_URL =
   "https://fpkrvgcpbnrusbfmhinj.supabase.co";
 
+// Active public publishable key for Grove.Sandbox.
+// Never replace this with a service-role or secret key.
 const SUPABASE_ANON_KEY =
-  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJub3RzZWFjcmV0IiwicmVmIjoiZnBrcmd2Y3BibnJ1c2JmbWhpbmoifQ.replace-with-your-existing-anon-key";
+  "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
 
 const REMEMBER_KEY = "grove:remember-session";
 
