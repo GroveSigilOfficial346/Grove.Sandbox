@@ -1,0 +1,381 @@
+/* ==========================================
+   GROVE PROFILE SOCIAL
+   Followers / Following / Reposts / Tabs
+   ========================================== */
+
+/* CLICKABLE PROFILE COUNTS */
+
+.profile-stat-button {
+  appearance: none;
+  color: var(--white);
+  font: inherit;
+  cursor: pointer;
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease,
+    transform 0.18s ease;
+}
+
+.profile-stat-button:hover {
+  border-color: var(--cyan);
+  background: rgba(5, 201, 244, 0.09);
+  transform: translateY(-1px);
+}
+
+.profile-stat-button:focus-visible,
+.profile-social-tab:focus-visible,
+.profile-list-close:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 3px;
+}
+
+/* PROFILE CONTENT TABS */
+
+.profile-social-tabs {
+  display: flex;
+  align-items: stretch;
+  gap: 8px;
+  margin-top: 22px;
+  padding: 6px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: rgba(16, 11, 37, 0.9);
+}
+
+.profile-social-tab {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 44px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 750;
+  cursor: pointer;
+  transition:
+    color 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.profile-social-tab:hover {
+  color: var(--white);
+  background: rgba(133, 30, 255, 0.12);
+}
+
+.profile-social-tab.active,
+.profile-social-tab[aria-selected="true"] {
+  border-color: var(--border-bright);
+  background:
+    linear-gradient(
+      110deg,
+      rgba(133, 30, 255, 0.25),
+      rgba(235, 54, 237, 0.12)
+    );
+  color: var(--white);
+  box-shadow: inset 0 -2px 0 var(--cyan);
+}
+
+/* REPOST CONTENT */
+
+.profile-reposts-section {
+  min-width: 0;
+}
+
+#reposts-status {
+  margin: 0 0 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+#reposts-list {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 13px;
+}
+
+.profile-repost-card {
+  min-width: 0;
+  padding: 17px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: rgba(133, 30, 255, 0.055);
+}
+
+.profile-repost-label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 12px;
+  color: var(--cyan);
+  font-size: 0.78rem;
+  font-weight: 750;
+}
+
+.profile-repost-author {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 0.8rem;
+}
+
+.profile-repost-author a {
+  color: var(--white);
+  font-weight: 700;
+}
+
+.profile-repost-author a:hover {
+  color: var(--cyan);
+}
+
+.profile-repost-body {
+  margin: 0;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.profile-repost-gallery {
+  display: grid;
+  grid-template-columns: repeat(
+    auto-fit,
+    minmax(min(150px, 100%), 1fr)
+  );
+  gap: 9px;
+  margin-top: 12px;
+}
+
+.profile-repost-media {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  border-radius: 10px;
+  background: var(--panel-light);
+}
+
+.profile-repost-image {
+  display: block;
+  width: 100%;
+  max-height: 340px;
+  object-fit: cover;
+}
+
+.profile-repost-footer {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 13px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+  color: var(--muted);
+  font-size: 0.76rem;
+}
+
+/* FOLLOWER / FOLLOWING DIALOG */
+
+.profile-list-dialog {
+  width: min(480px, calc(100% - 28px));
+  max-width: 480px;
+  max-height: min(78vh, 720px);
+  max-height: min(78dvh, 720px);
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-bright);
+  border-radius: 17px;
+  background: var(--panel, #110b27);
+  color: var(--white);
+  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.55);
+}
+
+.profile-list-dialog::backdrop {
+  background: rgba(3, 0, 15, 0.78);
+  backdrop-filter: blur(5px);
+}
+
+.profile-list-dialog-inner {
+  display: flex;
+  flex-direction: column;
+  max-height: inherit;
+  min-height: 180px;
+}
+
+.profile-list-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 17px 18px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(133, 30, 255, 0.08);
+}
+
+.profile-list-title {
+  min-width: 0;
+  margin: 0;
+  font-size: 1.05rem;
+  overflow-wrap: anywhere;
+}
+
+.profile-list-close {
+  display: grid;
+  flex: 0 0 36px;
+  width: 36px;
+  height: 36px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel-light);
+  color: var(--white);
+  font-size: 1.15rem;
+  cursor: pointer;
+}
+
+.profile-list-close:hover {
+  border-color: var(--cyan);
+}
+
+.profile-list-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  gap: 9px;
+  padding: 13px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.profile-list-message {
+  margin: 0;
+  padding: 15px 8px;
+  color: var(--muted);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+.profile-list-member {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.035);
+  transition:
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.profile-list-member:hover {
+  border-color: var(--border-bright);
+  background: rgba(133, 30, 255, 0.1);
+}
+
+.profile-list-avatar {
+  display: grid;
+  flex: 0 0 43px;
+  width: 43px;
+  height: 43px;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--violet), var(--magenta));
+  color: white;
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.profile-list-avatar img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.profile-list-member-info {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-width: 0;
+  gap: 3px;
+}
+
+.profile-list-member-name {
+  overflow: hidden;
+  color: var(--white);
+  font-size: 0.88rem;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.profile-list-member-username {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.75rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* MOBILE */
+
+@media (max-width: 600px) {
+  .profile-social-tabs {
+    margin-top: 15px;
+    gap: 5px;
+    padding: 5px;
+  }
+
+  .profile-social-tab {
+    min-height: 42px;
+    padding: 9px 8px;
+    font-size: 0.86rem;
+  }
+
+  .profile-repost-card {
+    padding: 13px;
+  }
+
+  .profile-repost-image {
+    max-height: 270px;
+  }
+
+  .profile-repost-footer {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .profile-list-dialog {
+    width: calc(100% - 18px);
+    max-height: 82vh;
+    max-height: 82dvh;
+    border-radius: 14px;
+  }
+
+  .profile-list-header {
+    padding: 13px;
+  }
+
+  .profile-list-content {
+    padding: 9px;
+  }
+}
+
+/* REDUCED MOTION */
+
+@media (prefers-reduced-motion: reduce) {
+  .profile-stat-button,
+  .profile-social-tab,
+  .profile-list-member {
+    transition: none;
+  }
+}
+
+/* GROVE PROFILE SOCIAL CSS END */
