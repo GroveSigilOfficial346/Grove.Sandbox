@@ -21,26 +21,137 @@ export function installGroveNotifications(supabase) {
   let channel = null;
   let audioContext = null;
   let interacted = false;
+  let cleanupObserver = null;
 
-  // Remove any notification interface left by an older script.
+  /*
+   * REMOVE THE UNWANTED NOTIFICATION TAB
+   * This does not disable realtime notifications,
+   * sound, or browser/device alerts.
+   */
+
   function removeNotificationInterface() {
+    const selectors = [
+      ".grove-notification-control",
+      ".grove-notification-panel",
+      ".grove-notification-bell",
+      ".grove-notification-count",
+      ".notification-tab",
+      ".notification-widget",
+      ".notification-bell",
+      ".notification-panel",
+      "#notification-tab",
+      "#notification-bell",
+      "#notification-widget",
+      "#grove-notification-tab",
+      "#grove-notification-control"
+    ];
+
+    document.querySelectorAll(selectors.join(",")).forEach(element => {
+      element.remove();
+    });
+
+    // Remove notification links or tabs injected into navigation.
     document.querySelectorAll(
-      ".grove-notification-control, " +
-      ".grove-notification-panel, " +
-      ".grove-notification-bell"
-    ).forEach(element => element.remove());
+      "nav a, nav button, [role='navigation'] a, [role='navigation'] button, [role='tab']"
+    ).forEach(element => {
+      const label = [
+        element.textContent,
+        element.getAttribute("aria-label"),
+        element.getAttribute("title")
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .trim()
+        .toLowerCase();
+
+      const isNotificationTab =
+        label === "notifications" ||
+        label === "notification" ||
+        label === "notifications tab" ||
+        label === "notification center";
+
+      if (isNotificationTab) {
+        element.remove();
+      }
+    });
+
+    // Remove floating notification controls even if their
+    // class names differ from the older Grove implementation.
+    document.querySelectorAll("body *").forEach(element => {
+      if (!(element instanceof HTMLElement)) return;
+
+      const identifier = [
+        element.id,
+        typeof element.className === "string"
+          ? element.className
+          : "",
+        element.getAttribute("aria-label") || ""
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      if (!identifier.includes("notification")) return;
+
+      // Preserve the actual notification settings interface.
+      if (
+        element.closest(".settings-panel") ||
+        element.closest("#notification-preferences")
+      ) {
+        return;
+      }
+
+      const style = window.getComputedStyle(element);
+
+      const isFloating =
+        style.position === "fixed" ||
+        style.position === "sticky";
+
+      const isNotificationControl =
+        /notification.*(tab|bell|control|widget|panel|button)/i
+          .test(identifier);
+
+      if (isFloating || isNotificationControl) {
+        element.remove();
+      }
+    });
   }
 
-  removeNotificationInterface();
+  function watchNotificationInterface() {
+    removeNotificationInterface();
 
-  // Keep notification sounds available after user interaction.
-  document.addEventListener("pointerdown", () => {
-    interacted = true;
-  }, { once: true });
+    if (!document.body || cleanupObserver) return;
 
-  document.addEventListener("keydown", () => {
-    interacted = true;
-  }, { once: true });
+    cleanupObserver = new MutationObserver(() => {
+      removeNotificationInterface();
+    });
+
+    cleanupObserver.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  }
+
+  watchNotificationInterface();
+
+  document.addEventListener(
+    "pointerdown",
+    () => {
+      interacted = true;
+    },
+    { once: true }
+  );
+
+  document.addEventListener(
+    "keydown",
+    () => {
+      interacted = true;
+    },
+    { once: true }
+  );
+
+  /*
+   * NOTIFICATION PREFERENCES
+   */
 
   function categoryEnabled(kind) {
     switch (kind) {
@@ -90,6 +201,10 @@ export function installGroveNotifications(supabase) {
     }
   }
 
+  /*
+   * NOTIFICATION SOUND
+   */
+
   function playNotificationSound() {
     if (!user || !interacted || !soundEnabled()) return;
 
@@ -119,10 +234,12 @@ export function installGroveNotifications(supabase) {
         oscillator.frequency.value = note.frequency;
 
         gain.gain.setValueAtTime(0, now + note.start);
+
         gain.gain.linearRampToValueAtTime(
           volume * 0.12,
           now + note.start + 0.02
         );
+
         gain.gain.exponentialRampToValueAtTime(
           0.001,
           now + note.start + note.duration
@@ -134,12 +251,19 @@ export function installGroveNotifications(supabase) {
         oscillator.start(now + note.start);
         oscillator.stop(now + note.start + note.duration);
       });
+
     } catch (error) {
       console.warn("Grove notification sound unavailable:", error);
     }
   }
 
+  /*
+   * LOAD ACCOUNT PREFERENCES
+   */
+
   async function loadPreferences() {
+    if (!user) return;
+
     const { data, error } = await supabase
       .from("user_preferences")
       .select(
@@ -156,6 +280,10 @@ export function installGroveNotifications(supabase) {
       ...(data || {})
     };
   }
+
+  /*
+   * BROWSER NOTIFICATIONS
+   */
 
   function destinationFor(row) {
     if (row.kind === "message") {
@@ -197,16 +325,29 @@ export function installGroveNotifications(supabase) {
           url: destinationFor(row)
         }
       });
+
     } catch (error) {
       console.warn("Grove browser alert failed:", error);
     }
   }
 
+  /*
+   * REALTIME NOTIFICATIONS
+   */
+
+  function disconnectRealtime() {
+    if (!channel) return;
+
+    const previous = channel;
+    channel = null;
+
+    supabase.removeChannel(previous);
+  }
+
   function connectRealtime() {
-    if (channel) {
-      supabase.removeChannel(channel);
-      channel = null;
-    }
+    disconnectRealtime();
+
+    if (!user) return;
 
     channel = supabase
       .channel(`grove-notifications-${user.id}`)
@@ -224,6 +365,7 @@ export function installGroveNotifications(supabase) {
           if (!row || !categoryEnabled(row.kind)) return;
 
           playNotificationSound();
+
           await showBrowserAlert(row);
 
           window.dispatchEvent(
@@ -250,28 +392,34 @@ export function installGroveNotifications(supabase) {
       });
   }
 
+  /*
+   * ACCOUNT INITIALIZATION
+   */
+
   async function initialize() {
-    const { data, error } = await supabase.auth.getUser();
-
-    if (error) {
-      console.warn("Grove notification account check failed:", error);
-      return;
-    }
-
-    user = data.user || null;
-
-    removeNotificationInterface();
-
-    if (!user) return;
-
     try {
+      const { data, error } = await supabase.auth.getUser();
+
+      if (error) throw error;
+
+      user = data.user || null;
+
+      removeNotificationInterface();
+
+      if (!user) {
+        disconnectRealtime();
+        return;
+      }
+
       await loadPreferences();
+
       connectRealtime();
 
       window.GroveNotifications = Object.freeze({
         playTestSound: playNotificationSound,
         reloadPreferences: loadPreferences
       });
+
     } catch (error) {
       console.error(
         "Grove notification system could not initialize:",
@@ -279,6 +427,10 @@ export function installGroveNotifications(supabase) {
       );
     }
   }
+
+  /*
+   * LIVE PREFERENCE UPDATES
+   */
 
   window.addEventListener(
     "grove:notification-preferences-updated",
@@ -290,16 +442,18 @@ export function installGroveNotifications(supabase) {
     }
   );
 
+  /*
+   * AUTHENTICATION CHANGES
+   */
+
   supabase.auth.onAuthStateChange((event, session) => {
     if (event === "SIGNED_OUT") {
       user = null;
 
-      if (channel) {
-        supabase.removeChannel(channel);
-        channel = null;
-      }
+      disconnectRealtime();
 
       removeNotificationInterface();
+
       delete window.GroveNotifications;
     }
 
@@ -308,7 +462,10 @@ export function installGroveNotifications(supabase) {
     }
   });
 
-  // Device alerts still require the service worker and permission.
+  /*
+   * SERVICE WORKER
+   */
+
   if ("serviceWorker" in navigator) {
     navigator.serviceWorker
       .register("/service-worker.js")
