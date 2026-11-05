@@ -1,0 +1,5 @@
+/* Keep owner-only relationship controls hidden from profile visitors. */
+.grove-rel-fields[hidden],
+.grove-rel-partner[hidden] {
+  display: none !important;
+}
