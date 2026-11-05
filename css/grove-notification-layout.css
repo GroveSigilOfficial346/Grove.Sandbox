@@ -1,15 +1,44 @@
-/* ==========================================
-   GROVE NOTIFICATION INTERFACE REMOVAL
-   Notification bell and popup are disabled.
-   Realtime sounds and device alerts remain
-   controlled by js/grove-notifications.js.
-========================================== */
+/*
+  GROVE — HIDE NOTIFICATION NAVIGATION UI
+
+  This stylesheet removes the unwanted notification tab.
+  It does not disable realtime notifications, notification
+  sounds, browser alerts, or notification preferences.
+*/
 
 .grove-notification-control,
-.grove-notification-bell,
 .grove-notification-panel,
-.grove-notification-count {
+.grove-notification-bell,
+.grove-notification-count,
+.notification-tab,
+.notification-widget,
+.notification-bell,
+.notification-panel,
+#notification-tab,
+#notification-bell,
+#notification-widget,
+#grove-notification-tab,
+#grove-notification-control {
   display: none !important;
   visibility: hidden !important;
+  opacity: 0 !important;
   pointer-events: none !important;
+}
+
+/* Remove old notification controls from navigation. */
+
+nav .grove-notification-control,
+nav .grove-notification-bell,
+nav .notification-tab,
+nav #notification-tab,
+[role="navigation"] .notification-tab,
+[role="navigation"] .grove-notification-control {
+  display: none !important;
+}
+
+/* Preserve the notification preference controls in Settings. */
+
+.settings-panel,
+.settings-panel * {
+  visibility: visible;
 }
