@@ -4,11 +4,16 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#050019">
-  <meta name="description" content="Discover and connect with Grove members.">
+  <meta name="description" content="Discover new members and connect with the Grove community.">
+
   <title>Discover Members | Grove</title>
 
+  <link rel="icon" type="image/svg+xml" href="/assets/neural-tree.svg">
   <link rel="stylesheet" href="css/discover.css">
+  <link rel="stylesheet" href="css/discover-new-members.css?v=20261105-1">
+
   <script type="module" src="js/discover.js"></script>
+  <script type="module" src="js/discover-new-members.js?v=20261105-1"></script>
 </head>
 
 <body>
@@ -29,6 +34,33 @@
       <p class="eyebrow">GROVE NETWORK</p>
       <h1>Discover members</h1>
       <p>Find people by their name or username and connect with them.</p>
+    </section>
+
+    <section class="new-members-section" aria-labelledby="new-members-title">
+      <div class="new-members-heading">
+        <div>
+          <p class="eyebrow">FRESH CONNECTIONS</p>
+          <h2 id="new-members-title">New to Grove</h2>
+          <p>Meet members who recently joined the network.</p>
+        </div>
+
+        <button id="refresh-new-members" type="button">
+          ↻ Refresh
+        </button>
+      </div>
+
+      <p
+        id="new-members-status"
+        class="new-members-status"
+        role="status"
+        aria-live="polite"
+      >Loading new members...</p>
+
+      <div
+        id="new-members-list"
+        class="new-members-list"
+        aria-live="polite"
+      ></div>
     </section>
 
     <section class="discover-search-panel" aria-label="Member search">
