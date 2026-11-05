@@ -1,39 +1,15 @@
-/* Keep the notification control off the public landing-page account buttons. */
-.account-navigation .grove-notification-control {
+/* ==========================================
+   GROVE NOTIFICATION INTERFACE REMOVAL
+   Notification bell and popup are disabled.
+   Realtime sounds and device alerts remain
+   controlled by js/grove-notifications.js.
+========================================== */
+
+.grove-notification-control,
+.grove-notification-bell,
+.grove-notification-panel,
+.grove-notification-count {
   display: none !important;
-}
-
-/* Keep the notification panel inside the viewport. */
-.grove-notification-panel {
-  display: flex !important;
-  flex-direction: column;
-  width: min(370px, calc(100vw - 24px));
-  max-height: min(570px, 75vh);
-  overflow: hidden !important;
-  overscroll-behavior: contain;
-}
-
-/* The notification list scrolls independently from its heading and footer. */
-.grove-notification-panel > div:nth-child(2) {
-  min-height: 0;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  scrollbar-gutter: stable;
-  flex: 1 1 auto;
-}
-
-/* Preserve usable controls on smaller screens. */
-@media (max-width: 600px) {
-  .grove-notification-panel {
-    position: fixed !important;
-    top: calc(env(safe-area-inset-top) + 66px) !important;
-    right: 12px !important;
-    left: 12px !important;
-    width: auto !important;
-    max-height: calc(100dvh - env(safe-area-inset-top) - 84px) !important;
-  }
-
-  .grove-notification-panel > div:nth-child(2) {
-    max-height: none;
-  }
+  visibility: hidden !important;
+  pointer-events: none !important;
 }
