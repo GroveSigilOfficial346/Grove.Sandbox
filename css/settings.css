@@ -1,0 +1,245 @@
+:root {
+  color-scheme: dark;
+  --night: #050019;
+  --panel: rgba(18, 10, 42, .9);
+  --violet: #851eff;
+  --magenta: #eb36ed;
+  --cyan: #05c9f4;
+  --white: #f7f5ff;
+  --muted: #aaa1c8;
+  --border: rgba(190, 155, 255, .2);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background: var(--night);
+  color: var(--white);
+  font-family: Inter, system-ui, sans-serif;
+}
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  padding: 15px clamp(16px, 4vw, 42px);
+  border-bottom: 1px solid var(--border);
+  background: rgba(5, 0, 25, .85);
+}
+
+.brand {
+  color: var(--white);
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: .16em;
+  text-decoration: none;
+}
+
+.site-header nav {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  flex-wrap: wrap;
+}
+
+.site-header nav a {
+  color: var(--muted);
+  font-size: .84rem;
+  text-decoration: none;
+}
+
+.site-header nav a:hover,
+.site-header nav a[aria-current="page"] {
+  color: var(--cyan);
+}
+
+.settings-container {
+  width: min(850px, calc(100% - 28px));
+  margin: 36px auto 80px;
+}
+
+.settings-heading {
+  margin-bottom: 25px;
+}
+
+.eyebrow {
+  color: var(--cyan);
+  font-size: .7rem;
+  font-weight: 800;
+  letter-spacing: .18em;
+}
+
+.settings-heading h1 {
+  margin: 7px 0;
+  font-size: clamp(2rem, 6vw, 3rem);
+}
+
+.settings-heading p:last-child {
+  color: var(--muted);
+}
+
+.settings-panel {
+  margin: 18px 0;
+  padding: clamp(17px, 3vw, 25px);
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: var(--panel);
+  box-shadow: 0 14px 40px rgba(0, 0, 0, .2);
+}
+
+.settings-panel h2 {
+  margin: 0 0 8px;
+  font-size: 1.1rem;
+}
+
+.settings-description {
+  margin: 0 0 16px;
+  color: var(--muted);
+  font-size: .86rem;
+  line-height: 1.6;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 15px 0;
+  border-top: 1px solid var(--border);
+  cursor: pointer;
+}
+
+.setting-row span {
+  display: grid;
+  gap: 4px;
+}
+
+.setting-row strong {
+  font-size: .9rem;
+}
+
+.setting-row small {
+  color: var(--muted);
+  font-size: .78rem;
+}
+
+.setting-row input {
+  width: 21px;
+  height: 21px;
+  flex: 0 0 auto;
+  accent-color: var(--violet);
+}
+
+.volume-setting {
+  display: grid;
+  gap: 12px;
+  margin: 16px 0;
+  color: var(--muted);
+  font-size: .85rem;
+}
+
+.volume-setting input {
+  width: 100%;
+  accent-color: var(--magenta);
+}
+
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 10px 16px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 750;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.button.primary {
+  background: linear-gradient(110deg, var(--violet), var(--magenta));
+  color: white;
+}
+
+.button.secondary {
+  border-color: rgba(133, 30, 255, .6);
+  background: rgba(133, 30, 255, .13);
+  color: var(--white);
+}
+
+.button:hover {
+  border-color: var(--cyan);
+}
+
+.button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.device-status {
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: rgba(133, 30, 255, .08);
+  color: var(--muted);
+  font-size: .85rem;
+  line-height: 1.5;
+}
+
+.device-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.settings-note {
+  margin: 15px 0 0;
+  color: var(--muted);
+  font-size: .75rem;
+  line-height: 1.6;
+}
+
+#settings-status {
+  min-height: 22px;
+  color: var(--cyan);
+  font-size: .85rem;
+}
+
+#settings-status.error {
+  color: #ff8585;
+}
+
+@media (max-width: 640px) {
+  .site-header {
+    align-items: flex-start;
+  }
+
+  .site-header nav {
+    width: 100%;
+    gap: 12px;
+  }
+
+  .site-header nav a {
+    font-size: .76rem;
+  }
+
+  .settings-container {
+    margin-top: 24px;
+  }
+
+  .setting-row {
+    align-items: flex-start;
+  }
+
+  .device-actions .button {
+    width: 100%;
+  }
+}
