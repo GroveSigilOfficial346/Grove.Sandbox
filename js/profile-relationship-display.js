@@ -4,14 +4,17 @@ import { supabase } from "./supabase.js";
   "use strict";
 
   const details = document.querySelector("#details");
+  const profileMain = document.querySelector(".profile-main");
 
-  if (!details) return;
+  if (!details || !profileMain) return;
 
   let relationshipSince = null;
-  let relationshipStatus = null;
+  let observer = null;
 
   function formatDate(value) {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(value || "")) return "";
+    if (typeof value !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      return "";
+    }
 
     const [year, month, day] = value.split("-").map(Number);
     const date = new Date(year, month - 1, day);
@@ -32,23 +35,36 @@ import { supabase } from "./supabase.js";
   }
 
   function render() {
-    details.querySelector(".grove-relationship-date")?.remove();
-
-    if (!relationshipSince) return;
+    const existing = details.querySelector(
+      "[data-grove-relationship-date]"
+    );
 
     const dateText = formatDate(relationshipSince);
-    if (!dateText) return;
+
+    if (!dateText) {
+      existing?.remove();
+      return;
+    }
+
+    const label = `Since: ${dateText}`;
+
+    if (existing) {
+      if (existing.textContent !== label) {
+        existing.textContent = label;
+      }
+      return;
+    }
 
     const item = document.createElement("span");
     item.className = "profile-detail grove-relationship-date";
-    item.textContent = `Since: ${dateText}`;
+    item.dataset.groveRelationshipDate = "true";
+    item.textContent = label;
 
     details.append(item);
   }
 
   async function resolveProfileId(user) {
-    const params = new URLSearchParams(location.search);
-
+    const params = new URLSearchParams(window.location.search);
     const requestedId = params.get("id");
     const requestedUsername = params.get("username");
 
@@ -62,7 +78,6 @@ import { supabase } from "./supabase.js";
         .maybeSingle();
 
       if (error) throw error;
-
       return data?.id || null;
     }
 
@@ -82,36 +97,28 @@ import { supabase } from "./supabase.js";
 
       const { data, error } = await supabase
         .from("profiles")
-        .select("relationship_status,relationship_since")
+        .select("relationship_since")
         .eq("id", profileId)
         .maybeSingle();
 
       if (error) throw error;
       if (!data) return;
 
-      relationshipStatus = data.relationship_status;
-      relationshipSince = data.relationship_since;
-
+      relationshipSince = data.relationship_since || null;
       render();
 
-      // The main profile renderer may rebuild the details section.
-      // Restore the date after it does, without creating duplicates.
-      const observer = new MutationObserver(() => {
-        if (
-          relationshipSince &&
-          !details.querySelector(".grove-relationship-date")
-        ) {
-          render();
-        }
+      observer = new MutationObserver(() => {
+        render();
       });
 
       observer.observe(details, {
-        childList: true
+        childList: true,
+        subtree: true
       });
 
     } catch (error) {
       console.warn(
-        "Grove relationship date could not be displayed:",
+        "Grove relationship date could not be loaded:",
         error
       );
     }
