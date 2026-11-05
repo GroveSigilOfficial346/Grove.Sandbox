@@ -63,7 +63,6 @@ import { supabase } from "./supabase.js";
         </header>
 
         <form class="grove-quick-edit-form">
-
           <label for="grove-quick-bio">Bio</label>
           <textarea
             id="grove-quick-bio"
@@ -79,8 +78,8 @@ import { supabase } from "./supabase.js";
           <input id="grove-quick-date" type="date">
 
           <p class="grove-quick-edit-hint">
-            This date is displayed on your own profile. It does not
-            approve or change another member's relationship status.
+            This date is displayed on your profile. It does not approve
+            or change another member's relationship status.
           </p>
 
           <p
@@ -97,7 +96,6 @@ import { supabase } from "./supabase.js";
               Save changes
             </button>
           </footer>
-
         </form>
       </section>
     `;
@@ -147,6 +145,7 @@ import { supabase } from "./supabase.js";
 
     button.type = "button";
     button.dataset.groveEdit = action;
+
     button.addEventListener("click", event => {
       event.stopPropagation();
       openModal();
@@ -176,23 +175,57 @@ import { supabase } from "./supabase.js";
     const details = $("#details");
     if (!details) return;
 
-    details.querySelector(".grove-relationship-date")?.remove();
-
-    if (!profileData?.relationship_since) return;
-
-    const date = new Date(
-      profileData.relationship_since + "T00:00:00"
+    let dateElement = details.querySelector(
+      ".grove-relationship-date"
     );
 
-    if (Number.isNaN(date.getTime())) return;
+    const value = profileData?.relationship_since;
 
-    const label = element(
+    if (!value) {
+      dateElement?.remove();
+      return;
+    }
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+      dateElement?.remove();
+      return;
+    }
+
+    const [year, month, day] = value.split("-").map(Number);
+    const date = new Date(year, month - 1, day);
+
+    if (
+      date.getFullYear() !== year ||
+      date.getMonth() !== month - 1 ||
+      date.getDate() !== day
+    ) {
+      dateElement?.remove();
+      return;
+    }
+
+    const dateText = new Intl.DateTimeFormat(undefined, {
+      year: "numeric",
+      month: "long",
+      day: "numeric"
+    }).format(date);
+
+    const label = "Since: " + dateText;
+
+    // Do not mutate the DOM when the displayed date is already correct.
+    if (dateElement) {
+      if (dateElement.textContent !== label) {
+        dateElement.textContent = label;
+      }
+      return;
+    }
+
+    dateElement = element(
       "span",
       "profile-detail grove-relationship-date",
-      "Since: " + date.toLocaleDateString()
+      label
     );
 
-    details.append(label);
+    details.append(dateElement);
   }
 
   function openModal() {
@@ -295,18 +328,43 @@ import { supabase } from "./supabase.js";
       }
 
       profileData = data;
-
       feedback.textContent = "Saved successfully.";
 
-      // Reload the existing profile renderer so its own display stays in sync.
       window.setTimeout(() => window.location.reload(), 450);
 
     } catch (error) {
       console.error("Grove profile quick edit failed:", error);
+
       feedback.textContent =
         error.message || "Could not save profile details.";
+
       saveButton.disabled = false;
     }
+  }
+
+  async function resolveViewedProfileId() {
+    const params = new URLSearchParams(location.search);
+
+    const requestedId = params.get("id");
+    const requestedUsername = params.get("username");
+
+    if (requestedId) {
+      return requestedId;
+    }
+
+    if (requestedUsername) {
+      const { data, error } = await supabase
+        .from("profile_directory")
+        .select("id")
+        .eq("username", requestedUsername.toLowerCase())
+        .maybeSingle();
+
+      if (error) throw error;
+
+      return data?.id || null;
+    }
+
+    return user?.id || null;
   }
 
   async function initialize() {
@@ -316,30 +374,31 @@ import { supabase } from "./supabase.js";
 
     user = data.user || null;
 
-    const params = new URLSearchParams(location.search);
-    const requestedId = params.get("id");
+    if (!user) return;
 
-    profileId = requestedId || user?.id || null;
-    isOwner = Boolean(user && profileId === user.id);
+    profileId = await resolveViewedProfileId();
 
-    // Never show editing controls on another member's profile.
+    // Ownership is based on the resolved profile ID, never on the
+    // presence of a signed-in user alone.
+    isOwner = Boolean(profileId && profileId === user.id);
+
+    // Never load or show edit controls on another member's profile.
     if (!isOwner) return;
 
     await loadProfileFields();
+
+    const main = $(".profile-main");
+    if (!main) return;
 
     const observer = new MutationObserver(() => {
       attachProfileControls();
       renderRelationshipDate();
     });
 
-    const main = $(".profile-main");
-
-    if (main) {
-      observer.observe(main, {
-        childList: true,
-        subtree: true
-      });
-    }
+    observer.observe(main, {
+      childList: true,
+      subtree: true
+    });
   }
 
   initialize().catch(error => {
