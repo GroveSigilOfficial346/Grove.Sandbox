@@ -5,8 +5,7 @@ import { installGroveNotifications } from "./grove-notifications.js";
 const SUPABASE_URL =
   "https://fpkrvgcpbnrusbfmhinj.supabase.co";
 
-// Active public publishable key for Grove.Sandbox.
-// Never replace this with a service-role or secret key.
+// Public publishable key only. Never put a service-role key in frontend code.
 const SUPABASE_ANON_KEY =
   "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
 
@@ -77,6 +76,12 @@ export const supabase = createClient(
 );
 
 window.groveClient = supabase;
+
+// Notification layout overrides. The notification module itself remains intact.
+const notificationStyles = document.createElement("link");
+notificationStyles.rel = "stylesheet";
+notificationStyles.href = "/css/grove-notification-layout.css?v=20261105-1";
+document.head.append(notificationStyles);
 
 installGroveShell(supabase);
 installGroveNotifications(supabase);
