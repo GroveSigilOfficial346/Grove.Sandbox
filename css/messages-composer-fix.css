@@ -1,0 +1,53 @@
+/* GROVE MESSAGE COMPOSER FIX */
+
+.message-form {
+  position: relative;
+  z-index: 2;
+  isolation: isolate;
+}
+
+.composer-input-wrap {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+}
+
+#message-input {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  resize: none;
+  overflow-x: hidden;
+  overflow-y: auto;
+  cursor: text;
+  touch-action: pan-y;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+#message-input::-webkit-resizer {
+  display: none;
+}
+
+#message-input:focus {
+  outline: none;
+}
+
+#message-input:focus-visible {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 3px rgba(5, 201, 244, 0.1);
+}
+
+#message-input:disabled {
+  cursor: not-allowed;
+}
+
+.send-button {
+  position: relative;
+  z-index: 2;
+  flex-shrink: 0;
+}
+
+/* END GROVE MESSAGE COMPOSER FIX */
