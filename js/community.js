@@ -536,11 +536,6 @@ async function changePostPin(postId, shouldPin, button) {
 async function toggleRepost(post, button) {
   if (!currentUser) return;
 
-  if (post.author_id === currentUser.id) {
-    setStatus("You cannot repost your own post.", true);
-    return;
-  }
-
   button.disabled = true;
 
   try {
@@ -928,11 +923,6 @@ function createPostCard(
   repostButton.type = "button";
 
   if (hasReposted) repostButton.classList.add("reposted");
-
-  repostButton.disabled = post.author_id === currentUser.id;
-  repostButton.title = repostButton.disabled
-    ? "You cannot repost your own post."
-    : "";
 
   repostButton.addEventListener("click", () => {
     toggleRepost(post, repostButton);
