@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+<DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -8,12 +8,14 @@
 
   <title>Grove Profile</title>
 
-  <link rel="stylesheet" href="css/profile.css?v=20261104-2">
-  <link rel="stylesheet" href="css/profile-pins.css?v=20261104-2">
+  <link rel="stylesheet" href="css/profile.css?v=20261105-1">
+  <link rel="stylesheet" href="css/profile-pins.css?v=20261105-1">
+  <link rel="stylesheet" href="css/profile-social.css?v=20261105-1">
 
-  <script type="module" src="js/profile-view.js?v=20261104-2"></script>
-  <script type="module" src="js/profile-pins.js?v=20261104-2"></script>
-  <script type="module" src="js/profile-mobile-compat.js?v=20261104-2"></script>
+  <script type="module" src="js/profile-view.js?v=20261105-1"></script>
+  <script type="module" src="js/profile-pins.js?v=20261105-1"></script>
+  <script type="module" src="js/profile-mobile-compat.js?v=20261105-1"></script>
+  <script type="module" src="js/profile-social.js?v=20261105-1"></script>
 </head>
 
 <body>
@@ -145,12 +147,49 @@
       <div id="music-content"></div>
     </section>
 
+    <section
+      id="profile-social-tabs"
+      class="profile-social-tabs"
+      aria-label="Profile content tabs"
+    >
+      <button
+        class="profile-social-tab active"
+        type="button"
+        data-profile-tab="posts"
+        aria-selected="true"
+      >Posts</button>
+
+      <button
+        class="profile-social-tab"
+        type="button"
+        data-profile-tab="reposts"
+        aria-selected="false"
+      >Reposts</button>
+    </section>
+
     <section id="posts-section" class="content-section">
       <h2>Posts</h2>
 
       <div id="posts-list">
         <p class="muted">Posts will appear here.</p>
       </div>
+    </section>
+
+    <section
+      id="reposts-section"
+      class="content-section profile-reposts-section"
+      hidden
+    >
+      <h2>Reposts</h2>
+
+      <p
+        id="reposts-status"
+        class="muted"
+        role="status"
+        aria-live="polite"
+      ></p>
+
+      <div id="reposts-list"></div>
     </section>
 
   </main>
