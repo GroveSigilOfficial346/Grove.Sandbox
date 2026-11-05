@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#050019">
+  <meta name="description" content="Manage your Grove account and notification settings.">
+
+  <title>Settings | Grove</title>
+
+  <link rel="stylesheet" href="css/settings.css">
+  <script type="module" src="js/settings.js"></script>
+</head>
+
+<body>
+  <header class="site-header">
+    <a class="brand" href="/">GROVE</a>
+
+    <nav aria-label="Main navigation">
+      <a href="/">Home</a>
+      <a href="/community.html">Community</a>
+      <a href="/news-feed.html">Following</a>
+      <a href="/discover.html">Discover</a>
+      <a href="/profile.html">Profile</a>
+      <a href="/messages.html">Messages</a>
+    </nav>
+  </header>
+
+  <main class="settings-container">
+    <header class="settings-heading">
+      <p class="eyebrow">YOUR ACCOUNT</p>
+      <h1>Settings</h1>
+      <p>Control how Grove reaches you.</p>
+    </header>
+
+    <p id="settings-status" role="status" aria-live="polite"></p>
+
+    <section class="settings-panel">
+      <h2>Notification preferences</h2>
+      <p class="settings-description">
+        Choose which activity appears in your Grove notification center.
+      </p>
+
+      <label class="setting-row">
+        <span>
+          <strong>Messages</strong>
+          <small>New direct messages</small>
+        </span>
+        <input id="notify-messages" type="checkbox" checked>
+      </label>
+
+      <label class="setting-row">
+        <span>
+          <strong>Follows</strong>
+          <small>New followers and follow requests</small>
+        </span>
+        <input id="notify-follows" type="checkbox" checked>
+      </label>
+
+      <label class="setting-row">
+        <span>
+          <strong>Likes</strong>
+          <small>Likes on your posts</small>
+        </span>
+        <input id="notify-likes" type="checkbox" checked>
+      </label>
+
+      <label class="setting-row">
+        <span>
+          <strong>Comments</strong>
+          <small>Comments on your posts</small>
+        </span>
+        <input id="notify-comments" type="checkbox" checked>
+      </label>
+
+      <label class="setting-row">
+        <span>
+          <strong>Nudges</strong>
+          <small>Grove pokes and check-ins</small>
+        </span>
+        <input id="notify-nudges" type="checkbox" checked>
+      </label>
+
+      <label class="setting-row">
+        <span>
+          <strong>Mentions</strong>
+          <small>When someone mentions you</small>
+        </span>
+        <input id="notify-mentions" type="checkbox" checked>
+      </label>
+    </section>
+
+    <section class="settings-panel">
+      <h2>Notification sound</h2>
+      <p class="settings-description">
+        Control the sound Grove plays when a new notification arrives.
+      </p>
+
+      <label class="setting-row">
+        <span>
+          <strong>Play notification sound</strong>
+          <small>Sound is played only after you interact with the page.</small>
+        </span>
+        <input id="sound-enabled" type="checkbox" checked>
+      </label>
+
+      <label class="volume-setting" for="sound-volume">
+        Sound volume
+        <input
+          id="sound-volume"
+          type="range"
+          min="0"
+          max="1"
+          step="0.05"
+          value="0.35"
+        >
+      </label>
+
+      <button id="test-sound" class="button secondary" type="button">
+        Preview sound
+      </button>
+    </section>
+
+    <section class="settings-panel">
+      <h2>Device notifications</h2>
+      <p class="settings-description">
+        Allow Grove to send alerts to this browser or device, even when
+        Grove is not open.
+      </p>
+
+      <p id="device-status" class="device-status">
+        Checking device notification support...
+      </p>
+
+      <div class="device-actions">
+        <button id="enable-device" class="button primary" type="button">
+          Enable device notifications
+        </button>
+
+        <button id="disable-device" class="button secondary" type="button">
+          Turn off on this device
+        </button>
+      </div>
+
+      <p class="settings-note">
+        Browser and operating-system permissions are controlled outside
+        Grove. If you block notifications there, you must restore permission
+        in your browser settings before Grove can enable them again.
+      </p>
+    </section>
+
+    <section class="settings-panel">
+      <h2>Account</h2>
+      <p class="settings-description">
+        Your notification preferences are saved to the signed-in account.
+      </p>
+
+      <a class="button secondary" href="/profile.html">Back to profile</a>
+    </section>
+  </main>
+</body>
+</html>
