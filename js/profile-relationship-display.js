@@ -4,14 +4,25 @@ import { supabase } from "./supabase.js";
   "use strict";
 
   const details = document.querySelector("#details");
-
   if (!details) return;
 
-  function formatRelationshipDate(value) {
+  const STATUS_LABELS = {
+    not_set: "",
+    single: "Single",
+    in_relationship: "In a relationship",
+    married: "Married",
+    engaged: "Engaged",
+    open_relationship: "In an open relationship",
+    complicated: "It's complicated",
+    separated: "Separated",
+    divorced: "Divorced",
+    widowed: "Widowed"
+  };
+
+  function formatDate(value) {
     if (!value || typeof value !== "string") return "";
 
     const parts = value.split("-").map(Number);
-
     if (parts.length !== 3) return "";
 
     const [year, month, day] = parts;
@@ -33,31 +44,51 @@ import { supabase } from "./supabase.js";
     });
   }
 
-  function renderDate(status, value) {
-    const formatted = formatRelationshipDate(value);
+  function removeDuplicateStatusRows() {
+    details.querySelectorAll(".profile-detail").forEach(item => {
+      if (item.dataset.groveRelationshipCombined === "true") return;
+
+      const text = (item.textContent || "").trim();
+
+      if (/^relationship\s*:/i.test(text)) {
+        item.remove();
+      }
+    });
+  }
+
+  function renderRelationship(status, dateValue) {
+    removeDuplicateStatusRows();
+
     const existing = details.querySelector(
-      "[data-grove-relationship-date-display]"
+      "[data-grove-relationship-combined]"
     );
 
-    if (!formatted) {
+    const label = STATUS_LABELS[status] || "";
+    const date = formatDate(dateValue);
+
+    if (!label) {
       existing?.remove();
       return;
     }
 
-    const label = status === "married"
-      ? "Married on: "
-      : "Since: ";
+    let text = label;
 
-    const text = label + formatted;
+    if (date) {
+      text += status === "married"
+        ? " · " + date
+        : " · Since " + date;
+    }
 
-    // Critical: do not mutate the DOM if the correct date is present.
     if (existing?.textContent === text) return;
 
-    existing?.remove();
+    if (existing) {
+      existing.textContent = text;
+      return;
+    }
 
     const item = document.createElement("span");
     item.className = "profile-detail grove-relationship-date";
-    item.dataset.groveRelationshipDateDisplay = "true";
+    item.dataset.groveRelationshipCombined = "true";
     item.textContent = text;
 
     details.append(item);
@@ -75,7 +106,7 @@ import { supabase } from "./supabase.js";
     const requestedId = params.get("id");
     const requestedUsername = params.get("username");
 
-    let viewedProfile = null;
+    let viewedProfile;
 
     if (!requestedId && !requestedUsername) {
       if (!currentUser) return;
@@ -102,8 +133,7 @@ import { supabase } from "./supabase.js";
     }
 
     const isOwner = Boolean(
-      currentUser &&
-      currentUser.id === viewedProfile.id
+      currentUser && currentUser.id === viewedProfile.id
     );
 
     if (viewedProfile.is_private && !isOwner) {
@@ -130,7 +160,7 @@ import { supabase } from "./supabase.js";
     if (!relationship) return;
 
     const updateDisplay = () => {
-      renderDate(
+      renderRelationship(
         relationship.relationship_status,
         relationship.relationship_since
       );
@@ -139,7 +169,8 @@ import { supabase } from "./supabase.js";
     const observer = new MutationObserver(updateDisplay);
 
     observer.observe(details, {
-      childList: true
+      childList: true,
+      subtree: false
     });
 
     updateDisplay();
@@ -147,7 +178,7 @@ import { supabase } from "./supabase.js";
 
   initialize().catch(error => {
     console.error(
-      "Grove relationship date display failed:",
+      "Grove relationship display failed:",
       error
     );
   });
