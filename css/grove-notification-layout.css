@@ -1,9 +1,11 @@
 /*
-  GROVE — HIDE NOTIFICATION NAVIGATION UI
+  GROVE NOTIFICATION LAYOUT
 
-  This stylesheet removes the unwanted notification tab.
-  It does not disable realtime notifications, notification
-  sounds, browser alerts, or notification preferences.
+  Legacy notification controls stay hidden.
+  The current signed-in activity control is:
+  .grove-activity-control
+
+  Do not hide that control here.
 */
 
 .grove-notification-control,
@@ -25,7 +27,16 @@
   pointer-events: none !important;
 }
 
-/* Remove old notification controls from navigation. */
+/* Preserve the current member notification control. */
+
+.grove-activity-control {
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+  pointer-events: auto !important;
+}
+
+/* Keep legacy notification controls out of navigation. */
 
 nav .grove-notification-control,
 nav .grove-notification-bell,
@@ -36,7 +47,7 @@ nav #notification-tab,
   display: none !important;
 }
 
-/* Preserve the notification preference controls in Settings. */
+/* Settings controls must remain visible and usable. */
 
 .settings-panel,
 .settings-panel * {
