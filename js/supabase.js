@@ -9,8 +9,8 @@ import { installGroveSanctionStatus } from "./grove-sanction-status.js";
 const SUPABASE_URL =
   "https://fpkrvgcpbnrusbfmhinj.supabase.co";
 
-// Verified active publishable key for Grove.Sandbox.
-// Never use a service-role key in browser code.
+// Active Grove.Sandbox publishable key.
+// Never place a service-role key in browser code.
 const SUPABASE_ANON_KEY =
   "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
 
@@ -92,7 +92,7 @@ const isLandingPage = Boolean(
 
 if (!isLandingPage) {
   installGroveNotifications(supabase);
-  installGroveActivityTab();
+  installGroveActivityTab(supabase);
 }
 
 console.info("Grove.Sandbox connected.");
