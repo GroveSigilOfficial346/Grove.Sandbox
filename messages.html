@@ -23,11 +23,13 @@
   <link rel="stylesheet" href="/css/messages-themes.css?v=20261105-2">
   <link rel="stylesheet" href="/css/messages-extras.css?v=20261105-2">
   <link rel="stylesheet" href="/css/group-conversations.css?v=20261105-2">
+  <link rel="stylesheet" href="/css/messages-audio.css?v=20261106-1">
 
   <script type="module" src="/js/messages.js"></script>
   <script type="module" src="/js/messages-themes.js?v=20261105-2"></script>
   <script type="module" src="/js/messages-extras.js?v=20261105-2"></script>
   <script type="module" src="/js/group-conversations.js?v=20261105-2"></script>
+  <script type="module" src="/js/messages-audio.js?v=20261106-1"></script>
 </head>
 
 <body>
@@ -113,6 +115,7 @@
         </div>
 
         <form id="message-form" class="message-form">
+
           <label class="sr-only" for="message-input">
             Write a message
           </label>
@@ -129,6 +132,24 @@
           </div>
 
           <button
+            type="button"
+            id="audio-attach-button"
+            class="audio-attach-button"
+            disabled
+            aria-label="Attach audio"
+            title="Attach audio"
+          >
+            ♫
+          </button>
+
+          <input
+            id="audio-file-input"
+            type="file"
+            accept="audio/mpeg,audio/mp4,audio/wav,audio/ogg,audio/webm,audio/aac,.mp3,.m4a,.wav,.ogg,.webm,.aac"
+            hidden
+          >
+
+          <button
             type="submit"
             id="send-message"
             class="send-button"
@@ -137,7 +158,10 @@
             <span>Send</span>
             <span aria-hidden="true">➤</span>
           </button>
+
         </form>
+
+        <p id="audio-upload-status" class="audio-upload-status" role="status" aria-live="polite"></p>
 
         <p class="composer-note">
           Private conversations on Grove
