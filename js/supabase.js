@@ -2,13 +2,14 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 import { installGroveShell } from "./grove-shell.js";
 import { installGroveNotifications } from "./grove-notifications.js";
 import { installGroveActivityTab } from "./grove-activity-tab.js";
+import { installGroveSanctionStatus } from "./grove-sanction-status.js";
 
 const SUPABASE_URL =
   "https://fpkrvgcpbnrusbfmhinj.supabase.co";
 
 // Public publishable key only. Never put a service-role key in frontend code.
 const SUPABASE_ANON_KEY =
-  "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
+  "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EkW6U0Z";
 
 const REMEMBER_KEY = "grove:remember-session";
 
@@ -79,6 +80,7 @@ export const supabase = createClient(
 window.groveClient = supabase;
 
 installGroveShell(supabase);
+installGroveSanctionStatus(supabase);
 
 const isLandingPage = Boolean(
   document.querySelector("main .account-navigation")
