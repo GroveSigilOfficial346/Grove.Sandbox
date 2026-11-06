@@ -62,10 +62,8 @@ export function installGroveSanctionStatus(supabase) {
       sanction.reason || "An account restriction is currently active.";
 
     const expiry = document.createElement("p");
-
     expiry.textContent = sanction.ends_at
-      ? "Restriction ends: " +
-        new Date(sanction.ends_at).toLocaleString()
+      ? "Restriction ends: " + new Date(sanction.ends_at).toLocaleString()
       : "This restriction currently has no scheduled end date.";
 
     const note = document.createElement("p");
@@ -77,7 +75,6 @@ export function installGroveSanctionStatus(supabase) {
     settingsLink.textContent = "Account settings";
 
     banner.append(heading, detail, expiry, note, settingsLink);
-
     document.body.prepend(banner);
   }
 
@@ -124,8 +121,12 @@ export function installGroveSanctionStatus(supabase) {
   });
 
   supabase.auth.onAuthStateChange((event, session) => {
-    if (event === "SIGNED_IN" || event === "SIGNED_OUT" ||
-        event === "TOKEN_REFRESHED" || event === "USER_UPDATED") {
+    if (
+      event === "SIGNED_IN" ||
+      event === "SIGNED_OUT" ||
+      event === "TOKEN_REFRESHED" ||
+      event === "USER_UPDATED"
+    ) {
       refresh(session?.user || null);
     }
   });
