@@ -1,6 +1,7 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 import { installGroveShell } from "./grove-shell.js";
 import { installGroveNotifications } from "./grove-notifications.js";
+import { installGroveActivityTab } from "./grove-activity-tab.js";
 
 const SUPABASE_URL =
   "https://fpkrvgcpbnrusbfmhinj.supabase.co";
@@ -77,23 +78,15 @@ export const supabase = createClient(
 
 window.groveClient = supabase;
 
-// Keep the Grove shell available across the platform.
 installGroveShell(supabase);
 
-// Do not inject notifications into the landing-page account buttons.
 const isLandingPage = Boolean(
   document.querySelector("main .account-navigation")
 );
 
 if (!isLandingPage) {
-  const notificationStyles = document.createElement("link");
-  notificationStyles.rel = "stylesheet";
-  notificationStyles.href =
-    "/css/grove-notification-layout.css?v=20261105-2";
-
-  document.head.append(notificationStyles);
-
   installGroveNotifications(supabase);
+  installGroveActivityTab();
 }
 
 console.info("Grove.Sandbox connected.");
