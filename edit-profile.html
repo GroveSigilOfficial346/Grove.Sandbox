@@ -11,6 +11,7 @@
 
   <script type="module" src="js/edit-profile.js"></script>
   <script type="module" src="js/relationship-status.js"></script>
+  <script type="module" src="js/relationship-date-controls.js"></script>
 </head>
 <body>
 
@@ -34,69 +35,36 @@
         <h2>Profile details</h2>
 
         <label for="edit-username">Username</label>
-        <input
-          id="edit-username"
-          name="username"
-          type="text"
-          minlength="3"
-          maxlength="30"
-          pattern="[a-zA-Z0-9_]+"
-          autocomplete="username"
-          placeholder="your_username"
-          required
-        >
+        <input id="edit-username" name="username" type="text"
+          minlength="3" maxlength="30" pattern="[a-zA-Z0-9_]+"
+          autocomplete="username" placeholder="your_username" required>
         <p class="field-hint">3–30 characters: letters, numbers, underscores.</p>
 
         <label for="edit-display-name">Display name</label>
-        <input
-          id="edit-display-name"
-          name="display_name"
-          type="text"
-          maxlength="60"
-          placeholder="Your name"
-        >
+        <input id="edit-display-name" name="display_name" type="text"
+          maxlength="60" placeholder="Your name">
 
         <label for="edit-bio">Bio</label>
-        <textarea
-          id="edit-bio"
-          name="bio"
-          rows="4"
-          maxlength="280"
-          placeholder="Tell the Grove community about yourself."
-        ></textarea>
+        <textarea id="edit-bio" name="bio" rows="4" maxlength="280"
+          placeholder="Tell the Grove community about yourself."></textarea>
 
         <label for="edit-location">Location</label>
-        <input
-          id="edit-location"
-          name="location"
-          type="text"
-          maxlength="80"
-          placeholder="Optional"
-        >
+        <input id="edit-location" name="location" type="text"
+          maxlength="80" placeholder="Optional">
 
         <label for="edit-website">Website</label>
-        <input
-          id="edit-website"
-          name="website"
-          type="url"
-          maxlength="300"
-          placeholder="https://example.com"
-        >
+        <input id="edit-website" name="website" type="url"
+          maxlength="300" placeholder="https://example.com">
 
         <label for="edit-pronouns">Pronouns</label>
-        <input
-          id="edit-pronouns"
-          name="pronouns"
-          type="text"
-          maxlength="40"
-          placeholder="Optional"
-        >
+        <input id="edit-pronouns" name="pronouns" type="text"
+          maxlength="40" placeholder="Optional">
 
         <hr>
 
         <h2>Relationship status</h2>
         <p class="field-hint">
-          Optional. Your selection is saved to your profile immediately.
+          Your relationship status and date are saved to your profile.
         </p>
 
         <label for="edit-relationship-status">Your status</label>
@@ -111,12 +79,23 @@
           <option value="prefer_not_to_say">Prefer not to say</option>
         </select>
 
-        <p
-          id="relationship-status-message"
-          class="field-hint"
-          role="status"
-          aria-live="polite"
-        ></p>
+        <p id="relationship-status-message" class="field-hint"
+          role="status" aria-live="polite"></p>
+
+        <label id="edit-relationship-date-label"
+          data-grove-relationship-date-label
+          for="edit-relationship-since">Relationship start date</label>
+        <input id="edit-relationship-since"
+          data-grove-relationship-date
+          type="date" disabled>
+
+        <p class="field-hint">
+          This date appears with your relationship status when your profile
+          privacy settings allow it. Changing the date saves it immediately.
+        </p>
+
+        <p data-grove-relationship-date-message
+          class="field-hint" role="status" aria-live="polite"></p>
 
         <hr>
 
@@ -141,32 +120,21 @@
 
         <h2>Profile music</h2>
         <p class="field-hint">
-          Use a direct audio-file URL. Streaming-service page links may not play in an audio player.
+          Use a direct audio-file URL. Streaming-service page links may not
+          play in an audio player.
         </p>
 
         <label for="edit-music-title">Track title</label>
-        <input
-          id="edit-music-title"
-          type="text"
-          maxlength="100"
-          placeholder="Track title"
-        >
+        <input id="edit-music-title" type="text" maxlength="100"
+          placeholder="Track title">
 
         <label for="edit-music-artist">Artist</label>
-        <input
-          id="edit-music-artist"
-          type="text"
-          maxlength="100"
-          placeholder="Artist name"
-        >
+        <input id="edit-music-artist" type="text" maxlength="100"
+          placeholder="Artist name">
 
         <label for="edit-music-url">Audio URL</label>
-        <input
-          id="edit-music-url"
-          type="url"
-          maxlength="1000"
-          placeholder="https://.../track.mp3"
-        >
+        <input id="edit-music-url" type="url" maxlength="1000"
+          placeholder="https://.../track.mp3">
 
         <label class="setting-row" for="edit-music-enabled">
           <span>
@@ -198,23 +166,16 @@
         </select>
 
         <label for="edit-background-file">Upload profile background</label>
-        <input
-          id="edit-background-file"
-          type="file"
-          accept="image/jpeg,image/png,image/webp,image/gif"
-        >
+        <input id="edit-background-file" type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif">
         <p class="field-hint">Image limit: 5 MB.</p>
 
         <div id="background-preview" class="background-preview">
           Background preview
         </div>
 
-        <p
-          id="edit-status"
-          class="status-message"
-          role="status"
-          aria-live="polite"
-        ></p>
+        <p id="edit-status" class="status-message"
+          role="status" aria-live="polite"></p>
 
         <div class="profile-actions">
           <button id="save-profile" class="button primary" type="submit">
