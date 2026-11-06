@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#050019">
+  <meta name="description" content="Discover and publish on Grove broadcast channels.">
+  <title>Broadcast Channels | Grove</title>
+
+  <link rel="icon" type="image/svg+xml" href="/assets/neural-tree.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/css/grove-ui.css?v=20261105-2">
+  <link rel="stylesheet" href="/css/broadcast.css?v=20261106-1">
+
+  <script type="module" src="/js/broadcast.js?v=20261106-1"></script>
+</head>
+<body>
+  <main class="broadcast-app">
+    <header class="broadcast-header">
+      <a href="/" class="broadcast-brand">
+        <img src="/assets/neural-tree.svg" alt="">
+        <span>GROVE</span>
+      </a>
+
+      <div class="broadcast-heading">
+        <span class="broadcast-eyebrow">GROVE NETWORK</span>
+        <h1>Broadcast channels</h1>
+        <p>Follow creators, updates, and communities.</p>
+      </div>
+
+      <nav class="broadcast-nav" aria-label="Account navigation">
+        <a href="/community.html">Community</a>
+        <a href="/news-feed.html">Following</a>
+        <a href="/messages.html">Messages</a>
+        <a href="/profile.html">My profile</a>
+      </nav>
+    </header>
+
+    <p id="broadcast-status" class="broadcast-status" role="status" aria-live="polite"></p>
+
+    <section class="broadcast-toolbar">
+      <div>
+        <span class="broadcast-eyebrow">YOUR CHANNEL NETWORK</span>
+        <h2>Explore channels</h2>
+      </div>
+      <button id="create-channel-button" class="broadcast-primary" type="button">
+        ＋ Create channel
+      </button>
+    </section>
+
+    <section id="invite-section" class="broadcast-invites" hidden>
+      <h2>Channel invitations</h2>
+      <div id="invite-list"></div>
+    </section>
+
+    <section class="broadcast-layout">
+      <aside class="broadcast-sidebar">
+        <label for="channel-search">Find a channel</label>
+        <input id="channel-search" type="search" maxlength="60" placeholder="Search channels...">
+        <div id="channel-list" class="broadcast-channel-list" aria-live="polite">
+          <p class="broadcast-muted">Loading channels...</p>
+        </div>
+      </aside>
+
+      <section class="broadcast-main">
+        <div id="channel-empty" class="broadcast-empty">
+          <div class="broadcast-empty-mark">◉</div>
+          <h2>Your channel network</h2>
+          <p>Select a channel to read updates, or create one to start publishing.</p>
+        </div>
+
+        <div id="channel-view" hidden>
+          <header class="channel-header">
+            <div class="channel-avatar" id="channel-avatar">G</div>
+            <div class="channel-heading-copy">
+              <span id="channel-visibility" class="broadcast-eyebrow">PUBLIC CHANNEL</span>
+              <h2 id="channel-name">Channel</h2>
+              <p id="channel-description"></p>
+            </div>
+          </header>
+
+          <div class="channel-actions">
+            <span id="channel-role" class="channel-role"></span>
+            <button id="subscribe-button" class="broadcast-secondary" type="button" hidden>Subscribe</button>
+            <button id="unsubscribe-button" class="broadcast-secondary" type="button" hidden>Unsubscribe</button>
+            <button id="invite-member-button" class="broadcast-secondary" type="button" hidden>Invite member</button>
+          </div>
+
+          <form id="channel-post-form" class="channel-composer" hidden>
+            <label for="channel-post-body">Publish an update</label>
+            <textarea id="channel-post-body" maxlength="5000" rows="4" placeholder="Write an update for your subscribers..." required></textarea>
+            <div class="channel-composer-footer">
+              <span>Up to 5,000 characters</span>
+              <button id="publish-channel-post" class="broadcast-primary" type="submit">Publish update</button>
+            </div>
+          </form>
+
+          <section class="channel-feed">
+            <div class="channel-feed-heading">
+              <h3>Channel updates</h3>
+              <button id="refresh-channel-button" class="broadcast-text-button" type="button">Refresh</button>
+            </div>
+            <div id="channel-posts" aria-live="polite">
+              <p class="broadcast-muted">Choose a channel to view updates.</p>
+            </div>
+          </section>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div id="channel-dialog" class="broadcast-overlay" hidden>
+    <section class="broadcast-dialog" role="dialog" aria-modal="true" aria-labelledby="channel-dialog-title">
+      <header class="broadcast-dialog-header">
+        <div>
+          <span class="broadcast-eyebrow">GROVE NETWORK</span>
+          <h2 id="channel-dialog-title">Create a channel</h2>
+          <p>Build a place for your updates and subscribers.</p>
+        </div>
+        <button id="close-channel-dialog" class="broadcast-close" type="button" aria-label="Close">×</button>
+      </header>
+
+      <form id="create-channel-form">
+        <label for="new-channel-name">Channel name</label>
+        <input id="new-channel-name" type="text" maxlength="60" required placeholder="Name your channel">
+
+        <label for="new-channel-description">Description</label>
+        <textarea id="new-channel-description" maxlength="500" rows="3" placeholder="What is this channel about?"></textarea>
+
+        <label class="broadcast-check">
+          <input id="new-channel-private" type="checkbox">
+          <span>
+            <strong>Private channel</strong>
+            <small>Only the owner can currently view its channel details. Member access needs an additional database policy.</small>
+          </span>
+        </label>
+
+        <p id="create-channel-error" class="broadcast-error" role="alert"></p>
+
+        <footer class="broadcast-dialog-footer">
+          <button id="cancel-channel-dialog" class="broadcast-secondary" type="button">Cancel</button>
+          <button id="save-channel-button" class="broadcast-primary" type="submit">Create channel</button>
+        </footer>
+      </form>
+    </section>
+  </div>
+
+  <div id="invite-dialog" class="broadcast-overlay" hidden>
+    <section class="broadcast-dialog" role="dialog" aria-modal="true" aria-labelledby="invite-dialog-title">
+      <header class="broadcast-dialog-header">
+        <div>
+          <span class="broadcast-eyebrow">CHANNEL MANAGEMENT</span>
+          <h2 id="invite-dialog-title">Invite a member</h2>
+          <p>Search Grove by display name or username.</p>
+        </div>
+        <button id="close-invite-dialog" class="broadcast-close" type="button" aria-label="Close">×</button>
+      </header>
+
+      <label for="invite-member-search">Find a member</label>
+      <input id="invite-member-search" type="search" maxlength="40" placeholder="Search members...">
+      <div id="invite-member-results" class="broadcast-member-results"></div>
+      <p id="invite-member-feedback" class="broadcast-muted" role="status" aria-live="polite"></p>
+    </section>
+  </div>
+</body>
+</html>
