@@ -6,19 +6,15 @@ import { supabase } from "./supabase.js";
   const originalInput = document.querySelector(
     "[data-grove-relationship-date]"
   );
-
   const message = document.querySelector(
     "[data-grove-relationship-date-message]"
   );
-
   const label = document.querySelector(
     "[data-grove-relationship-date-label]"
   );
-
   const statusDisplay = document.querySelector(
     "[data-grove-relationship-current-status]"
   );
-
   const statusSelect = document.querySelector(
     "#edit-relationship-status"
   );
@@ -37,76 +33,19 @@ import { supabase } from "./supabase.js";
   };
 
   let userId = null;
-  let saving = false;
   let savedValue = "";
   let initialized = false;
+  let saving = false;
 
   const wrapper = document.createElement("div");
   wrapper.className = "grove-date-fields";
 
   const inputs = {};
-
-  const fields = [
-    { name: "month", label: "Month", placeholder: "MM", length: 2 },
-    { name: "day", label: "Day", placeholder: "DD", length: 2 },
-    { name: "year", label: "Year", placeholder: "YYYY", length: 4 }
+  const definitions = [
+    ["month", "Month", "MM", 2],
+    ["day", "Day", "DD", 2],
+    ["year", "Year", "YYYY", 4]
   ];
-
-  fields.forEach(field => {
-    const group = document.createElement("label");
-    group.className = "grove-date-field";
-
-    const caption = document.createElement("span");
-    caption.textContent = field.label;
-
-    const input = document.createElement("input");
-    input.type = "text";
-    input.inputMode = "numeric";
-    input.autocomplete = "off";
-    input.placeholder = field.placeholder;
-    input.maxLength = field.length;
-    input.pattern = "[0-9]*";
-    input.dataset.datePart = field.name;
-
-    input.addEventListener("input", () => {
-      input.value = input.value.replace(/\D/g, "").slice(0, field.length);
-      updateSaveButton();
-
-      if (input.value.length === field.length) {
-        const next = inputs[
-          field.name === "month" ? "day" :
-          field.name === "day" ? "year" : ""
-        ];
-
-        next?.focus();
-      }
-    });
-
-    input.addEventListener("keydown", event => {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        saveDate();
-      }
-    });
-
-    group.append(caption, input);
-    wrapper.append(group);
-    inputs[field.name] = input;
-  });
-
-  const saveButton = document.createElement("button");
-  saveButton.type = "button";
-  saveButton.className = "button primary grove-date-save";
-  saveButton.textContent = "Save Date";
-  saveButton.disabled = true;
-
-  saveButton.addEventListener("click", saveDate);
-
-  originalInput.insertAdjacentElement("afterend", wrapper);
-  wrapper.insertAdjacentElement("afterend", saveButton);
-
-  originalInput.hidden = true;
-  originalInput.removeAttribute("required");
 
   function showMessage(text, error = false) {
     message.textContent = text;
@@ -115,8 +54,9 @@ import { supabase } from "./supabase.js";
 
   function updateLabel(status) {
     if (label) {
-      label.textContent =
-        status === "married" ? "Date married" : "Relationship start date";
+      label.textContent = status === "married"
+        ? "Date married"
+        : "Relationship start date";
     }
 
     if (statusDisplay) {
@@ -125,15 +65,132 @@ import { supabase } from "./supabase.js";
     }
   }
 
-  function formatDate(value) {
-    if (!value) {
-      inputs.month.value = "";
-      inputs.day.value = "";
-      inputs.year.value = "";
-      return;
+  function focusNext(name) {
+    const order = ["month", "day", "year"];
+    const index = order.indexOf(name);
+    if (index >= 0 && order[index + 1]) {
+      inputs[order[index + 1]].focus();
+      inputs[order[index + 1]].select();
+    }
+  }
+
+  function updateButton() {
+    if (!initialized || saving) return;
+
+    try {
+      saveButton.disabled = readDate() === savedValue;
+    } catch {
+      saveButton.disabled = false;
+    }
+  }
+
+  function assignDate(value) {
+    const digits = String(value || "").replace(/\D/g, "");
+
+    if (digits.length >= 8) {
+      inputs.month.value = digits.slice(0, 2);
+      inputs.day.value = digits.slice(2, 4);
+      inputs.year.value = digits.slice(4, 8);
+      updateButton();
+      return true;
     }
 
-    const [year, month, day] = value.split("-");
+    return false;
+  }
+
+  definitions.forEach(([name, captionText, placeholder, max]) => {
+    const group = document.createElement("label");
+    group.className = "grove-date-field";
+
+    const caption = document.createElement("span");
+    caption.textContent = captionText;
+
+    const input = document.createElement("input");
+    input.type = "text";
+    input.inputMode = "numeric";
+    input.autocomplete = "off";
+    input.placeholder = placeholder;
+    input.maxLength = max;
+    input.pattern = "[0-9]*";
+    input.dataset.datePart = name;
+    input.setAttribute("aria-label", captionText);
+
+    input.addEventListener("input", () => {
+      input.value = input.value.replace(/\D/g, "").slice(0, max);
+
+      updateButton();
+
+      if (input.value.length === max) {
+        focusNext(name);
+      }
+    });
+
+    input.addEventListener("paste", event => {
+      const pasted = event.clipboardData?.getData("text") || "";
+      const digits = pasted.replace(/\D/g, "");
+
+      if (digits.length >= 8) {
+        event.preventDefault();
+        assignDate(digits);
+        inputs.year.focus();
+        inputs.year.select();
+      }
+    });
+
+    input.addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        saveDate();
+        return;
+      }
+
+      if (
+        event.key === "Backspace" &&
+        input.value.length === 0
+      ) {
+        const order = ["month", "day", "year"];
+        const index = order.indexOf(name);
+
+        if (index > 0) {
+          inputs[order[index - 1]].focus();
+          inputs[order[index - 1]].select();
+        }
+      }
+
+      if (event.key === "ArrowRight" && input.selectionStart === input.value.length) {
+        focusNext(name);
+      }
+
+      if (event.key === "ArrowLeft" && input.selectionStart === 0) {
+        const order = ["month", "day", "year"];
+        const index = order.indexOf(name);
+
+        if (index > 0) inputs[order[index - 1]].focus();
+      }
+    });
+
+    group.append(caption, input);
+    wrapper.append(group);
+    inputs[name] = input;
+  });
+
+  const saveButton = document.createElement("button");
+  saveButton.type = "button";
+  saveButton.className = "button primary grove-date-save";
+  saveButton.textContent = "Save Date";
+  saveButton.disabled = true;
+  saveButton.addEventListener("click", saveDate);
+
+  originalInput.insertAdjacentElement("afterend", wrapper);
+  wrapper.insertAdjacentElement("afterend", saveButton);
+
+  originalInput.hidden = true;
+  originalInput.removeAttribute("required");
+
+  function formatDate(value) {
+    const [year, month, day] = value
+      ? value.split("-")
+      : ["", "", ""];
 
     inputs.month.value = month;
     inputs.day.value = day;
@@ -152,21 +209,23 @@ import { supabase } from "./supabase.js";
       day.length !== 2 ||
       year.length !== 4
     ) {
-      throw new Error("Enter the month, day, and full four-digit year.");
+      throw new Error(
+        "Enter the month, day, and full four-digit year."
+      );
     }
 
-    const monthNumber = Number(month);
-    const dayNumber = Number(day);
-    const yearNumber = Number(year);
+    const m = Number(month);
+    const d = Number(day);
+    const y = Number(year);
 
-    const date = new Date(yearNumber, monthNumber - 1, dayNumber);
+    const date = new Date(y, m - 1, d);
 
     if (
-      yearNumber < 1900 ||
-      yearNumber > 9999 ||
-      date.getFullYear() !== yearNumber ||
-      date.getMonth() !== monthNumber - 1 ||
-      date.getDate() !== dayNumber
+      y < 1900 ||
+      y > 9999 ||
+      date.getFullYear() !== y ||
+      date.getMonth() !== m - 1 ||
+      date.getDate() !== d
     ) {
       throw new Error("Enter a valid calendar date.");
     }
@@ -179,16 +238,6 @@ import { supabase } from "./supabase.js";
     }
 
     return `${year}-${month}-${day}`;
-  }
-
-  function updateSaveButton() {
-    if (!initialized || saving) return;
-
-    try {
-      saveButton.disabled = readDate() === savedValue;
-    } catch {
-      saveButton.disabled = false;
-    }
   }
 
   async function saveDate() {
@@ -239,7 +288,6 @@ import { supabase } from "./supabase.js";
 
       savedValue = data.relationship_since || "";
       originalInput.value = savedValue;
-
       formatDate(savedValue);
 
       showMessage(
@@ -247,11 +295,9 @@ import { supabase } from "./supabase.js";
           ? "Relationship date saved successfully."
           : "Relationship date cleared successfully."
       );
-
     } catch (error) {
       console.error("Grove relationship date save failed:", error);
       showMessage(error.message || "Could not save the date.", true);
-
     } finally {
       saving = false;
 
@@ -260,13 +306,11 @@ import { supabase } from "./supabase.js";
       });
 
       saveButton.textContent = "Save Date";
-      updateSaveButton();
+      updateButton();
     }
   }
 
   async function initialize() {
-    saveButton.disabled = true;
-
     Object.values(inputs).forEach(input => {
       input.disabled = true;
     });
@@ -293,10 +337,9 @@ import { supabase } from "./supabase.js";
     if (!data) throw new Error("Your profile could not be found.");
 
     savedValue = data.relationship_since || "";
-
-    formatDate(savedValue);
     originalInput.value = savedValue;
 
+    formatDate(savedValue);
     updateLabel(data.relationship_status || "not_set");
 
     initialized = true;
@@ -305,7 +348,7 @@ import { supabase } from "./supabase.js";
       input.disabled = false;
     });
 
-    updateSaveButton();
+    updateButton();
     showMessage("Your relationship date is ready to edit.");
   }
 
