@@ -1,5 +1,7 @@
 import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
+
 import { installGroveShell } from "./grove-shell.js";
+import { installGroveCompactUI } from "./grove-compact-ui.js";
 import { installGroveNotifications } from "./grove-notifications.js";
 import { installGroveActivityTab } from "./grove-activity-tab.js";
 import { installGroveSanctionStatus } from "./grove-sanction-status.js";
@@ -81,6 +83,7 @@ export const supabase = createClient(
 window.groveClient = supabase;
 
 installGroveShell(supabase);
+installGroveCompactUI();
 installGroveSanctionStatus(supabase);
 
 const isLandingPage = Boolean(
