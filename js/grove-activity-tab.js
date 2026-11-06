@@ -1,3 +1,5 @@
+import { supabase } from "./supabase.js";
+
 export function installGroveActivityTab() {
   "use strict";
 
@@ -32,7 +34,6 @@ export function installGroveActivityTab() {
 
     .grove-activity-trigger:hover {
       border-color: #eb36ed;
-      transform: translateY(-1px);
     }
 
     .grove-activity-count {
@@ -55,8 +56,8 @@ export function installGroveActivityTab() {
       position: absolute;
       right: 0;
       bottom: 58px;
-      width: min(340px, calc(100vw - 36px));
-      max-height: min(440px, 65vh);
+      width: min(350px, calc(100vw - 30px));
+      max-height: min(460px, 65vh);
       overflow-y: auto;
       padding: 16px;
       border: 1px solid rgba(133,30,255,.55);
@@ -93,11 +94,30 @@ export function installGroveActivityTab() {
     }
 
     .grove-activity-item {
-      padding: 11px 0;
+      display: block;
+      padding: 12px 0;
       border-top: 1px solid rgba(190,155,255,.15);
+      color: inherit;
+      text-decoration: none;
       font-size: .86rem;
       line-height: 1.45;
       overflow-wrap: anywhere;
+    }
+
+    .grove-activity-item:hover {
+      color: #05c9f4;
+    }
+
+    .grove-activity-item.unread {
+      border-left: 2px solid #eb36ed;
+      padding-left: 10px;
+    }
+
+    .grove-activity-time {
+      display: block;
+      margin-top: 5px;
+      color: #aaa0c7;
+      font-size: .72rem;
     }
 
     .grove-activity-empty {
@@ -117,6 +137,7 @@ export function installGroveActivityTab() {
       }
     }
   `;
+
   document.head.append(style);
 
   const control = document.createElement("div");
@@ -141,95 +162,231 @@ export function installGroveActivityTab() {
   const title = document.createElement("h2");
   title.textContent = "Notifications";
 
-  const clear = document.createElement("button");
-  clear.type = "button";
-  clear.className = "grove-activity-clear";
-  clear.textContent = "Clear";
+  const refresh = document.createElement("button");
+  refresh.type = "button";
+  refresh.className = "grove-activity-clear";
+  refresh.textContent = "Refresh";
 
-  heading.append(title, clear);
+  heading.append(title, refresh);
 
   const list = document.createElement("div");
   list.className = "grove-activity-list";
 
-  const empty = document.createElement("p");
-  empty.className = "grove-activity-empty";
-  empty.textContent = "No new notifications in this session.";
-
-  list.append(empty);
   panel.append(heading, list);
   control.append(trigger, panel);
   document.body.append(control);
 
+  let user = null;
   let unread = 0;
-  const entries = [];
+  let loading = false;
+  let channel = null;
+
+  const renderedIds = new Set();
 
   function updateCount() {
     count.textContent = String(unread);
     count.classList.toggle("visible", unread > 0);
+    trigger.setAttribute(
+      "aria-label",
+      unread ? `Notifications, ${unread} unread` : "Notifications"
+    );
   }
 
-  function addNotification(detail) {
-    const message =
-      typeof detail?.message === "string" && detail.message.trim()
-        ? detail.message.trim()
-        : `New ${detail?.kind || "Grove"} activity`;
+  function showEmpty(message) {
+    const empty = document.createElement("p");
+    empty.className = "grove-activity-empty";
+    empty.textContent = message;
+    list.replaceChildren(empty);
+  }
 
-    const item = document.createElement("article");
-    item.className = "grove-activity-item";
-    item.textContent = message;
-
-    const time = document.createElement("small");
-    time.style.display = "block";
-    time.style.marginTop = "5px";
-    time.style.color = "#aaa0c7";
-
-    const date = detail?.created_at
-      ? new Date(detail.created_at)
-      : new Date();
-
-    time.textContent = Number.isNaN(date.getTime())
-      ? "Just now"
-      : date.toLocaleString();
-
-    item.append(time);
-
-    if (entries.length === 0) list.replaceChildren();
-
-    list.prepend(item);
-    entries.unshift(item);
-
-    while (entries.length > 30) {
-      entries.pop()?.remove();
+  function destinationFor(row) {
+    if (row.kind === "message") {
+      return "/messages.html";
     }
 
-    unread += 1;
+    if (row.post_id) {
+      return `/community.html?post=${encodeURIComponent(row.post_id)}`;
+    }
+
+    if (row.actor_id) {
+      return `/profile.html?id=${encodeURIComponent(row.actor_id)}`;
+    }
+
+    return "/settings.html";
+  }
+
+  function renderNotification(row, prepend = true) {
+    if (!row?.id || renderedIds.has(row.id)) return;
+
+    renderedIds.add(row.id);
+
+    const link = document.createElement("a");
+    link.className = "grove-activity-item";
+    link.href = destinationFor(row);
+
+    if (!row.read_at) {
+      link.classList.add("unread");
+      unread += 1;
+    }
+
+    const message = document.createElement("span");
+    message.textContent =
+      row.message || `New ${row.kind || "Grove"} activity`;
+
+    const time = document.createElement("time");
+    time.className = "grove-activity-time";
+    time.dateTime = row.created_at || "";
+
+    const date = new Date(row.created_at);
+
+    time.textContent = Number.isNaN(date.getTime())
+      ? ""
+      : date.toLocaleString();
+
+    link.append(message, time);
+
+    const empty = list.querySelector(".grove-activity-empty");
+    if (empty) empty.remove();
+
+    if (prepend) {
+      list.prepend(link);
+    } else {
+      list.append(link);
+    }
+
     updateCount();
   }
 
-  trigger.addEventListener("click", () => {
+  async function loadHistory() {
+    if (!user || loading) return;
+
+    loading = true;
+    showEmpty("Loading notifications...");
+
+    try {
+      const { data, error } = await supabase
+        .from("notifications")
+        .select(
+          "id,actor_id,kind,message,post_id,created_at,read_at"
+        )
+        .eq("recipient_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      renderedIds.clear();
+      unread = 0;
+      list.replaceChildren();
+
+      if (!data?.length) {
+        showEmpty("You're all caught up.");
+        updateCount();
+        return;
+      }
+
+      data.forEach(row => renderNotification(row, false));
+      updateCount();
+
+    } catch (error) {
+      console.error("Notification history failed:", error);
+      showEmpty("Notifications could not load. Try refreshing.");
+    } finally {
+      loading = false;
+    }
+  }
+
+  async function markAllRead() {
+    if (!user || unread === 0) return;
+
+    const timestamp = new Date().toISOString();
+
+    const { error } = await supabase
+      .from("notifications")
+      .update({ read_at: timestamp })
+      .eq("recipient_id", user.id)
+      .is("read_at", null);
+
+    if (error) {
+      console.warn("Could not mark notifications read:", error);
+      return;
+    }
+
+    unread = 0;
+
+    list.querySelectorAll(".grove-activity-item.unread")
+      .forEach(item => item.classList.remove("unread"));
+
+    updateCount();
+  }
+
+  function addRealtimeNotification(row) {
+    if (!row || !row.id) return;
+
+    if (list.querySelector(".grove-activity-empty")) {
+      list.replaceChildren();
+    }
+
+    renderNotification(row, true);
+  }
+
+  async function initialize() {
+    const { data, error } = await supabase.auth.getUser();
+
+    if (error) throw error;
+
+    user = data.user || null;
+
+    if (!user) {
+      control.remove();
+      return;
+    }
+
+    await loadHistory();
+
+    channel = supabase
+      .channel(`grove-activity-history-${user.id}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: `recipient_id=eq.${user.id}`
+        },
+        payload => addRealtimeNotification(payload.new)
+      )
+      .subscribe(status => {
+        if (
+          status === "CHANNEL_ERROR" ||
+          status === "TIMED_OUT"
+        ) {
+          console.warn("Notification history realtime:", status);
+        }
+      });
+  }
+
+  trigger.addEventListener("click", async () => {
     const open = panel.classList.toggle("open");
     trigger.setAttribute("aria-expanded", String(open));
 
     if (open) {
-      unread = 0;
-      updateCount();
+      await markAllRead();
     }
   });
 
-  clear.addEventListener("click", () => {
-    entries.splice(0).forEach(item => item.remove());
+  refresh.addEventListener("click", loadHistory);
 
-    const message = document.createElement("p");
-    message.className = "grove-activity-empty";
-    message.textContent = "No new notifications in this session.";
-
-    list.replaceChildren(message);
-    unread = 0;
-    updateCount();
+  supabase.auth.onAuthStateChange((event) => {
+    if (event === "SIGNED_OUT") {
+      user = null;
+      if (channel) supabase.removeChannel(channel);
+      control.remove();
+    }
   });
 
-  window.addEventListener(
-    "grove:notification-received",
-    event => addNotification(event.detail || {})
-  );
+  initialize().catch(error => {
+    console.error("Grove activity tab failed:", error);
+    showEmpty("Notifications could not initialize.");
+  });
 }
