@@ -1,265 +1,294 @@
+/* =========================================================
+   GROVE SETTINGS
+   Dark violet theme + relationship date controls
+   ========================================================= */
+
 :root {
   color-scheme: dark;
-  --night: #050019;
-  --panel: rgba(18, 10, 42, .9);
-  --violet: #851eff;
-  --magenta: #eb36ed;
-  --cyan: #05c9f4;
-  --white: #f7f5ff;
-  --muted: #aaa1c8;
-  --border: rgba(190, 155, 255, .2);
+  --grove-bg: #050019;
+  --grove-panel: rgba(20, 12, 43, 0.92);
+  --grove-panel-soft: rgba(35, 20, 65, 0.78);
+  --grove-purple: #851eff;
+  --grove-pink: #eb36ed;
+  --grove-cyan: #05c9f4;
+  --grove-text: #f7f5ff;
+  --grove-muted: #aaa1c8;
+  --grove-border: rgba(133, 30, 255, 0.35);
+  --grove-danger: #ff8585;
+  --grove-success: #7bd7a2;
 }
 
 * {
   box-sizing: border-box;
 }
 
+html {
+  min-height: 100%;
+  background: var(--grove-bg);
+}
+
 body {
   min-height: 100vh;
   margin: 0;
-  background: var(--night);
-  color: var(--white);
-  font-family: Inter, system-ui, sans-serif;
+  padding: 24px;
+  background:
+    radial-gradient(
+      circle at 15% 0%,
+      rgba(133, 30, 255, 0.2),
+      transparent 38%
+    ),
+    radial-gradient(
+      circle at 90% 100%,
+      rgba(235, 54, 237, 0.12),
+      transparent 35%
+    ),
+    var(--grove-bg);
+  color: var(--grove-text);
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
 }
 
-.site-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  flex-wrap: wrap;
-  padding: 15px clamp(16px, 4vw, 42px);
-  border-bottom: 1px solid var(--border);
-  background: rgba(5, 0, 25, .85);
+button,
+input,
+select,
+textarea {
+  font: inherit;
 }
 
-.brand {
-  color: var(--white);
-  font-size: 1.15rem;
-  font-weight: 900;
-  letter-spacing: .16em;
-  text-decoration: none;
+button {
+  cursor: pointer;
 }
 
-.site-header nav {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  flex-wrap: wrap;
+.settings-container,
+.settings-content,
+.settings-page,
+.settings-wrapper {
+  width: 100%;
+  max-width: 900px;
+  margin-right: auto;
+  margin-left: auto;
 }
 
-.site-header nav a {
-  color: var(--muted);
-  font-size: .84rem;
-  text-decoration: none;
+.settings-container,
+.settings-content,
+.settings-page,
+.settings-wrapper,
+.settings-section,
+.settings-card {
+  color: var(--grove-text);
 }
 
-.site-header nav a:hover,
-.site-header nav a[aria-current="page"] {
-  color: var(--cyan);
-}
-
-.settings-container {
-  width: min(850px, calc(100% - 28px));
-  margin: 36px auto 80px;
-}
-
-.settings-heading {
-  margin-bottom: 25px;
-}
-
-.eyebrow {
-  color: var(--cyan);
-  font-size: .7rem;
-  font-weight: 800;
-  letter-spacing: .18em;
-}
-
-.settings-heading h1 {
-  margin: 7px 0;
-  font-size: clamp(2rem, 6vw, 3rem);
-}
-
-.settings-heading p:last-child {
-  color: var(--muted);
-}
-
+.settings-section,
+.settings-card,
 .settings-panel {
-  margin: 18px 0;
-  padding: clamp(17px, 3vw, 25px);
-  border: 1px solid var(--border);
-  border-radius: 15px;
-  background: var(--panel);
-  box-shadow: 0 14px 40px rgba(0, 0, 0, .2);
+  margin-bottom: 20px;
+  padding: 22px;
+  border: 1px solid var(--grove-border);
+  border-radius: 16px;
+  background: var(--grove-panel);
+  box-shadow: 0 12px 35px rgba(0, 0, 0, 0.22);
 }
 
-.settings-panel h2 {
-  margin: 0 0 8px;
-  font-size: 1.1rem;
+.settings-section h1,
+.settings-section h2,
+.settings-section h3,
+.settings-card h1,
+.settings-card h2,
+.settings-card h3 {
+  color: var(--grove-text);
 }
 
+.settings-section p,
+.settings-card p,
 .settings-description {
-  margin: 0 0 16px;
-  color: var(--muted);
-  font-size: .86rem;
+  color: var(--grove-muted);
   line-height: 1.6;
 }
 
-.settings-panel input[type="date"] {
-  display: block;
-  width: 100%;
-  max-width: 320px;
-  min-height: 44px;
-  margin: 10px 0 14px;
-  padding: 10px 12px;
-  border: 1px solid rgba(133, 30, 255, .55);
-  border-radius: 9px;
-  background: rgba(5, 0, 25, .85);
-  color: #f7f5ff;
-  font: inherit;
-  color-scheme: dark;
+.settings-section label,
+.settings-card label {
+  color: var(--grove-muted);
 }
 
-.settings-panel input[type="date"]:focus {
-  outline: 2px solid #05c9f4;
+.settings-section input:not([type="checkbox"]):not([type="radio"]),
+.settings-section select,
+.settings-section textarea,
+.settings-card input:not([type="checkbox"]):not([type="radio"]),
+.settings-card select,
+.settings-card textarea {
+  width: 100%;
+  max-width: 100%;
+  min-height: 44px;
+  padding: 11px 13px;
+  border: 1px solid var(--grove-border);
+  border-radius: 9px;
+  background: rgba(5, 0, 25, 0.9);
+  color: var(--grove-text);
+}
+
+.settings-section input:focus,
+.settings-section select:focus,
+.settings-section textarea:focus,
+.settings-card input:focus,
+.settings-card select:focus,
+.settings-card textarea:focus {
+  outline: 2px solid var(--grove-cyan);
   outline-offset: 2px;
 }
 
-.setting-row {
+.settings-section button,
+.settings-card button,
+.settings-container button {
+  min-height: 42px;
+  padding: 10px 17px;
+  border: 1px solid rgba(235, 54, 237, 0.45);
+  border-radius: 10px;
+  background: linear-gradient(
+    110deg,
+    rgba(133, 30, 255, 0.9),
+    rgba(235, 54, 237, 0.82)
+  );
+  color: #fff;
+  font-weight: 700;
+  transition:
+    transform 0.18s ease,
+    filter 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.settings-section button:hover,
+.settings-card button:hover,
+.settings-container button:hover {
+  filter: brightness(1.12);
+  transform: translateY(-1px);
+}
+
+.settings-section button:disabled,
+.settings-card button:disabled,
+.settings-container button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+  transform: none;
+}
+
+/* =========================================================
+   RELATIONSHIP DATE — MONTH / DAY / YEAR
+   ========================================================= */
+
+.grove-date-fields {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  max-width: 390px;
+  margin: 12px 0 16px;
+}
+
+.grove-date-field {
+  display: grid;
+  flex: 1;
+  gap: 7px;
+  min-width: 0;
+  color: var(--grove-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.grove-date-field input {
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  padding: 10px;
+  border: 1px solid rgba(133, 30, 255, 0.55);
+  border-radius: 9px;
+  background: rgba(5, 0, 25, 0.9);
+  color: var(--grove-text);
+  font-size: 1rem;
+  text-align: center;
+}
+
+.grove-date-field input:focus {
+  outline: 2px solid var(--grove-cyan);
+  outline-offset: 2px;
+}
+
+.grove-date-field input:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+[data-grove-relationship-date-message] {
+  min-height: 20px;
+  margin-top: 8px;
+  color: var(--grove-muted);
+  font-size: 0.85rem;
+}
+
+/* =========================================================
+   BLOCKED MEMBERS / NOTIFICATION PREFERENCES
+   ========================================================= */
+
+.blocked-member,
+.blocked-member-item,
+.notification-setting,
+.settings-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 18px;
-  padding: 15px 0;
-  border-top: 1px solid var(--border);
-  cursor: pointer;
+  gap: 14px;
+  padding: 13px 0;
+  border-bottom: 1px solid rgba(133, 30, 255, 0.18);
 }
 
-.setting-row span {
-  display: grid;
-  gap: 4px;
+.blocked-member:last-child,
+.blocked-member-item:last-child,
+.notification-setting:last-child,
+.settings-row:last-child {
+  border-bottom: 0;
 }
 
-.setting-row strong {
-  font-size: .9rem;
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--grove-purple);
 }
 
-.setting-row small {
-  color: var(--muted);
-  font-size: .78rem;
-}
-
-.setting-row input {
-  width: 21px;
-  height: 21px;
-  flex: 0 0 auto;
-  accent-color: var(--violet);
-}
-
-.volume-setting {
-  display: grid;
-  gap: 12px;
-  margin: 16px 0;
-  color: var(--muted);
-  font-size: .85rem;
-}
-
-.volume-setting input {
-  width: 100%;
-  accent-color: var(--magenta);
-}
-
-.button {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 42px;
-  padding: 10px 16px;
-  border: 1px solid transparent;
-  border-radius: 9px;
-  font: inherit;
-  font-size: .85rem;
-  font-weight: 750;
-  text-decoration: none;
-  cursor: pointer;
-}
-
-.button.primary {
-  background: linear-gradient(110deg, var(--violet), var(--magenta));
-  color: white;
-}
-
-.button.secondary {
-  border-color: rgba(133, 30, 255, .6);
-  background: rgba(133, 30, 255, .13);
-  color: var(--white);
-}
-
-.button:hover {
-  border-color: var(--cyan);
-}
-
-.button:disabled {
-  opacity: .5;
-  cursor: not-allowed;
-}
-
-.device-status {
-  padding: 12px;
-  border: 1px solid var(--border);
-  border-radius: 9px;
-  background: rgba(133, 30, 255, .08);
-  color: var(--muted);
-  font-size: .85rem;
-  line-height: 1.5;
-}
-
-.device-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.settings-note {
-  margin: 15px 0 0;
-  color: var(--muted);
-  font-size: .75rem;
-  line-height: 1.6;
-}
-
-#settings-status {
-  min-height: 22px;
-  color: var(--cyan);
-  font-size: .85rem;
-}
-
-#settings-status.error {
-  color: #ff8585;
-}
+/* =========================================================
+   RESPONSIVE LAYOUT
+   ========================================================= */
 
 @media (max-width: 640px) {
-  .site-header {
+  body {
+    padding: 14px;
+  }
+
+  .settings-section,
+  .settings-card,
+  .settings-panel {
+    padding: 16px;
+    border-radius: 13px;
+  }
+
+  .settings-section button,
+  .settings-card button,
+  .settings-container button {
+    max-width: 100%;
+  }
+
+  .blocked-member,
+  .blocked-member-item,
+  .notification-setting,
+  .settings-row {
     align-items: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+@media (max-width: 420px) {
+  .grove-date-fields {
+    gap: 8px;
   }
 
-  .site-header nav {
-    width: 100%;
-    gap: 12px;
-  }
-
-  .site-header nav a {
-    font-size: .76rem;
-  }
-
-  .settings-container {
-    margin-top: 24px;
-  }
-
-  .setting-row {
-    align-items: flex-start;
-  }
-
-  .device-actions .button {
-    width: 100%;
+  .grove-date-field input {
+    height: 46px;
+    padding: 8px 4px;
   }
 }
