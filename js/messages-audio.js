@@ -7,6 +7,7 @@ import { supabase } from "./supabase.js";
 
   const BUCKET = "grove-private";
   const MAX_AUDIO_SIZE = 20 * 1024 * 1024;
+  const SIGNED_URL_LIFETIME = 3600;
 
   const AUDIO_TYPES = {
     "audio/mpeg": "mp3",
@@ -21,7 +22,9 @@ import { supabase } from "./supabase.js";
 
   let user = null;
   let uploading = false;
+
   const enhanced = new Set();
+  const enhancing = new Set();
   const signedUrlCache = new Map();
 
   function status(message, error = false) {
@@ -41,8 +44,9 @@ import { supabase } from "./supabase.js";
   function getExtension(file) {
     if (AUDIO_TYPES[file.type]) return AUDIO_TYPES[file.type];
 
-    const name = file.name.toLowerCase();
-    const match = name.match(/\.(mp3|m4a|wav|ogg|webm|aac)$/);
+    const match = file.name.toLowerCase().match(
+      /\.(mp3|m4a|wav|ogg|webm|aac)$/
+    );
 
     return match?.[1] || null;
   }
@@ -55,8 +59,16 @@ import { supabase } from "./supabase.js";
     if (input) input.disabled = !enabled || uploading;
   }
 
+  function wait(milliseconds) {
+    return new Promise(resolve => {
+      window.setTimeout(resolve, milliseconds);
+    });
+  }
+
   async function uploadAudio(file) {
-    if (!user) throw new Error("Sign in before sending audio.");
+    if (!user) {
+      throw new Error("Sign in before sending audio.");
+    }
 
     const conversationId = activeConversationId();
 
@@ -66,16 +78,16 @@ import { supabase } from "./supabase.js";
 
     const extension = getExtension(file);
 
-    if (!extension) {
-      throw new Error("Choose an MP3, M4A, WAV, OGG, WebM, or AAC file.");
-    }
-
-    if (!file.type.startsWith("audio/")) {
-      throw new Error("The selected file is not recognized as audio.");
+    if (!extension || !file.type.startsWith("audio/")) {
+      throw new Error(
+        "Choose a supported MP3, M4A, WAV, OGG, WebM, or AAC audio file."
+      );
     }
 
     if (file.size <= 0 || file.size > MAX_AUDIO_SIZE) {
-      throw new Error("Audio files must be larger than 0 and no more than 20 MB.");
+      throw new Error(
+        "Audio files must be larger than 0 and no more than 20 MB."
+      );
     }
 
     const safeName = crypto.randomUUID() + "." + extension;
@@ -99,7 +111,6 @@ import { supabase } from "./supabase.js";
       if (uploadError) throw uploadError;
 
       uploaded = true;
-
       status("Sending audio message...");
 
       const { data, error } = await supabase
@@ -122,7 +133,8 @@ import { supabase } from "./supabase.js";
       }
 
       status("Audio message sent.");
-      enhanceMessage(data.id);
+
+      await enhanceMessage(data.id, 12);
 
     } catch (error) {
       if (uploaded) {
@@ -144,13 +156,15 @@ import { supabase } from "./supabase.js";
   }
 
   async function getAudioUrl(path) {
-    if (signedUrlCache.has(path)) {
-      return signedUrlCache.get(path);
+    const cached = signedUrlCache.get(path);
+
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.url;
     }
 
     const { data, error } = await supabase.storage
       .from(BUCKET)
-      .createSignedUrl(path, 3600);
+      .createSignedUrl(path, SIGNED_URL_LIFETIME);
 
     if (error) throw error;
 
@@ -158,39 +172,62 @@ import { supabase } from "./supabase.js";
       throw new Error("Audio playback link could not be created.");
     }
 
-    signedUrlCache.set(path, data.signedUrl);
+    signedUrlCache.set(path, {
+      url: data.signedUrl,
+      expiresAt: Date.now() + (SIGNED_URL_LIFETIME - 60) * 1000
+    });
+
     return data.signedUrl;
   }
 
-  async function enhanceMessage(messageId) {
-    if (!messageId || enhanced.has(messageId)) return;
+  async function enhanceMessage(messageId, attempts = 1) {
+    if (
+      !messageId ||
+      enhanced.has(messageId) ||
+      enhancing.has(messageId)
+    ) {
+      return;
+    }
 
-    const article = document.querySelector(
+    let article = document.querySelector(
       `[data-message-id="${messageId}"]`
     );
 
+    if (!article && attempts > 0) {
+      await wait(250);
+      return enhanceMessage(messageId, attempts - 1);
+    }
+
     if (!article) return;
 
-    enhanced.add(messageId);
+    enhancing.add(messageId);
 
     try {
       const { data, error } = await supabase
         .from("conversation_messages")
-        .select("attachment_path,attachment_mime_type,attachment_filename")
+        .select(
+          "attachment_path,attachment_mime_type,attachment_filename"
+        )
         .eq("id", messageId)
         .maybeSingle();
 
       if (error) throw error;
 
-      if (!data?.attachment_path) return;
+      if (!data?.attachment_path) {
+        enhanced.add(messageId);
+        return;
+      }
 
       const url = await getAudioUrl(data.attachment_path);
 
-      const currentArticle = document.querySelector(
+      article = document.querySelector(
         `[data-message-id="${messageId}"]`
       );
 
-      if (!currentArticle) return;
+      if (!article || article.querySelector(".message-audio-player")) {
+        enhanced.add(messageId);
+        return;
+      }
 
       const player = document.createElement("audio");
       player.className = "message-audio-player";
@@ -198,31 +235,36 @@ import { supabase } from "./supabase.js";
       player.preload = "metadata";
       player.src = url;
 
-      if (data.attachment_mime_type) {
-        player.type = data.attachment_mime_type;
-      }
-
       const label = document.createElement("span");
       label.className = "message-audio-label";
-      label.textContent = data.attachment_filename || "Audio attachment";
+      label.textContent =
+        data.attachment_filename || "Audio attachment";
 
-      const body = currentArticle.querySelector("p");
+      const body = article.querySelector("p");
 
       if (body) {
         body.insertAdjacentElement("afterend", player);
         player.insertAdjacentElement("afterend", label);
       } else {
-        currentArticle.prepend(player, label);
+        article.prepend(player, label);
       }
+
+      enhanced.add(messageId);
 
     } catch (error) {
       console.warn("Audio attachment could not load:", error);
-      enhanced.delete(messageId);
+
+    } finally {
+      enhancing.delete(messageId);
     }
   }
 
   function scanMessages(root = document) {
-    root.querySelectorAll("[data-message-id]").forEach(article => {
+    if (root.matches?.("[data-message-id]")) {
+      enhanceMessage(root.dataset.messageId);
+    }
+
+    root.querySelectorAll?.("[data-message-id]").forEach(article => {
       enhanceMessage(article.dataset.messageId);
     });
   }
@@ -297,6 +339,9 @@ import { supabase } from "./supabase.js";
 
   initialize().catch(error => {
     console.error("Grove audio module failed:", error);
-    status(error.message || "Audio messaging could not initialize.", true);
+    status(
+      error.message || "Audio messaging could not initialize.",
+      true
+    );
   });
 })();
