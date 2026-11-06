@@ -861,3 +861,66 @@ body[data-profile-theme="ocean-light"] .profile-avatar {
     animation-iteration-count: 1 !important;
   }
 }
+
+/* =========================================
+   RELATIONSHIP DATE — MONTH / DAY / YEAR
+   ========================================= */
+
+.grove-date-fields {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  max-width: 390px;
+  margin: 12px 0 16px;
+}
+
+.grove-date-field {
+  display: grid;
+  flex: 1;
+  gap: 7px;
+  min-width: 0;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.grove-date-field input {
+  width: 100%;
+  min-width: 0;
+  height: 48px;
+  padding: 10px;
+  border: 1px solid rgba(133, 30, 255, 0.55);
+  border-radius: 9px;
+  background: rgba(5, 0, 25, 0.9);
+  color: var(--white);
+  font-size: 1rem;
+  text-align: center;
+}
+
+.grove-date-field input:focus {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+.grove-date-field input:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+
+[data-grove-relationship-date-message] {
+  min-height: 20px;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+@media (max-width: 420px) {
+  .grove-date-fields {
+    gap: 8px;
+  }
+
+  .grove-date-field input {
+    height: 46px;
+    padding: 8px 4px;
+  }
+}
