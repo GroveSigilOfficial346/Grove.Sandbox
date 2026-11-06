@@ -13,12 +13,10 @@ export function installGroveCompactUI() {
       --grove-control-hover: rgba(133, 30, 255, .17);
       --grove-control-text: #f7f5ff;
       --grove-control-muted: #c4bbd8;
-
       --grove-surface: rgba(16, 11, 37, .92);
       --grove-surface-raised: rgba(25, 16, 49, .94);
       --grove-surface-border: rgba(190, 155, 255, .18);
-      --grove-surface-shadow:
-        0 16px 42px rgba(0, 0, 0, .22);
+      --grove-surface-shadow: 0 16px 42px rgba(0, 0, 0, .22);
     }
 
     /* TYPOGRAPHY */
@@ -28,8 +26,7 @@ export function installGroveCompactUI() {
       -webkit-font-smoothing: antialiased;
     }
 
-    h1, h2, h3, h4,
-    .header-title {
+    h1, h2, h3, h4, .header-title {
       font-family: var(--grove-font-display, "Space Grotesk", sans-serif);
       letter-spacing: -.025em;
     }
@@ -179,7 +176,7 @@ export function installGroveCompactUI() {
         0 4px 14px rgba(0,0,0,.14);
     }
 
-    /* BRAND — PRESERVE THE EXISTING LOGO */
+    /* BRAND — PRESERVE EXISTING LOGO */
 
     .brand {
       text-shadow:
@@ -187,31 +184,29 @@ export function installGroveCompactUI() {
         0 0 19px rgba(235,54,237,.1);
     }
 
-    /* SHARED CARD SURFACES */
-
-    .profile-card,
-    .content-section,
-    .messages-layout,
-    .conversation-sidebar,
-    .chat-panel {
-      box-shadow: var(--grove-surface-shadow);
-    }
+    /* PROFILE SURFACES */
 
     .profile-card,
     .content-section {
       border-color: var(--grove-surface-border);
-      background:
-        linear-gradient(
-          145deg,
-          rgba(29,18,54,.96),
-          rgba(13,9,31,.97)
-        );
       border-radius: 17px;
+      background: linear-gradient(
+        145deg,
+        rgba(29,18,54,.96),
+        rgba(13,9,31,.97)
+      );
+      box-shadow: var(--grove-surface-shadow);
     }
 
     .profile-card {
       position: relative;
       isolation: isolate;
+      overflow: hidden;
+    }
+
+    .content-section {
+      position: relative;
+      overflow: hidden;
     }
 
     .profile-card::after,
@@ -231,17 +226,6 @@ export function installGroveCompactUI() {
         transparent
       );
     }
-
-    .profile-card {
-      overflow: hidden;
-    }
-
-    .content-section {
-      position: relative;
-      overflow: hidden;
-    }
-
-    /* PROFILE HEADER AND IDENTITY */
 
     .profile-identity h1 {
       font-weight: 700;
@@ -274,8 +258,6 @@ export function installGroveCompactUI() {
       transform: translateY(-1px);
     }
 
-    /* SECTION HEADERS */
-
     .content-section > h1,
     .content-section > h2 {
       margin-bottom: 17px;
@@ -294,8 +276,6 @@ export function installGroveCompactUI() {
       letter-spacing: .16em;
       text-transform: uppercase;
     }
-
-    /* PROFILE TABS AND POSTS */
 
     .profile-social-tabs {
       border-color: var(--grove-surface-border);
@@ -335,7 +315,7 @@ export function installGroveCompactUI() {
       box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
     }
 
-    /* MESSAGING WORKSPACE */
+    /* MESSAGING */
 
     .messages-header {
       padding-bottom: 15px;
@@ -435,11 +415,210 @@ export function installGroveCompactUI() {
       box-shadow: 0 0 0 3px rgba(5,201,244,.08);
     }
 
-    /* RELATIONSHIP DATE */
-
     .grove-relationship-date {
       color: var(--grove-cyan, #05c9f4);
       font-weight: 650;
+    }
+
+    /* COMMUNITY AND FOLLOWING PAGE HEADERS */
+
+    .community-container,
+    .feed-main {
+      width: min(900px, calc(100% - 32px));
+      margin-left: auto;
+      margin-right: auto;
+    }
+
+    .community-heading,
+    .feed-intro {
+      position: relative;
+      padding: 25px 26px;
+      margin-bottom: 22px;
+      border: 1px solid rgba(190,155,255,.16);
+      border-radius: 17px;
+      background: linear-gradient(
+        120deg,
+        rgba(35,19,65,.72),
+        rgba(13,9,31,.76)
+      );
+      box-shadow: 0 12px 34px rgba(0,0,0,.16);
+    }
+
+    .community-heading h1,
+    .feed-intro h1 {
+      margin-top: 0;
+      font-weight: 750;
+      letter-spacing: -.04em;
+    }
+
+    .community-heading .eyebrow,
+    .feed-intro .eyebrow {
+      color: #c3a5ff;
+      font-size: .67rem;
+      font-weight: 800;
+      letter-spacing: .17em;
+    }
+
+    .community-heading p,
+    .feed-intro p {
+      color: var(--grove-control-muted);
+      line-height: 1.6;
+    }
+
+    /* FEED TOOLBARS AND SECTION HEADERS */
+
+    .feed-toolbar {
+      border-color: rgba(190,155,255,.17);
+      border-radius: 12px;
+      background: rgba(18,12,39,.84);
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+    }
+
+    .feed-heading {
+      align-items: center;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(190,155,255,.13);
+    }
+
+    .feed-heading h2 {
+      font-size: 1.12rem;
+      letter-spacing: -.02em;
+    }
+
+    /* COMMUNITY AND FOLLOWING POST CARDS */
+
+    .post-card,
+    .feed-post {
+      position: relative;
+      min-width: 0;
+      overflow: hidden;
+      border: 1px solid rgba(190,155,255,.18);
+      border-radius: 16px;
+      background: linear-gradient(
+        145deg,
+        rgba(27,18,51,.97),
+        rgba(12,8,29,.98)
+      );
+      box-shadow:
+        0 13px 34px rgba(0,0,0,.2),
+        inset 0 1px 0 rgba(255,255,255,.035);
+      transition:
+        border-color .2s ease,
+        box-shadow .2s ease,
+        transform .2s ease;
+    }
+
+    .post-card:hover,
+    .feed-post:hover {
+      border-color: rgba(160,105,255,.32);
+      box-shadow:
+        0 17px 38px rgba(0,0,0,.25),
+        0 0 18px rgba(133,30,255,.055);
+    }
+
+    .post-header,
+    .feed-post-header {
+      padding-top: 18px;
+    }
+
+    .post-avatar,
+    .feed-avatar {
+      border: 1px solid rgba(190,155,255,.3);
+      box-shadow: 0 0 15px rgba(133,30,255,.12);
+    }
+
+    .post-author,
+    .feed-author {
+      font-weight: 750;
+      letter-spacing: -.01em;
+    }
+
+    .post-meta,
+    .feed-meta {
+      color: #aaa2c4;
+      font-size: .73rem;
+    }
+
+    .post-body,
+    .feed-post-body {
+      color: #f1edf9;
+      line-height: 1.72;
+    }
+
+    /* POST COMPOSERS */
+
+    .composer,
+    .profile-post-composer {
+      border: 1px solid rgba(160,105,255,.23);
+      border-radius: 16px;
+      background: linear-gradient(
+        145deg,
+        rgba(24,15,47,.96),
+        rgba(12,8,29,.96)
+      );
+      box-shadow:
+        0 12px 32px rgba(0,0,0,.16),
+        inset 0 1px 0 rgba(255,255,255,.035);
+    }
+
+    .composer textarea,
+    .profile-post-composer textarea {
+      background: rgba(5,0,25,.55);
+      border-color: rgba(190,155,255,.2);
+      color: var(--grove-control-text);
+    }
+
+    .post-actions,
+    .feed-actions {
+      border-color: rgba(190,155,255,.14);
+    }
+
+    .feed-action,
+    .post-actions .button {
+      border-radius: 9px;
+      transition:
+        background .18s ease,
+        border-color .18s ease,
+        color .18s ease,
+        transform .18s ease;
+    }
+
+    .feed-action:hover,
+    .post-actions .button:hover {
+      border-color: rgba(5,201,244,.45);
+      transform: translateY(-1px);
+    }
+
+    .feed-action.active,
+    .post-actions .liked {
+      border-color: rgba(235,54,237,.5);
+      background: rgba(235,54,237,.12);
+      color: #ff9df5;
+    }
+
+    .feed-post-footer a {
+      color: #c3a5ff;
+      transition: color .18s ease;
+    }
+
+    .feed-post-footer a:hover {
+      color: var(--grove-control-text);
+    }
+
+    /* EMPTY STATES */
+
+    .feed-empty,
+    .community-empty,
+    .empty-state {
+      border: 1px dashed rgba(190,155,255,.25);
+      border-radius: 16px;
+      background: rgba(16,11,37,.66);
+      padding: 32px 22px;
+    }
+
+    .empty-symbol {
+      color: #d58cff;
+      text-shadow: 0 0 18px rgba(235,54,237,.2);
     }
 
     /* TOUCHSCREENS */
@@ -482,6 +661,22 @@ export function installGroveCompactUI() {
       .messages-layout {
         border-radius: 13px;
       }
+
+      .community-container,
+      .feed-main {
+        width: min(100% - 22px, 900px);
+      }
+
+      .community-heading,
+      .feed-intro {
+        padding: 19px 17px;
+        border-radius: 13px;
+      }
+
+      .post-card,
+      .feed-post {
+        border-radius: 13px;
+      }
     }
 
     @media (prefers-reduced-motion: reduce) {
@@ -492,7 +687,9 @@ export function installGroveCompactUI() {
       select,
       textarea,
       .conversation-item,
-      .profile-stat {
+      .profile-stat,
+      .post-card,
+      .feed-post {
         transition: none !important;
       }
     }
