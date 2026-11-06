@@ -1,0 +1,73 @@
+.audio-attach-button {
+  display: grid;
+  flex: 0 0 48px;
+  width: 48px;
+  min-height: 48px;
+  place-items: center;
+  border: 1px solid var(--border-bright);
+  border-radius: 12px;
+  background: rgba(133, 30, 255, .13);
+  color: var(--cyan);
+  font-size: 1.35rem;
+  cursor: pointer;
+}
+
+.audio-attach-button:hover:not(:disabled) {
+  border-color: var(--cyan);
+  background: rgba(5, 201, 244, .12);
+}
+
+.audio-attach-button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+.audio-upload-status {
+  min-height: 0;
+  margin: 0;
+  padding: 0 20px 8px;
+  background: rgba(16, 11, 37, .96);
+  color: var(--cyan);
+  font-size: .76rem;
+  overflow-wrap: anywhere;
+}
+
+.audio-upload-status:empty {
+  display: none;
+}
+
+.audio-upload-status.error {
+  color: var(--danger);
+}
+
+.message-audio-player {
+  display: block;
+  width: min(310px, 100%);
+  max-width: 100%;
+  margin-top: 9px;
+  accent-color: var(--cyan);
+}
+
+.message-audio-label {
+  display: block;
+  margin-top: 8px;
+  color: var(--muted);
+  font-size: .75rem;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 640px) {
+  .audio-attach-button {
+    flex-basis: 40px;
+    width: 40px;
+    min-height: 44px;
+  }
+
+  .message-form {
+    gap: 7px;
+  }
+
+  .message-audio-player {
+    width: 100%;
+  }
+}
