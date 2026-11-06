@@ -15,7 +15,6 @@ import { supabase } from "./supabase.js";
     if (parts.length !== 3) return "";
 
     const [year, month, day] = parts;
-
     const date = new Date(year, month - 1, day);
 
     if (
@@ -35,25 +34,31 @@ import { supabase } from "./supabase.js";
   }
 
   function renderDate(status, value) {
+    const formatted = formatRelationshipDate(value);
     const existing = details.querySelector(
       "[data-grove-relationship-date-display]"
     );
 
-    if (existing) existing.remove();
-
-    const formatted = formatRelationshipDate(value);
-
-    if (!formatted) return;
+    if (!formatted) {
+      existing?.remove();
+      return;
+    }
 
     const label = status === "married"
       ? "Married on: "
       : "Since: ";
 
-    const item = document.createElement("span");
+    const text = label + formatted;
 
+    // Critical: do not mutate the DOM if the correct date is present.
+    if (existing?.textContent === text) return;
+
+    existing?.remove();
+
+    const item = document.createElement("span");
     item.className = "profile-detail grove-relationship-date";
     item.dataset.groveRelationshipDateDisplay = "true";
-    item.textContent = label + formatted;
+    item.textContent = text;
 
     details.append(item);
   }
@@ -91,7 +96,6 @@ import { supabase } from "./supabase.js";
       const { data, error } = await query.maybeSingle();
 
       if (error) throw error;
-
       if (!data) return;
 
       viewedProfile = data;
@@ -113,7 +117,6 @@ import { supabase } from "./supabase.js";
         .maybeSingle();
 
       if (error) throw error;
-
       if (follow?.status !== "accepted") return;
     }
 
@@ -124,7 +127,6 @@ import { supabase } from "./supabase.js";
       .maybeSingle();
 
     if (error) throw error;
-
     if (!relationship) return;
 
     const updateDisplay = () => {
@@ -134,8 +136,6 @@ import { supabase } from "./supabase.js";
       );
     };
 
-    // The profile renderer can rebuild #details after this module loads.
-    // Reinsert the date after those updates without duplicating it.
     const observer = new MutationObserver(updateDisplay);
 
     observer.observe(details, {
