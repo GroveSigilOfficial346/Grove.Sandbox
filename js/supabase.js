@@ -7,9 +7,10 @@ import { installGroveSanctionStatus } from "./grove-sanction-status.js";
 const SUPABASE_URL =
   "https://fpkrvgcpbnrusbfmhinj.supabase.co";
 
-// Public publishable key only. Never put a service-role key in frontend code.
+// Verified active publishable key for Grove.Sandbox.
+// Never use a service-role key in browser code.
 const SUPABASE_ANON_KEY =
-  "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EkW6U0Z";
+  "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
 
 const REMEMBER_KEY = "grove:remember-session";
 
