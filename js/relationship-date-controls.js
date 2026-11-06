@@ -42,7 +42,31 @@ import { supabase } from "./supabase.js";
     }
   }
 
+  function isValidDate(value) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
+
+    const [year, month, day] = value.split("-").map(Number);
+    const date = new Date(year, month - 1, day);
+
+    return (
+      date.getFullYear() === year &&
+      date.getMonth() === month - 1 &&
+      date.getDate() === day
+    );
+  }
+
+  function localToday() {
+    const now = new Date();
+    const year = now.getFullYear();
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
+
+    return `${year}-${month}-${day}`;
+  }
+
   async function initialize() {
+    input.disabled = true;
+
     const { data: auth, error: authError } =
       await supabase.auth.getUser();
 
@@ -75,24 +99,14 @@ import { supabase } from "./supabase.js";
 
     const value = input.value;
 
-    if (value) {
-      const parsed = new Date(value + "T00:00:00");
+    if (value && !isValidDate(value)) {
+      showMessage("Enter a valid calendar date.", true);
+      return;
+    }
 
-      if (
-        Number.isNaN(parsed.getTime()) ||
-        parsed.toISOString().slice(0, 10) !== value
-      ) {
-        showMessage("Enter a valid date.", true);
-        return;
-      }
-
-      const today = new Date();
-      today.setHours(23, 59, 59, 999);
-
-      if (parsed > today) {
-        showMessage("The relationship date cannot be in the future.", true);
-        return;
-      }
+    if (value && value > localToday()) {
+      showMessage("The relationship date cannot be in the future.", true);
+      return;
     }
 
     saving = true;
@@ -113,7 +127,9 @@ import { supabase } from "./supabase.js";
       if (error) throw error;
 
       if (!data) {
-        throw new Error("The date was not saved. Check your profile permissions.");
+        throw new Error(
+          "The date was not saved. Your profile update permission may be missing."
+        );
       }
 
       input.value = data.relationship_since || "";
@@ -127,7 +143,6 @@ import { supabase } from "./supabase.js";
     }
   }
 
-  input.disabled = true;
   input.addEventListener("change", saveDate);
 
   statusSelect?.addEventListener("change", () => {
