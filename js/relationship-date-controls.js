@@ -39,17 +39,18 @@ import { supabase } from "./supabase.js";
   let userId = null;
   let saving = false;
   let savedValue = "";
+  let initialized = false;
 
   const wrapper = document.createElement("div");
   wrapper.className = "grove-date-fields";
 
-  const fields = [
-    { name: "month", label: "Month", placeholder: "MM", max: 12, length: 2 },
-    { name: "day", label: "Day", placeholder: "DD", max: 31, length: 2 },
-    { name: "year", label: "Year", placeholder: "YYYY", max: 9999, length: 4 }
-  ];
-
   const inputs = {};
+
+  const fields = [
+    { name: "month", label: "Month", placeholder: "MM", length: 2 },
+    { name: "day", label: "Day", placeholder: "DD", length: 2 },
+    { name: "year", label: "Year", placeholder: "YYYY", length: 4 }
+  ];
 
   fields.forEach(field => {
     const group = document.createElement("label");
@@ -69,6 +70,7 @@ import { supabase } from "./supabase.js";
 
     input.addEventListener("input", () => {
       input.value = input.value.replace(/\D/g, "").slice(0, field.length);
+      updateSaveButton();
 
       if (input.value.length === field.length) {
         const next = inputs[
@@ -80,12 +82,29 @@ import { supabase } from "./supabase.js";
       }
     });
 
+    input.addEventListener("keydown", event => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        saveDate();
+      }
+    });
+
     group.append(caption, input);
     wrapper.append(group);
     inputs[field.name] = input;
   });
 
+  const saveButton = document.createElement("button");
+  saveButton.type = "button";
+  saveButton.className = "button primary grove-date-save";
+  saveButton.textContent = "Save Date";
+  saveButton.disabled = true;
+
+  saveButton.addEventListener("click", saveDate);
+
   originalInput.insertAdjacentElement("afterend", wrapper);
+  wrapper.insertAdjacentElement("afterend", saveButton);
+
   originalInput.hidden = true;
   originalInput.removeAttribute("required");
 
@@ -107,7 +126,12 @@ import { supabase } from "./supabase.js";
   }
 
   function formatDate(value) {
-    if (!value) return;
+    if (!value) {
+      inputs.month.value = "";
+      inputs.day.value = "";
+      inputs.year.value = "";
+      return;
+    }
 
     const [year, month, day] = value.split("-");
 
@@ -117,9 +141,9 @@ import { supabase } from "./supabase.js";
   }
 
   function readDate() {
-    const month = inputs.month.value;
-    const day = inputs.day.value;
-    const year = inputs.year.value;
+    const month = inputs.month.value.trim();
+    const day = inputs.day.value.trim();
+    const year = inputs.year.value.trim();
 
     if (!month && !day && !year) return "";
 
@@ -157,8 +181,18 @@ import { supabase } from "./supabase.js";
     return `${year}-${month}-${day}`;
   }
 
+  function updateSaveButton() {
+    if (!initialized || saving) return;
+
+    try {
+      saveButton.disabled = readDate() === savedValue;
+    } catch {
+      saveButton.disabled = false;
+    }
+  }
+
   async function saveDate() {
-    if (!userId || saving) return;
+    if (!userId || saving || !initialized) return;
 
     let value;
 
@@ -169,11 +203,20 @@ import { supabase } from "./supabase.js";
       return;
     }
 
-    if (value === savedValue) return;
+    if (value === savedValue) {
+      showMessage("No date changes to save.");
+      return;
+    }
 
     saving = true;
-    Object.values(inputs).forEach(input => input.disabled = true);
-    showMessage("Saving date...");
+    saveButton.disabled = true;
+    saveButton.textContent = "Saving...";
+
+    Object.values(inputs).forEach(input => {
+      input.disabled = true;
+    });
+
+    showMessage("Saving relationship date...");
 
     try {
       const { data, error } = await supabase
@@ -189,40 +232,44 @@ import { supabase } from "./supabase.js";
       if (error) throw error;
 
       if (!data) {
-        throw new Error("The date could not be saved. Check your profile permissions.");
+        throw new Error(
+          "The date was not saved. Check your profile permissions."
+        );
       }
 
       savedValue = data.relationship_since || "";
-      formatDate(savedValue);
       originalInput.value = savedValue;
 
-      showMessage("Relationship date saved.");
+      formatDate(savedValue);
+
+      showMessage(
+        savedValue
+          ? "Relationship date saved successfully."
+          : "Relationship date cleared successfully."
+      );
+
     } catch (error) {
-      console.error("Relationship date save failed:", error);
+      console.error("Grove relationship date save failed:", error);
       showMessage(error.message || "Could not save the date.", true);
+
     } finally {
-      Object.values(inputs).forEach(input => input.disabled = false);
       saving = false;
+
+      Object.values(inputs).forEach(input => {
+        input.disabled = false;
+      });
+
+      saveButton.textContent = "Save Date";
+      updateSaveButton();
     }
   }
 
-  Object.values(inputs).forEach(input => {
-    input.addEventListener("change", saveDate);
-
-    input.addEventListener("keydown", event => {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        input.blur();
-      }
-    });
-  });
-
-  statusSelect?.addEventListener("change", () => {
-    updateLabel(statusSelect.value);
-  });
-
   async function initialize() {
-    Object.values(inputs).forEach(input => input.disabled = true);
+    saveButton.disabled = true;
+
+    Object.values(inputs).forEach(input => {
+      input.disabled = true;
+    });
 
     const { data: auth, error: authError } =
       await supabase.auth.getUser();
@@ -246,16 +293,30 @@ import { supabase } from "./supabase.js";
     if (!data) throw new Error("Your profile could not be found.");
 
     savedValue = data.relationship_since || "";
+
     formatDate(savedValue);
     originalInput.value = savedValue;
 
     updateLabel(data.relationship_status || "not_set");
 
-    Object.values(inputs).forEach(input => input.disabled = false);
+    initialized = true;
+
+    Object.values(inputs).forEach(input => {
+      input.disabled = false;
+    });
+
+    updateSaveButton();
+    showMessage("Your relationship date is ready to edit.");
+  }
+
+  if (statusSelect) {
+    statusSelect.addEventListener("change", () => {
+      updateLabel(statusSelect.value);
+    });
   }
 
   initialize().catch(error => {
-    console.error("Relationship date control failed:", error);
-    showMessage(error.message || "Could not load the date.", true);
+    console.error("Grove relationship date control failed:", error);
+    showMessage(error.message || "Could not load the relationship date.", true);
   });
 })();
