@@ -14,6 +14,7 @@
 
   <script type="module" src="js/settings.js"></script>
   <script type="module" src="js/blocked-members.js?v=20261105-1"></script>
+  <script type="module" src="js/relationship-date-controls.js"></script>
 </head>
 
 <body>
@@ -38,6 +39,38 @@
     </header>
 
     <p id="settings-status" role="status" aria-live="polite"></p>
+
+    <section class="settings-panel">
+      <h2>Relationship details</h2>
+      <p class="settings-description">
+        Manage the date associated with your relationship status.
+      </p>
+
+      <p data-grove-relationship-current-status>
+        Loading relationship status...
+      </p>
+
+      <label for="settings-relationship-since"
+        data-grove-relationship-date-label>
+        Relationship start date
+      </label>
+
+      <input id="settings-relationship-since"
+        data-grove-relationship-date
+        type="date" disabled>
+
+      <p class="settings-description">
+        When your status is Married, this is your date married.
+        Changes save immediately.
+      </p>
+
+      <p data-grove-relationship-date-message
+        role="status" aria-live="polite"></p>
+
+      <a class="button secondary" href="/edit-profile.html">
+        Edit relationship status
+      </a>
+    </section>
 
     <section class="settings-panel">
       <h2>Notification preferences</h2>
@@ -92,14 +125,8 @@
 
       <label class="volume-setting" for="sound-volume">
         Sound volume
-        <input
-          id="sound-volume"
-          type="range"
-          min="0"
-          max="1"
-          step="0.05"
-          value="0.35"
-        >
+        <input id="sound-volume" type="range"
+          min="0" max="1" step="0.05" value="0.35">
       </label>
 
       <button id="test-sound" class="button secondary" type="button">
@@ -140,12 +167,11 @@
         to interact, subject to each member's privacy and messaging settings.
       </p>
 
-      <p
-        id="blocked-members-status"
+      <p id="blocked-members-status"
         class="blocked-members-status"
-        role="status"
-        aria-live="polite"
-      >Loading blocked members...</p>
+        role="status" aria-live="polite">
+        Loading blocked members...
+      </p>
 
       <div id="blocked-members-list" class="blocked-members-list"></div>
     </section>
@@ -156,6 +182,7 @@
         Manage your account and profile.
       </p>
 
+      <a class="button secondary" href="/edit-profile.html">Edit profile</a>
       <a class="button secondary" href="/profile.html">Back to profile</a>
     </section>
   </main>
