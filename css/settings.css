@@ -105,6 +105,26 @@ body {
   line-height: 1.6;
 }
 
+.settings-panel input[type="date"] {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  min-height: 44px;
+  margin: 10px 0 14px;
+  padding: 10px 12px;
+  border: 1px solid rgba(133, 30, 255, .55);
+  border-radius: 9px;
+  background: rgba(5, 0, 25, .85);
+  color: #f7f5ff;
+  font: inherit;
+  color-scheme: dark;
+}
+
+.settings-panel input[type="date"]:focus {
+  outline: 2px solid #05c9f4;
+  outline-offset: 2px;
+}
+
 .setting-row {
   display: flex;
   align-items: center;
