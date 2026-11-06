@@ -358,6 +358,28 @@ export function installGroveActivityTab(supabase) {
     };
   }
 
+  async function refreshUnreadCount() {
+    if (!user) {
+      unread = 0;
+      updateCount();
+      return;
+    }
+
+    const { count: exactCount, error } = await supabase
+      .from("notifications")
+      .select("id", {
+        count: "exact",
+        head: true
+      })
+      .eq("recipient_id", user.id)
+      .is("read_at", null);
+
+    if (error) throw error;
+
+    unread = exactCount ?? 0;
+    updateCount();
+  }
+
   function destinationFor(row) {
     if (row.kind === "message") {
       return "/messages.html";
@@ -389,7 +411,6 @@ export function installGroveActivityTab(supabase) {
 
     if (!row.read_at) {
       link.classList.add("unread");
-      unread += 1;
     }
 
     const message = document.createElement("span");
@@ -418,8 +439,6 @@ export function installGroveActivityTab(supabase) {
     } else {
       list.append(link);
     }
-
-    updateCount();
   }
 
   async function loadHistory() {
@@ -431,28 +450,32 @@ export function installGroveActivityTab(supabase) {
     try {
       await loadPreferences();
 
-      const { data, error } = await supabase
-        .from("notifications")
-        .select(
-          "id,actor_id,kind,message,post_id,created_at,read_at"
-        )
-        .eq("recipient_id", user.id)
-        .order("created_at", { ascending: false })
-        .limit(50);
+      const [historyResult] = await Promise.all([
+        supabase
+          .from("notifications")
+          .select(
+            "id,actor_id,kind,message,post_id,created_at,read_at"
+          )
+          .eq("recipient_id", user.id)
+          .order("created_at", { ascending: false })
+          .limit(50),
 
-      if (error) throw error;
+        refreshUnreadCount()
+      ]);
+
+      if (historyResult.error) throw historyResult.error;
 
       renderedIds.clear();
-      unread = 0;
       list.replaceChildren();
 
-      const visibleRows = (data || []).filter(row =>
+      const rows = historyResult.data || [];
+      const visibleRows = rows.filter(row =>
         categoryEnabled(row.kind)
       );
 
       if (!visibleRows.length) {
         showEmpty(
-          data?.length
+          rows.length
             ? "No notifications match your enabled categories."
             : "You're all caught up. No notifications yet."
         );
@@ -475,12 +498,6 @@ export function installGroveActivityTab(supabase) {
   async function markAllRead() {
     if (!user || unread === 0) return;
 
-    const ids = [...list.querySelectorAll(
-      ".grove-activity-item.unread"
-    )].map(item => item.dataset.notificationId).filter(Boolean);
-
-    if (!ids.length) return;
-
     markRead.disabled = true;
 
     try {
@@ -488,7 +505,6 @@ export function installGroveActivityTab(supabase) {
         .from("notifications")
         .update({ read_at: new Date().toISOString() })
         .eq("recipient_id", user.id)
-        .in("id", ids)
         .is("read_at", null);
 
       if (error) throw error;
@@ -496,8 +512,7 @@ export function installGroveActivityTab(supabase) {
       list.querySelectorAll(".grove-activity-item.unread")
         .forEach(item => item.classList.remove("unread"));
 
-      unread = 0;
-      updateCount();
+      await refreshUnreadCount();
 
     } catch (error) {
       console.error("Could not mark notifications read:", error);
@@ -523,8 +538,7 @@ export function installGroveActivityTab(supabase) {
         if (error) throw error;
 
         link.classList.remove("unread");
-        unread = Math.max(0, unread - 1);
-        updateCount();
+        await refreshUnreadCount();
 
       } catch (error) {
         console.warn("Could not mark notification read:", error);
@@ -534,7 +548,7 @@ export function installGroveActivityTab(supabase) {
     window.location.assign(destination);
   }
 
-  function addRealtimeNotification(row) {
+  async function addRealtimeNotification(row) {
     if (!row || !row.id || !categoryEnabled(row.kind)) return;
 
     if (list.querySelector(".grove-activity-empty")) {
@@ -542,6 +556,12 @@ export function installGroveActivityTab(supabase) {
     }
 
     renderNotification(row, true);
+
+    try {
+      await refreshUnreadCount();
+    } catch (error) {
+      console.warn("Could not refresh unread count:", error);
+    }
   }
 
   function disconnectRealtime() {
@@ -590,6 +610,8 @@ export function installGroveActivityTab(supabase) {
 
       if (!user) {
         disconnectRealtime();
+        unread = 0;
+        updateCount();
         control.remove();
         return;
       }
@@ -645,7 +667,9 @@ export function installGroveActivityTab(supabase) {
   supabase.auth.onAuthStateChange(event => {
     if (event === "SIGNED_OUT") {
       user = null;
+      unread = 0;
       disconnectRealtime();
+      updateCount();
       control.remove();
     }
 
