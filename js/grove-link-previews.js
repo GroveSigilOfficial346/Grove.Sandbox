@@ -9,11 +9,31 @@ import { supabase } from "./supabase.js";
   const cache = new Map();
   const pending = new Set();
 
+  const CONTENT_SELECTORS = [
+    ".message-bubble",
+    ".message-body",
+    ".community-post",
+    ".community-feed",
+    ".profile-post",
+    ".profile-posts",
+    ".feed-post",
+    ".feed-card",
+    ".post-card",
+    ".post-content",
+    ".post-body",
+    ".grove-post",
+    "#community-feed",
+    "#pinned-community-feed",
+    "#following-feed",
+    "#profile-posts"
+  ].join(",");
+
   const STYLE = `
     .grove-link-preview {
       display: grid;
       grid-template-columns: 112px minmax(0, 1fr);
       gap: 12px;
+      width: 100%;
       max-width: 560px;
       margin: 10px 0 5px;
       overflow: hidden;
@@ -23,6 +43,7 @@ import { supabase } from "./supabase.js";
       color: #f7f5ff;
       text-decoration: none;
       transition: border-color .18s ease, background .18s ease;
+      box-sizing: border-box;
     }
 
     .grove-link-preview:hover {
@@ -31,6 +52,7 @@ import { supabase } from "./supabase.js";
     }
 
     .grove-link-preview-image {
+      display: block;
       width: 112px;
       height: 100%;
       min-height: 104px;
@@ -82,6 +104,10 @@ import { supabase } from "./supabase.js";
       padding-left: 12px;
     }
 
+    .grove-link-preview-fallback .grove-link-preview-content {
+      padding-left: 0;
+    }
+
     @media (max-width: 600px) {
       .grove-link-preview {
         grid-template-columns: 88px minmax(0, 1fr);
@@ -109,14 +135,20 @@ import { supabase } from "./supabase.js";
     }
   `;
 
-  const style = document.createElement("style");
-  style.id = "grove-link-preview-styles";
-  style.textContent = STYLE;
-  document.head.append(style);
+  function installStyles() {
+    if (document.getElementById("grove-link-preview-styles")) return;
+
+    const style = document.createElement("style");
+    style.id = "grove-link-preview-styles";
+    style.textContent = STYLE;
+    document.head.append(style);
+  }
 
   function safeUrl(value) {
+    if (typeof value !== "string" || !value.trim()) return null;
+
     try {
-      const url = new URL(value);
+      const url = new URL(value.trim());
 
       if (!["http:", "https:"].includes(url.protocol)) return null;
       if (url.username || url.password) return null;
@@ -128,32 +160,29 @@ import { supabase } from "./supabase.js";
   }
 
   function isPreviewArea(anchor) {
-    return Boolean(
-      anchor.closest(
-        ".message-bubble, .community-post, .profile-post, " +
-        ".feed-post, .grove-post, .post-card"
-      )
-    );
+    return Boolean(anchor.closest(CONTENT_SELECTORS));
   }
 
-  function getCandidateAnchors(root = document) {
-    return root.querySelectorAll(
-      ".message-bubble a[href], .community-post a[href], " +
-      ".profile-post a[href], .feed-post a[href], " +
-      ".grove-post a[href], .post-card a[href]"
-    );
+  function getCardForUrl(container, url) {
+    return [...container.querySelectorAll(".grove-link-preview")]
+      .find(card => card.dataset.grovePreviewUrl === url) || null;
   }
 
   function createCard(data, originalUrl) {
     const card = document.createElement("a");
+
     card.className = "grove-link-preview";
     card.href = originalUrl;
     card.target = "_blank";
     card.rel = "noopener noreferrer";
-    card.setAttribute("aria-label", `Preview: ${data.title || data.domain}`);
+    card.setAttribute(
+      "aria-label",
+      `Preview: ${data.title || data.domain || "Open website"}`
+    );
 
     if (data.image) {
       const image = document.createElement("img");
+
       image.className = "grove-link-preview-image";
       image.src = data.image;
       image.alt = "";
@@ -179,14 +208,17 @@ import { supabase } from "./supabase.js";
 
     const title = document.createElement("span");
     title.className = "grove-link-preview-title";
-    title.textContent = data.title || data.domain || "Open website";
+    title.textContent =
+      data.title || data.domain || "Open website";
 
     content.append(domain, title);
 
     if (data.description) {
       const description = document.createElement("span");
+
       description.className = "grove-link-preview-description";
       description.textContent = data.description;
+
       content.append(description);
     }
 
@@ -203,7 +235,9 @@ import { supabase } from "./supabase.js";
     try {
       const { data, error } = await supabase.functions.invoke(
         "get-link-preview",
-        { body: { url } }
+        {
+          body: { url }
+        }
       );
 
       if (error || !data || data.error) {
@@ -224,8 +258,16 @@ import { supabase } from "./supabase.js";
     }
   }
 
+  function getTextInsertionPoint(anchor) {
+    return (
+      anchor.closest("p, .message-body, .post-body, .post-content") ||
+      anchor
+    );
+  }
+
   async function processAnchor(anchor) {
     if (
+      !anchor ||
       !anchor.isConnected ||
       anchor.dataset.grovePreview === "done" ||
       !isPreviewArea(anchor)
@@ -238,58 +280,70 @@ import { supabase } from "./supabase.js";
 
     anchor.dataset.grovePreview = "done";
 
-    const card = await fetchPreview(url.href);
+    const data = await fetchPreview(url.href);
 
-    if (!card || !anchor.isConnected) return;
+    if (!data || !anchor.isConnected) return;
 
-    const parent = anchor.closest(
-      ".message-bubble, .community-post, .profile-post, " +
-      ".feed-post, .grove-post, .post-card"
-    );
+    const container = anchor.closest(CONTENT_SELECTORS);
+    if (!container) return;
 
-    if (!parent) return;
+    if (getCardForUrl(container, url.href)) return;
 
-    if (
-      parent.querySelector(
-        `[data-grove-preview-url="${CSS.escape(url.href)}"]`
-      )
-    ) {
-      return;
-    }
-
-    const preview = createCard(card, url.href);
+    const preview = createCard(data, url.href);
     preview.dataset.grovePreviewUrl = url.href;
 
-    const textContainer = anchor.closest("p, .message-body, .post-body") || anchor;
-    textContainer.insertAdjacentElement("afterend", preview);
+    const insertionPoint = getTextInsertionPoint(anchor);
+
+    insertionPoint.insertAdjacentElement("afterend", preview);
   }
 
   function scan(root = document) {
-    getCandidateAnchors(root).forEach(anchor => {
+    if (!root) return;
+
+    if (
+      root.nodeType === Node.ELEMENT_NODE &&
+      root.matches?.("a[href]")
+    ) {
+      processAnchor(root);
+    }
+
+    if (!root.querySelectorAll) return;
+
+    root.querySelectorAll("a[href]").forEach(anchor => {
       processAnchor(anchor);
     });
   }
 
-  scan();
+  function installObserver() {
+    if (!document.body) return;
 
-  const observer = new MutationObserver(records => {
-    for (const record of records) {
-      for (const node of record.addedNodes) {
-        if (node.nodeType !== Node.ELEMENT_NODE) continue;
+    const observer = new MutationObserver(records => {
+      for (const record of records) {
+        for (const node of record.addedNodes) {
+          if (node.nodeType !== Node.ELEMENT_NODE) continue;
 
-        if (node.matches?.("a[href]")) {
-          processAnchor(node);
+          scan(node);
         }
-
-        scan(node);
       }
-    }
-  });
+    });
 
-  observer.observe(document.body, {
-    childList: true,
-    subtree: true
-  });
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+  }
+
+  function start() {
+    installStyles();
+    scan();
+    installObserver();
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start, { once: true });
+  } else {
+    start();
+  }
 
   window.GroveLinkPreviews = Object.freeze({
     refresh: () => scan(),
