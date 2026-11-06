@@ -37,7 +37,6 @@ import { supabase } from "./supabase.js";
     if (!value) return "";
 
     const date = new Date(value);
-
     if (Number.isNaN(date.getTime())) return "";
 
     return new Intl.DateTimeFormat(undefined, {
@@ -69,8 +68,23 @@ import { supabase } from "./supabase.js";
     }
   }
 
+  async function loadMemberships() {
+    const { data, error } = await supabase
+      .from("channel_members")
+      .select("channel_id,role")
+      .eq("user_id", state.user.id);
+
+    if (error) throw error;
+
+    state.memberships = new Map(
+      (data || []).map(row => [row.channel_id, row.role])
+    );
+  }
+
   async function loadChannels() {
-    const [publicResult, ownedResult, memberResult] = await Promise.all([
+    await loadMemberships();
+
+    const [publicResult, ownedResult] = await Promise.all([
       supabase
         .from("broadcast_channels")
         .select("id,owner_id,name,description,avatar_url,is_private,created_at")
@@ -81,21 +95,11 @@ import { supabase } from "./supabase.js";
         .from("broadcast_channels")
         .select("id,owner_id,name,description,avatar_url,is_private,created_at")
         .eq("owner_id", state.user.id)
-        .order("created_at", { ascending: false }),
-
-      supabase
-        .from("channel_members")
-        .select("channel_id,role")
-        .eq("user_id", state.user.id)
+        .order("created_at", { ascending: false })
     ]);
 
     if (publicResult.error) throw publicResult.error;
     if (ownedResult.error) throw ownedResult.error;
-    if (memberResult.error) throw memberResult.error;
-
-    state.memberships = new Map(
-      (memberResult.data || []).map(row => [row.channel_id, row.role])
-    );
 
     const unique = new Map();
 
@@ -106,25 +110,120 @@ import { supabase } from "./supabase.js";
       unique.set(channel.id, channel);
     }
 
+    // Members must also be able to see private channels they joined.
+    const memberChannelIds = [...state.memberships.keys()];
+
+    if (memberChannelIds.length) {
+      const { data: memberChannels, error: memberChannelsError } =
+        await supabase
+          .from("broadcast_channels")
+          .select("id,owner_id,name,description,avatar_url,is_private,created_at")
+          .in("id", memberChannelIds)
+          .order("created_at", { ascending: false });
+
+      if (memberChannelsError) throw memberChannelsError;
+
+      for (const channel of memberChannels || []) {
+        unique.set(channel.id, channel);
+      }
+    }
+
     state.channels = [...unique.values()];
     renderChannels();
   }
 
+  async function ensureMembership(channelId) {
+    if (!channelId || !state.user?.id) {
+      throw new Error("Missing channel or account information.");
+    }
+
+    const existingRole = state.memberships.get(channelId);
+
+    if (existingRole) return existingRole;
+
+    const { error } = await supabase
+      .from("channel_members")
+      .insert({
+        channel_id: channelId,
+        user_id: state.user.id,
+        role: "subscriber"
+      });
+
+    if (error && error.code !== "23505") {
+      throw error;
+    }
+
+    // A duplicate can mean a previous attempt already succeeded.
+    const { data, error: verifyError } = await supabase
+      .from("channel_members")
+      .select("channel_id,role")
+      .eq("channel_id", channelId)
+      .eq("user_id", state.user.id)
+      .maybeSingle();
+
+    if (verifyError) throw verifyError;
+
+    if (!data) {
+      throw new Error(
+        "The invitation was accepted, but channel membership could not be confirmed. Check the invitation policy and try refreshing."
+      );
+    }
+
+    state.memberships.set(channelId, data.role);
+    return data.role;
+  }
+
+  async function reconcileAcceptedInvites() {
+    const { data, error } = await supabase
+      .from("channel_invites")
+      .select("id,channel_id,status")
+      .eq("invitee_id", state.user.id)
+      .eq("status", "accepted");
+
+    if (error) throw error;
+
+    let repaired = 0;
+    const failures = [];
+
+    for (const invite of data || []) {
+      if (state.memberships.has(invite.channel_id)) continue;
+
+      try {
+        await ensureMembership(invite.channel_id);
+        repaired++;
+      } catch (membershipError) {
+        console.warn(
+          "Accepted broadcast invitation still needs membership:",
+          invite.channel_id,
+          membershipError
+        );
+        failures.push(invite.channel_id);
+      }
+    }
+
+    return { repaired, failures };
+  }
+
   function renderChannels() {
     const list = $("#channel-list");
-    const term = $("#channel-search").value.trim().toLowerCase();
-
+    const search = $("#channel-search");
     if (!list) return;
 
+    const term = search?.value.trim().toLowerCase() || "";
+
     const channels = state.channels.filter(channel => {
-      const text = `${channel.name} ${channel.description || ""}`.toLowerCase();
+      const text =
+        `${channel.name} ${channel.description || ""}`.toLowerCase();
+
       return text.includes(term);
     });
 
     if (!channels.length) {
       list.innerHTML = `
         <p class="broadcast-muted">
-          ${term ? "No matching channels." : "No channels yet. Create one to get started."}
+          ${term
+            ? "No matching channels."
+            : "No channels yet. Create one to get started."}
         </p>
       `;
       return;
@@ -148,12 +247,14 @@ import { supabase } from "./supabase.js";
         <span class="broadcast-channel-symbol">◉</span>
         <span class="broadcast-channel-copy">
           <strong>${escapeHTML(channel.name)}</strong>
-          <small>${isOwner ? "Your channel" : role ? role : "Public channel"}${channel.is_private ? " · Private" : ""}</small>
+          <small>
+            ${isOwner ? "Your channel" : role || "Public channel"}
+            ${channel.is_private ? " · Private" : ""}
+          </small>
         </span>
       `;
 
       button.addEventListener("click", () => openChannel(channel));
-
       list.append(button);
     }
   }
@@ -188,7 +289,10 @@ import { supabase } from "./supabase.js";
       const copy = document.createElement("div");
       copy.innerHTML = `
         <strong>Private channel invitation</strong>
-        <div class="broadcast-muted">Channel reference: ${escapeHTML(invite.channel_id.slice(0, 8))}… · ${escapeHTML(formatDate(invite.created_at))}</div>
+        <div class="broadcast-muted">
+          Channel reference: ${escapeHTML(invite.channel_id.slice(0, 8))}…
+          · ${escapeHTML(formatDate(invite.created_at))}
+        </div>
       `;
 
       const actions = document.createElement("div");
@@ -198,13 +302,17 @@ import { supabase } from "./supabase.js";
       accept.type = "button";
       accept.className = "broadcast-primary";
       accept.textContent = "Accept";
-      accept.addEventListener("click", () => respondToInvite(invite, "accepted"));
+      accept.addEventListener("click", () =>
+        respondToInvite(invite, "accepted")
+      );
 
       const decline = document.createElement("button");
       decline.type = "button";
       decline.className = "broadcast-secondary";
       decline.textContent = "Decline";
-      decline.addEventListener("click", () => respondToInvite(invite, "declined"));
+      decline.addEventListener("click", () =>
+        respondToInvite(invite, "declined")
+      );
 
       actions.append(accept, decline);
       row.append(copy, actions);
@@ -225,23 +333,46 @@ import { supabase } from "./supabase.js";
         .eq("id", invite.id)
         .eq("invitee_id", state.user.id)
         .eq("status", "pending")
-        .select("id,status")
+        .select("id,status,channel_id")
         .maybeSingle();
 
       if (error) throw error;
-      if (!data) throw new Error("This invitation is no longer pending.");
 
-      await loadInvites();
+      if (!data) {
+        throw new Error("This invitation is no longer pending.");
+      }
 
       if (response === "accepted") {
-        status("Invitation accepted. Private channel member visibility still needs its database policy.");
+        // The SQL policy must be installed before this insert can succeed.
+        await ensureMembership(invite.channel_id);
+
+        await Promise.all([
+          loadChannels(),
+          loadInvites()
+        ]);
+
+        const joinedChannel = state.channels.find(
+          channel => channel.id === invite.channel_id
+        );
+
+        if (joinedChannel) {
+          await openChannel(joinedChannel);
+        }
+
+        status("Invitation accepted. You have joined the private channel.");
       } else {
+        await loadInvites();
         status("Invitation declined.");
       }
 
     } catch (error) {
       console.error("Grove channel invitation response failed:", error);
-      status(error.message || "Could not update the invitation.", true);
+
+      status(
+        error.message ||
+        "Could not complete the invitation. Refresh and try again.",
+        true
+      );
     }
   }
 
@@ -251,7 +382,9 @@ import { supabase } from "./supabase.js";
 
     if (!posts.length) {
       container.innerHTML = `
-        <p class="broadcast-muted">No updates have been published yet.</p>
+        <p class="broadcast-muted">
+          No updates have been published yet.
+        </p>
       `;
       return;
     }
@@ -276,6 +409,7 @@ import { supabase } from "./supabase.js";
 
   async function loadPosts(channel) {
     const container = $("#channel-posts");
+    if (!container) return;
 
     container.innerHTML = `
       <p class="broadcast-muted">Loading channel updates...</p>
@@ -297,6 +431,7 @@ import { supabase } from "./supabase.js";
     const role = state.memberships.get(channel.id);
     const isOwner = channel.owner_id === state.user.id;
     const isMember = Boolean(role);
+
     const canPublish =
       isOwner ||
       ["owner", "moderator", "publisher"].includes(role);
@@ -316,7 +451,6 @@ import { supabase } from "./supabase.js";
       !isMember || isOwner;
 
     $("#invite-member-button").hidden = !canInvite;
-
     $("#channel-post-form").hidden = !canPublish;
 
     $("#channel-visibility").textContent =
@@ -374,10 +508,14 @@ import { supabase } from "./supabase.js";
 
       if (error) throw error;
 
-      state.memberships.set(channel.id, "subscriber");
+      await loadChannels();
 
-      updateChannelControls(channel);
-      renderChannels();
+      const updated = state.channels.find(item => item.id === channel.id);
+      if (updated) {
+        state.activeChannel = updated;
+        updateChannelControls(updated);
+      }
+
       status("You are now subscribed.");
 
     } catch (error) {
@@ -404,9 +542,19 @@ import { supabase } from "./supabase.js";
       if (error) throw error;
 
       state.memberships.delete(channel.id);
+      await loadChannels();
 
-      updateChannelControls(channel);
-      renderChannels();
+      const updated = state.channels.find(item => item.id === channel.id);
+
+      if (updated) {
+        state.activeChannel = updated;
+        updateChannelControls(updated);
+      } else {
+        state.activeChannel = null;
+        $("#channel-view").hidden = true;
+        $("#channel-empty").hidden = false;
+      }
+
       status("You have unsubscribed.");
 
     } catch (error) {
@@ -469,12 +617,14 @@ import { supabase } from "./supabase.js";
     errorNode.textContent = "";
 
     if (!name || name.length > 60) {
-      errorNode.textContent = "Channel names must contain 1–60 characters.";
+      errorNode.textContent =
+        "Channel names must contain 1–60 characters.";
       return;
     }
 
     if (description.length > 500) {
-      errorNode.textContent = "Descriptions must be 500 characters or fewer.";
+      errorNode.textContent =
+        "Descriptions must be 500 characters or fewer.";
       return;
     }
 
@@ -495,8 +645,6 @@ import { supabase } from "./supabase.js";
 
       if (error) throw error;
 
-      // Add the creator as the channel owner. The owner_id policy
-      // independently allows management if this membership insert fails.
       const { error: memberError } = await supabase
         .from("channel_members")
         .insert({
@@ -506,7 +654,10 @@ import { supabase } from "./supabase.js";
         });
 
       if (memberError) {
-        console.warn("Channel created, but owner membership insert failed:", memberError);
+        console.warn(
+          "Channel created, but owner membership insert failed:",
+          memberError
+        );
       } else {
         state.memberships.set(channel.id, "owner");
       }
@@ -516,7 +667,7 @@ import { supabase } from "./supabase.js";
       closeDialog("channel-dialog");
       $("#create-channel-form").reset();
 
-      renderChannels();
+      await loadChannels();
       await openChannel(channel);
 
       status(
@@ -540,7 +691,9 @@ import { supabase } from "./supabase.js";
     container.innerHTML = "";
 
     if (!members.length) {
-      container.innerHTML = `<p class="broadcast-muted">No matching members found.</p>`;
+      container.innerHTML = `
+        <p class="broadcast-muted">No matching members found.</p>
+      `;
       return;
     }
 
@@ -551,8 +704,14 @@ import { supabase } from "./supabase.js";
 
       const copy = document.createElement("span");
       copy.innerHTML = `
-        <strong>${escapeHTML(member.display_name || member.username || "Grove member")}</strong>
-        <small>${member.username ? "@" + escapeHTML(member.username) : "Grove member"}</small>
+        <strong>
+          ${escapeHTML(member.display_name || member.username || "Grove member")}
+        </strong>
+        <small>
+          ${member.username
+            ? "@" + escapeHTML(member.username)
+            : "Grove member"}
+        </small>
       `;
 
       const action = document.createElement("strong");
@@ -569,11 +728,15 @@ import { supabase } from "./supabase.js";
     const container = $("#invite-member-results");
 
     if (term.length < 2) {
-      container.innerHTML = `<p class="broadcast-muted">Type at least two characters.</p>`;
+      container.innerHTML = `
+        <p class="broadcast-muted">Type at least two characters.</p>
+      `;
       return;
     }
 
-    container.innerHTML = `<p class="broadcast-muted">Searching...</p>`;
+    container.innerHTML = `
+      <p class="broadcast-muted">Searching...</p>
+    `;
 
     try {
       const safeTerm = term.replace(/[%_\\]/g, "").slice(0, 40);
@@ -611,7 +774,12 @@ import { supabase } from "./supabase.js";
 
     } catch (error) {
       console.error("Grove channel member search failed:", error);
-      container.innerHTML = `<p class="broadcast-muted">Member search failed. Try again.</p>`;
+
+      container.innerHTML = `
+        <p class="broadcast-muted">
+          Member search failed. Try again.
+        </p>
+      `;
     }
   }
 
@@ -639,6 +807,7 @@ import { supabase } from "./supabase.js";
 
     } catch (error) {
       console.error("Grove channel invitation failed:", error);
+
       feedback.textContent =
         error.message || "Could not send this invitation.";
     }
@@ -651,16 +820,30 @@ import { supabase } from "./supabase.js";
       $("#new-channel-name").focus();
     });
 
-    $("#close-channel-dialog").addEventListener("click", () => closeDialog("channel-dialog"));
-    $("#cancel-channel-dialog").addEventListener("click", () => closeDialog("channel-dialog"));
+    $("#close-channel-dialog").addEventListener(
+      "click",
+      () => closeDialog("channel-dialog")
+    );
+
+    $("#cancel-channel-dialog").addEventListener(
+      "click",
+      () => closeDialog("channel-dialog")
+    );
+
     $("#create-channel-form").addEventListener("submit", createChannel);
 
-    $("#close-invite-dialog").addEventListener("click", () => closeDialog("invite-dialog"));
+    $("#close-invite-dialog").addEventListener(
+      "click",
+      () => closeDialog("invite-dialog")
+    );
 
     $("#invite-member-button").addEventListener("click", () => {
       $("#invite-member-search").value = "";
-      $("#invite-member-results").innerHTML =
-        `<p class="broadcast-muted">Search for a member to invite.</p>`;
+      $("#invite-member-results").innerHTML = `
+        <p class="broadcast-muted">
+          Search for a member to invite.
+        </p>
+      `;
       $("#invite-member-feedback").textContent = "";
       openDialog("invite-dialog");
       $("#invite-member-search").focus();
@@ -717,17 +900,37 @@ import { supabase } from "./supabase.js";
       await requireUser();
       bindEvents();
 
+      // Load existing memberships first, then repair any accepted
+      // invitations that were accepted before membership was created.
+      await loadMemberships();
+
+      const repair = await reconcileAcceptedInvites();
+
       await Promise.all([
         loadChannels(),
         loadInvites()
       ]);
 
-      status("Broadcast channels are ready.");
+      if (repair.failures.length) {
+        status(
+          "Some accepted invitations still need membership setup. Check the accepted-invite database policy.",
+          true
+        );
+      } else if (repair.repaired) {
+        status(
+          `${repair.repaired} accepted channel invitation(s) activated.`
+        );
+      } else {
+        status("Broadcast channels are ready.");
+      }
 
-      const requestedChannel = new URLSearchParams(location.search).get("channel");
+      const requestedChannel =
+        new URLSearchParams(location.search).get("channel");
 
       if (requestedChannel) {
-        const channel = state.channels.find(item => item.id === requestedChannel);
+        const channel = state.channels.find(
+          item => item.id === requestedChannel
+        );
 
         if (channel) {
           await openChannel(channel);
@@ -735,8 +938,15 @@ import { supabase } from "./supabase.js";
       }
 
     } catch (error) {
-      console.error("Grove broadcast channels failed to initialize:", error);
-      status(error.message || "Could not load broadcast channels.", true);
+      console.error(
+        "Grove broadcast channels failed to initialize:",
+        error
+      );
+
+      status(
+        error.message || "Could not load broadcast channels.",
+        true
+      );
     }
   }
 
