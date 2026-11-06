@@ -11,22 +11,20 @@ import { supabase } from "./supabase.js";
 
   const CONTENT_SELECTORS = [
     ".message-bubble",
-    ".message-body",
-    ".community-post",
     ".community-feed",
-    ".profile-post",
-    ".profile-posts",
-    ".feed-post",
-    ".feed-card",
     ".post-card",
-    ".post-content",
-    ".post-body",
-    ".grove-post",
+    ".comment-body",
+    ".feed-post",
+    ".profile-post",
+    "#bio",
+    "#details",
+    "#following-feed",
     "#community-feed",
     "#pinned-community-feed",
-    "#following-feed",
-    "#profile-posts"
+    "#posts-list"
   ].join(",");
+
+  const URL_PATTERN = /https?:\/\/[^\s<>"'`]+/gi;
 
   const STYLE = `
     .grove-link-preview {
@@ -108,6 +106,14 @@ import { supabase } from "./supabase.js";
       padding-left: 0;
     }
 
+    .post-external-link,
+    .grove-message-link,
+    .grove-profile-link {
+      overflow-wrap: anywhere;
+      text-decoration: underline;
+      text-underline-offset: 2px;
+    }
+
     @media (max-width: 600px) {
       .grove-link-preview {
         grid-template-columns: 88px minmax(0, 1fr);
@@ -135,15 +141,6 @@ import { supabase } from "./supabase.js";
     }
   `;
 
-  function installStyles() {
-    if (document.getElementById("grove-link-preview-styles")) return;
-
-    const style = document.createElement("style");
-    style.id = "grove-link-preview-styles";
-    style.textContent = STYLE;
-    document.head.append(style);
-  }
-
   function safeUrl(value) {
     if (typeof value !== "string" || !value.trim()) return null;
 
@@ -159,8 +156,122 @@ import { supabase } from "./supabase.js";
     }
   }
 
-  function isPreviewArea(anchor) {
-    return Boolean(anchor.closest(CONTENT_SELECTORS));
+  function contentRoot(node) {
+    if (!node || !node.closest) return null;
+
+    if (node.matches?.(CONTENT_SELECTORS)) return node;
+    return node.closest(CONTENT_SELECTORS);
+  }
+
+  function isExcludedTextNode(node) {
+    const parent = node.parentElement;
+    if (!parent) return true;
+
+    return Boolean(parent.closest(
+      "a,script,style,textarea,code,pre,.grove-link-preview,[contenteditable='true']"
+    ));
+  }
+
+  function installStyles() {
+    if (document.getElementById("grove-link-preview-styles")) return;
+
+    const style = document.createElement("style");
+    style.id = "grove-link-preview-styles";
+    style.textContent = STYLE;
+    document.head.append(style);
+  }
+
+  function createTextLink(urlText, root) {
+    const url = safeUrl(urlText);
+    if (!url) return document.createTextNode(urlText);
+
+    const link = document.createElement("a");
+    link.href = url.href;
+    link.textContent = urlText;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
+
+    if (root.matches(".message-bubble")) {
+      link.className = "grove-message-link";
+    } else if (root.matches("#bio, #details")) {
+      link.className = "grove-profile-link";
+    } else {
+      link.className = "post-external-link";
+    }
+
+    return link;
+  }
+
+  function linkifyTextNode(node) {
+    if (
+      !node ||
+      node.nodeType !== Node.TEXT_NODE ||
+      !node.isConnected ||
+      isExcludedTextNode(node)
+    ) {
+      return;
+    }
+
+    const root = contentRoot(node.parentElement);
+    if (!root) return;
+
+    const value = node.nodeValue || "";
+    URL_PATTERN.lastIndex = 0;
+
+    const matches = [...value.matchAll(URL_PATTERN)];
+    if (!matches.length) return;
+
+    const fragment = document.createDocumentFragment();
+    let cursor = 0;
+
+    for (const match of matches) {
+      const raw = match[0];
+      let candidate = raw;
+      let trailing = "";
+
+      while (/[),.!?;:]$/.test(candidate)) {
+        trailing = candidate.slice(-1) + trailing;
+        candidate = candidate.slice(0, -1);
+      }
+
+      if (match.index > cursor) {
+        fragment.append(
+          document.createTextNode(value.slice(cursor, match.index))
+        );
+      }
+
+      fragment.append(createTextLink(candidate, root));
+
+      if (trailing) {
+        fragment.append(document.createTextNode(trailing));
+      }
+
+      cursor = match.index + raw.length;
+    }
+
+    if (cursor < value.length) {
+      fragment.append(document.createTextNode(value.slice(cursor)));
+    }
+
+    node.replaceWith(fragment);
+  }
+
+  function linkify(root = document) {
+    if (!root) return;
+
+    const walker = document.createTreeWalker(
+      root,
+      NodeFilter.SHOW_TEXT
+    );
+
+    const nodes = [];
+    let node;
+
+    while ((node = walker.nextNode())) {
+      nodes.push(node);
+    }
+
+    nodes.forEach(linkifyTextNode);
   }
 
   function getCardForUrl(container, url) {
@@ -180,7 +291,7 @@ import { supabase } from "./supabase.js";
       `Preview: ${data.title || data.domain || "Open website"}`
     );
 
-    if (data.image) {
+    if (data.image && safeUrl(data.image)) {
       const image = document.createElement("img");
 
       image.className = "grove-link-preview-image";
@@ -208,17 +319,14 @@ import { supabase } from "./supabase.js";
 
     const title = document.createElement("span");
     title.className = "grove-link-preview-title";
-    title.textContent =
-      data.title || data.domain || "Open website";
+    title.textContent = data.title || data.domain || "Open website";
 
     content.append(domain, title);
 
     if (data.description) {
       const description = document.createElement("span");
-
       description.className = "grove-link-preview-description";
       description.textContent = data.description;
-
       content.append(description);
     }
 
@@ -235,9 +343,7 @@ import { supabase } from "./supabase.js";
     try {
       const { data, error } = await supabase.functions.invoke(
         "get-link-preview",
-        {
-          body: { url }
-        }
+        { body: { url } }
       );
 
       if (error || !data || data.error) {
@@ -247,22 +353,19 @@ import { supabase } from "./supabase.js";
 
       cache.set(url, data);
       return data;
-
     } catch (error) {
       console.warn("Grove link preview unavailable:", error);
       cache.set(url, null);
       return null;
-
     } finally {
       pending.delete(url);
     }
   }
 
-  function getTextInsertionPoint(anchor) {
-    return (
-      anchor.closest("p, .message-body, .post-body, .post-content") ||
-      anchor
-    );
+  function insertionPoint(anchor) {
+    return anchor.closest(
+      "p,.message-body,.post-body,.profile-post-body,.feed-post-body,.comment-body"
+    ) || anchor;
   }
 
   async function processAnchor(anchor) {
@@ -270,10 +373,13 @@ import { supabase } from "./supabase.js";
       !anchor ||
       !anchor.isConnected ||
       anchor.dataset.grovePreview === "done" ||
-      !isPreviewArea(anchor)
+      anchor.closest(".grove-link-preview")
     ) {
       return;
     }
+
+    const root = contentRoot(anchor);
+    if (!root) return;
 
     const url = safeUrl(anchor.href);
     if (!url) return;
@@ -281,24 +387,21 @@ import { supabase } from "./supabase.js";
     anchor.dataset.grovePreview = "done";
 
     const data = await fetchPreview(url.href);
-
     if (!data || !anchor.isConnected) return;
 
-    const container = anchor.closest(CONTENT_SELECTORS);
-    if (!container) return;
-
-    if (getCardForUrl(container, url.href)) return;
+    const currentRoot = contentRoot(anchor);
+    if (!currentRoot || getCardForUrl(currentRoot, url.href)) return;
 
     const preview = createCard(data, url.href);
     preview.dataset.grovePreviewUrl = url.href;
 
-    const insertionPoint = getTextInsertionPoint(anchor);
-
-    insertionPoint.insertAdjacentElement("afterend", preview);
+    insertionPoint(anchor).insertAdjacentElement("afterend", preview);
   }
 
   function scan(root = document) {
     if (!root) return;
+
+    linkify(root);
 
     if (
       root.nodeType === Node.ELEMENT_NODE &&
@@ -309,9 +412,7 @@ import { supabase } from "./supabase.js";
 
     if (!root.querySelectorAll) return;
 
-    root.querySelectorAll("a[href]").forEach(anchor => {
-      processAnchor(anchor);
-    });
+    root.querySelectorAll("a[href]").forEach(processAnchor);
   }
 
   function installObserver() {
@@ -320,9 +421,12 @@ import { supabase } from "./supabase.js";
     const observer = new MutationObserver(records => {
       for (const record of records) {
         for (const node of record.addedNodes) {
-          if (node.nodeType !== Node.ELEMENT_NODE) continue;
-
-          scan(node);
+          if (
+            node.nodeType === Node.ELEMENT_NODE ||
+            node.nodeType === Node.TEXT_NODE
+          ) {
+            scan(node);
+          }
         }
       }
     });
