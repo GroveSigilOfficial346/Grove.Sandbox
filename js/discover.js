@@ -53,7 +53,9 @@ function renderAvatar(member) {
 
     image.addEventListener("error", () => {
       avatar.replaceChildren(
-        document.createTextNode(memberName(member).charAt(0).toUpperCase())
+        document.createTextNode(
+          memberName(member).charAt(0).toUpperCase()
+        )
       );
     }, { once: true });
 
@@ -137,7 +139,12 @@ function renderMember(member, relationshipState) {
   const card = createElement("article", "member-card");
   const info = createElement("div", "member-info");
 
-  const name = createElement("span", "member-name", memberName(member));
+  const name = createElement(
+    "span",
+    "member-name",
+    memberName(member)
+  );
+
   const username = createElement(
     "span",
     "member-username",
@@ -159,8 +166,8 @@ function renderMember(member, relationshipState) {
     "member-profile-link",
     "View profile"
   );
-  profileLink.href = profileUrl(member.id);
 
+  profileLink.href = profileUrl(member.id);
   actions.append(profileLink);
 
   if (currentUser && member.id !== currentUser.id) {
@@ -170,6 +177,41 @@ function renderMember(member, relationshipState) {
   card.append(renderAvatar(member), info, actions);
 
   return card;
+}
+
+function relationshipErrorMessage(error) {
+  const message = String(error?.message || "");
+  const code = String(error?.code || "");
+
+  if (code === "23505") {
+    return "A follow request or relationship already exists. Refresh the member list.";
+  }
+
+  if (message.includes("notifications_kind_check")) {
+    return "The database rejected a notification type. The current Grove.Sandbox schema accepts follow_request; check the deployed database trigger and report this exact error.";
+  }
+
+  if (message.includes("You already follow this account")) {
+    return "You already follow this member. Refresh the list.";
+  }
+
+  if (message.includes("Follow requests are only for private accounts")) {
+    return "This account is no longer private. Refresh the member list and try following again.";
+  }
+
+  if (message.includes("You cannot follow yourself")) {
+    return "You cannot follow your own account.";
+  }
+
+  if (code === "42501") {
+    return "Grove could not authorize that follow action. Check your account status and database permissions.";
+  }
+
+  if (message.includes("row-level security")) {
+    return "Your account is not permitted to complete that action.";
+  }
+
+  return message || "Could not update this follow status. Please try again.";
 }
 
 async function updateRelationship(member, button, currentState) {
@@ -239,19 +281,7 @@ async function updateRelationship(member, button, currentState) {
   } catch (error) {
     console.error("Member follow action failed:", error);
 
-    const message = String(error?.message || "");
-
-    if (
-      message.includes("notifications_kind_check") ||
-      message.includes("follow_request")
-    ) {
-      setStatus(
-        "The follow request was blocked by the notification database constraint. Apply the notification SQL fix supplied with this update, then try again.",
-        true
-      );
-    } else {
-      setStatus(message || "Could not update this follow status.", true);
-    }
+    setStatus(relationshipErrorMessage(error), true);
 
     button.disabled = false;
     button.textContent =
@@ -302,8 +332,11 @@ async function searchDirectory(term) {
       const aUsername = (a.username || "").toLowerCase();
       const bUsername = (b.username || "").toLowerCase();
 
-      const aStarts = aName.startsWith(lower) || aUsername.startsWith(lower);
-      const bStarts = bName.startsWith(lower) || bUsername.startsWith(lower);
+      const aStarts =
+        aName.startsWith(lower) || aUsername.startsWith(lower);
+
+      const bStarts =
+        bName.startsWith(lower) || bUsername.startsWith(lower);
 
       return Number(bStarts) - Number(aStarts);
     })
@@ -355,6 +388,7 @@ async function performSearch(rawTerm) {
     if (sequence !== searchSequence) return;
 
     console.error("Member search failed:", error);
+
     setStatus(
       error.message || "Could not search members. Try again.",
       true
