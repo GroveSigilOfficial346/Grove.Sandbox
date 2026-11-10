@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#050019">
+  <title>Grove Live</title>
+
+  <link rel="icon" type="image/svg+xml" href="/assets/neural-tree.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="/css/live.css?v=20261110-1">
+  <script type="module" src="/js/live.js?v=20261110-1"></script>
+</head>
+
+<body>
+<main class="live-app">
+
+  <header class="live-header">
+    <a class="brand" href="/">GROVE</a>
+
+    <nav aria-label="Grove navigation">
+      <a href="/community.html">Community</a>
+      <a href="/news-feed.html">Following</a>
+      <a href="/messages.html">Messages</a>
+      <a href="/profile.html">Profile</a>
+    </nav>
+  </header>
+
+  <section class="live-intro">
+    <div>
+      <span class="eyebrow">GROVE NETWORK / REAL TIME</span>
+      <h1>Grove <span>Live</span></h1>
+      <p>Go live, join a conversation, and connect face to face.</p>
+    </div>
+
+    <span class="live-pill"><i></i> LIVE NETWORK</span>
+  </section>
+
+  <p id="live-status" class="status" role="status" aria-live="polite"></p>
+
+  <section class="host-card">
+    <div>
+      <span class="eyebrow">YOUR BROADCAST</span>
+      <h2>Start a live session</h2>
+      <p>Start with your camera and microphone. Members can join as viewers.</p>
+    </div>
+
+    <form id="start-live-form">
+      <label for="live-title">Broadcast title</label>
+      <input
+        id="live-title"
+        maxlength="120"
+        placeholder="What are you sharing?"
+        required
+      >
+      <button class="primary" type="submit" id="start-live-button">
+        Start broadcasting
+      </button>
+    </form>
+  </section>
+
+  <section id="active-session" class="session" hidden>
+    <div class="session-heading">
+      <div>
+        <span class="eyebrow">ON AIR</span>
+        <h2 id="session-title">Live session</h2>
+      </div>
+
+      <button id="end-live-button" class="danger" type="button" hidden>
+        End broadcast
+      </button>
+    </div>
+
+    <div class="session-grid">
+      <div class="stage-wrap">
+        <div id="video-stage" class="video-stage">
+          <div class="stage-placeholder">
+            <span>◉</span>
+            <p>Waiting for video…</p>
+          </div>
+        </div>
+
+        <div class="media-controls">
+          <button id="camera-button" type="button" disabled>
+            Camera on
+          </button>
+
+          <button id="mic-button" type="button" disabled>
+            Mic on
+          </button>
+
+          <span id="viewer-label">Connecting…</span>
+        </div>
+      </div>
+
+      <aside class="chat-panel">
+        <h3>Live chat</h3>
+
+        <div id="live-chat-list" class="chat-list" aria-live="polite"></div>
+
+        <form id="live-chat-form" class="chat-form">
+          <input
+            id="live-chat-input"
+            maxlength="1000"
+            placeholder="Say something…"
+            autocomplete="off"
+            required
+          >
+          <button type="submit">Send</button>
+        </form>
+      </aside>
+    </div>
+  </section>
+
+  <section class="discover-section">
+    <div class="section-heading">
+      <div>
+        <span class="eyebrow">HAPPENING NOW</span>
+        <h2>Live broadcasts</h2>
+      </div>
+
+      <button id="refresh-live" class="quiet" type="button">
+        Refresh
+      </button>
+    </div>
+
+    <div id="live-list" class="live-list">
+      <p class="muted">Loading broadcasts…</p>
+    </div>
+  </section>
+
+  <footer>
+    Grove Live · Be respectful. Hosts control their broadcasts.
+  </footer>
+
+</main>
+</body>
+</html>
