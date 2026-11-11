@@ -8,6 +8,7 @@ import { supabase } from "./supabase.js";
   const BUCKET = "post-media-private";
   const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
   const MAX_AUDIO_SIZE = 20 * 1024 * 1024;
+  const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
   const MAX_IMAGES = 10;
   const MAX_BODY_LENGTH = 5000;
 
@@ -18,22 +19,26 @@ import { supabase } from "./supabase.js";
     "image/gif": "gif"
   };
 
-  const AUDIO_EXTENSIONS = new Set([
-    "mp3", "m4a", "wav", "ogg", "webm", "aac"
-  ]);
+  const AUDIO_TYPES = {
+    "audio/mpeg": "mp3",
+    "audio/mp4": "m4a",
+    "audio/x-m4a": "m4a",
+    "audio/wav": "wav",
+    "audio/x-wav": "wav",
+    "audio/ogg": "ogg",
+    "audio/webm": "webm",
+    "audio/aac": "aac"
+  };
 
-  const AUDIO_MIME_BY_EXTENSION = {
-    mp3: "audio/mpeg",
-    m4a: "audio/mp4",
-    wav: "audio/wav",
-    ogg: "audio/ogg",
-    webm: "audio/webm",
-    aac: "audio/aac"
+  const VIDEO_TYPES = {
+    "video/mp4": "mp4",
+    "video/webm": "webm"
   };
 
   let currentUser = null;
   let selectedImages = [];
   let selectedAudio = null;
+  let selectedVideo = null;
 
   function setStatus(message, error = false) {
     const node = $("#profile-post-status");
@@ -51,28 +56,46 @@ import { supabase } from "./supabase.js";
     node.classList.toggle("error", error);
   }
 
+  function setVideoStatus(message, error = false) {
+    const node = $("#profile-post-video-status");
+    if (!node) return;
+
+    node.textContent = message || "";
+    node.classList.toggle("error", error);
+  }
+
   function imageExtension(file) {
     return IMAGE_TYPES[file.type] || null;
   }
 
   function audioExtension(file) {
-    const mime = (file.type || "").toLowerCase();
+    const mime = String(file.type || "").toLowerCase();
 
-    const mimeMap = {
-      "audio/mpeg": "mp3",
-      "audio/mp4": "m4a",
-      "audio/x-m4a": "m4a",
-      "audio/wav": "wav",
-      "audio/x-wav": "wav",
-      "audio/ogg": "ogg",
-      "audio/webm": "webm",
-      "audio/aac": "aac"
-    };
+    if (AUDIO_TYPES[mime]) return AUDIO_TYPES[mime];
 
-    if (mimeMap[mime]) return mimeMap[mime];
+    const extension = String(file.name || "")
+      .toLowerCase()
+      .split(".")
+      .pop();
 
-    const extension = file.name.split(".").pop().toLowerCase();
-    return AUDIO_EXTENSIONS.has(extension) ? extension : null;
+    return Object.values(AUDIO_TYPES).includes(extension)
+      ? extension
+      : null;
+  }
+
+  function videoExtension(file) {
+    const mime = String(file.type || "").toLowerCase();
+
+    if (VIDEO_TYPES[mime]) return VIDEO_TYPES[mime];
+
+    const extension = String(file.name || "")
+      .toLowerCase()
+      .split(".")
+      .pop();
+
+    return ["mp4", "webm"].includes(extension)
+      ? extension
+      : null;
   }
 
   function revokePreviews() {
@@ -127,7 +150,9 @@ import { supabase } from "./supabase.js";
       }
 
       if (file.size <= 0 || file.size > MAX_IMAGE_SIZE) {
-        throw new Error(file.name + " must be larger than 0 bytes and 5 MB or smaller.");
+        throw new Error(
+          `${file.name} must be larger than 0 bytes and 5 MB or smaller.`
+        );
       }
     }
   }
@@ -147,7 +172,33 @@ import { supabase } from "./supabase.js";
 
     return {
       extension,
-      contentType: AUDIO_MIME_BY_EXTENSION[extension]
+      contentType: AUDIO_TYPES[file.type] || ({
+        mp3: "audio/mpeg",
+        m4a: "audio/mp4",
+        wav: "audio/wav",
+        ogg: "audio/ogg",
+        webm: "audio/webm",
+        aac: "audio/aac"
+      })[extension]
+    };
+  }
+
+  function validateVideo(file) {
+    if (!file) return null;
+
+    const extension = videoExtension(file);
+
+    if (!extension) {
+      throw new Error("Use MP4 or WebM video files.");
+    }
+
+    if (file.size <= 0 || file.size > MAX_VIDEO_SIZE) {
+      throw new Error("Video must be larger than 0 bytes and 50 MB or smaller.");
+    }
+
+    return {
+      extension,
+      contentType: VIDEO_TYPES[file.type] || `video/${extension}`
     };
   }
 
@@ -182,16 +233,12 @@ import { supabase } from "./supabase.js";
     return true;
   }
 
-  async function uploadSelectedFiles(postId) {
-    const paths = [];
-
-    const files = [
-      ...selectedImages.map(file => ({
-        file,
-        extension: imageExtension(file),
-        contentType: file.type
-      }))
-    ];
+  async function uploadSelectedFiles(postId, uploadedPaths) {
+    const files = selectedImages.map(file => ({
+      file,
+      extension: imageExtension(file),
+      contentType: file.type
+    }));
 
     if (selectedAudio) {
       const audio = validateAudio(selectedAudio);
@@ -203,9 +250,19 @@ import { supabase } from "./supabase.js";
       });
     }
 
+    if (selectedVideo) {
+      const video = validateVideo(selectedVideo);
+
+      files.push({
+        file: selectedVideo,
+        extension: video.extension,
+        contentType: video.contentType
+      });
+    }
+
     for (const item of files) {
       const filename = crypto.randomUUID() + "." + item.extension;
-      const path = currentUser.id + "/" + postId + "/" + filename;
+      const path = `${currentUser.id}/${postId}/${filename}`;
 
       const { error } = await supabase.storage
         .from(BUCKET)
@@ -217,10 +274,10 @@ import { supabase } from "./supabase.js";
 
       if (error) throw error;
 
-      paths.push(path);
+      uploadedPaths.push(path);
     }
 
-    return paths;
+    return uploadedPaths;
   }
 
   async function publishPost(event) {
@@ -230,7 +287,12 @@ import { supabase } from "./supabase.js";
     const visibility = $("#profile-post-visibility").value;
     const submit = $("#profile-post-submit");
 
-    if (!body && !selectedImages.length && !selectedAudio) {
+    if (
+      !body &&
+      !selectedImages.length &&
+      !selectedAudio &&
+      !selectedVideo
+    ) {
       setStatus("Write something or choose an attachment first.", true);
       return;
     }
@@ -248,6 +310,7 @@ import { supabase } from "./supabase.js";
     try {
       validateImages(selectedImages);
       validateAudio(selectedAudio);
+      validateVideo(selectedVideo);
     } catch (error) {
       setStatus(error.message, true);
       return;
@@ -257,10 +320,10 @@ import { supabase } from "./supabase.js";
     setStatus("Preparing your post...");
 
     const postId = crypto.randomUUID();
-    let uploadedPaths = [];
+    const uploadedPaths = [];
 
     try {
-      uploadedPaths = await uploadSelectedFiles(postId);
+      await uploadSelectedFiles(postId, uploadedPaths);
 
       setStatus("Publishing...");
 
@@ -287,16 +350,18 @@ import { supabase } from "./supabase.js";
 
       selectedImages = [];
       selectedAudio = null;
+      selectedVideo = null;
 
       $("#profile-post-images").value = "";
       $("#profile-post-audio").value = "";
+      $("#profile-post-video").value = "";
 
       renderPreviews();
       updateCounter();
       setAudioStatus("");
+      setVideoStatus("");
 
       setStatus("Post published successfully.");
-
       window.location.reload();
 
     } catch (error) {
@@ -336,9 +401,17 @@ import { supabase } from "./supabase.js";
     const form = $("#profile-post-form");
     const imageInput = $("#profile-post-images");
     const audioInput = $("#profile-post-audio");
+    const videoInput = $("#profile-post-video");
     const body = $("#profile-post-body");
 
-    if (!composer || !form || !imageInput || !audioInput || !body) {
+    if (
+      !composer ||
+      !form ||
+      !imageInput ||
+      !audioInput ||
+      !videoInput ||
+      !body
+    ) {
       return;
     }
 
@@ -379,7 +452,9 @@ import { supabase } from "./supabase.js";
             validateAudio(selectedAudio);
 
             setAudioStatus(
-              selectedAudio ? "Audio selected: " + selectedAudio.name : ""
+              selectedAudio
+                ? "Audio selected: " + selectedAudio.name
+                : ""
             );
 
             setStatus("");
@@ -388,6 +463,28 @@ import { supabase } from "./supabase.js";
             selectedAudio = null;
             audioInput.value = "";
             setAudioStatus(error.message, true);
+          }
+        });
+
+        videoInput.addEventListener("change", () => {
+          const file = videoInput.files?.[0] || null;
+
+          try {
+            selectedVideo = file;
+            validateVideo(selectedVideo);
+
+            setVideoStatus(
+              selectedVideo
+                ? "Video selected: " + selectedVideo.name
+                : ""
+            );
+
+            setStatus("");
+
+          } catch (error) {
+            selectedVideo = null;
+            videoInput.value = "";
+            setVideoStatus(error.message, true);
           }
         });
 
@@ -403,5 +500,6 @@ import { supabase } from "./supabase.js";
       });
   }
 
+  window.addEventListener("beforeunload", revokePreviews);
   install();
 })();
