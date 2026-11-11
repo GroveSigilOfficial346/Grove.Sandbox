@@ -3,11 +3,12 @@ import { supabase } from "./supabase.js";
 (() => {
   "use strict";
 
-  const $ = (selector) => document.querySelector(selector);
+  const $ = selector => document.querySelector(selector);
 
   const BUCKET = "post-media-private";
-  const MAX_FILE_SIZE = 5 * 1024 * 1024;
-  const MAX_FILES = 10;
+  const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
+  const MAX_AUDIO_SIZE = 20 * 1024 * 1024;
+  const MAX_IMAGES = 10;
   const MAX_BODY_LENGTH = 5000;
 
   const IMAGE_TYPES = {
@@ -17,8 +18,22 @@ import { supabase } from "./supabase.js";
     "image/gif": "gif"
   };
 
+  const AUDIO_EXTENSIONS = new Set([
+    "mp3", "m4a", "wav", "ogg", "webm", "aac"
+  ]);
+
+  const AUDIO_MIME_BY_EXTENSION = {
+    mp3: "audio/mpeg",
+    m4a: "audio/mp4",
+    wav: "audio/wav",
+    ogg: "audio/ogg",
+    webm: "audio/webm",
+    aac: "audio/aac"
+  };
+
   let currentUser = null;
-  let selectedFiles = [];
+  let selectedImages = [];
+  let selectedAudio = null;
 
   function setStatus(message, error = false) {
     const node = $("#profile-post-status");
@@ -28,8 +43,36 @@ import { supabase } from "./supabase.js";
     node.classList.toggle("error", error);
   }
 
-  function getExtension(file) {
+  function setAudioStatus(message, error = false) {
+    const node = $("#profile-post-audio-status");
+    if (!node) return;
+
+    node.textContent = message || "";
+    node.classList.toggle("error", error);
+  }
+
+  function imageExtension(file) {
     return IMAGE_TYPES[file.type] || null;
+  }
+
+  function audioExtension(file) {
+    const mime = (file.type || "").toLowerCase();
+
+    const mimeMap = {
+      "audio/mpeg": "mp3",
+      "audio/mp4": "m4a",
+      "audio/x-m4a": "m4a",
+      "audio/wav": "wav",
+      "audio/x-wav": "wav",
+      "audio/ogg": "ogg",
+      "audio/webm": "webm",
+      "audio/aac": "aac"
+    };
+
+    if (mimeMap[mime]) return mimeMap[mime];
+
+    const extension = file.name.split(".").pop().toLowerCase();
+    return AUDIO_EXTENSIONS.has(extension) ? extension : null;
   }
 
   function revokePreviews() {
@@ -47,7 +90,7 @@ import { supabase } from "./supabase.js";
     revokePreviews();
     container.replaceChildren();
 
-    selectedFiles.forEach((file, index) => {
+    selectedImages.forEach((file, index) => {
       const item = document.createElement("div");
       item.className = "profile-post-preview-item";
 
@@ -64,7 +107,7 @@ import { supabase } from "./supabase.js";
       remove.setAttribute("aria-label", "Remove selected image");
 
       remove.addEventListener("click", () => {
-        selectedFiles.splice(index, 1);
+        selectedImages.splice(index, 1);
         renderPreviews();
       });
 
@@ -73,28 +116,39 @@ import { supabase } from "./supabase.js";
     });
   }
 
-  function validateFiles(files) {
-    if (files.length > MAX_FILES) {
+  function validateImages(files) {
+    if (files.length > MAX_IMAGES) {
       throw new Error("You can upload up to 10 images per post.");
     }
 
     for (const file of files) {
-      if (!getExtension(file)) {
-        throw new Error(
-          "Unsupported image type. Use JPG, PNG, WebP, or GIF."
-        );
+      if (!imageExtension(file)) {
+        throw new Error("Use JPG, PNG, WebP, or GIF images.");
       }
 
-      if (file.size > MAX_FILE_SIZE) {
-        throw new Error(
-          file.name + " is larger than the 5 MB limit."
-        );
-      }
-
-      if (file.size === 0) {
-        throw new Error(file.name + " is empty.");
+      if (file.size <= 0 || file.size > MAX_IMAGE_SIZE) {
+        throw new Error(file.name + " must be larger than 0 bytes and 5 MB or smaller.");
       }
     }
+  }
+
+  function validateAudio(file) {
+    if (!file) return null;
+
+    const extension = audioExtension(file);
+
+    if (!extension) {
+      throw new Error("Use MP3, M4A, WAV, OGG, WebM, or AAC audio.");
+    }
+
+    if (file.size <= 0 || file.size > MAX_AUDIO_SIZE) {
+      throw new Error("Audio must be larger than 0 bytes and 20 MB or smaller.");
+    }
+
+    return {
+      extension,
+      contentType: AUDIO_MIME_BY_EXTENSION[extension]
+    };
   }
 
   async function resolveOwnProfile() {
@@ -104,7 +158,6 @@ import { supabase } from "./supabase.js";
     if (authError) throw authError;
 
     currentUser = auth.user || null;
-
     if (!currentUser) return false;
 
     const params = new URLSearchParams(window.location.search);
@@ -123,28 +176,41 @@ import { supabase } from "./supabase.js";
         .maybeSingle();
 
       if (error) throw error;
-
       if (data?.id !== currentUser.id) return false;
     }
 
     return true;
   }
 
-  async function uploadImages(postId) {
+  async function uploadSelectedFiles(postId) {
     const paths = [];
 
-    for (const file of selectedFiles) {
-      const extension = getExtension(file);
-      const filename =
-        crypto.randomUUID() + "." + extension;
+    const files = [
+      ...selectedImages.map(file => ({
+        file,
+        extension: imageExtension(file),
+        contentType: file.type
+      }))
+    ];
 
-      const path =
-        currentUser.id + "/" + postId + "/" + filename;
+    if (selectedAudio) {
+      const audio = validateAudio(selectedAudio);
+
+      files.push({
+        file: selectedAudio,
+        extension: audio.extension,
+        contentType: audio.contentType
+      });
+    }
+
+    for (const item of files) {
+      const filename = crypto.randomUUID() + "." + item.extension;
+      const path = currentUser.id + "/" + postId + "/" + filename;
 
       const { error } = await supabase.storage
         .from(BUCKET)
-        .upload(path, file, {
-          contentType: file.type,
+        .upload(path, item.file, {
+          contentType: item.contentType,
           cacheControl: "3600",
           upsert: false
         });
@@ -164,8 +230,8 @@ import { supabase } from "./supabase.js";
     const visibility = $("#profile-post-visibility").value;
     const submit = $("#profile-post-submit");
 
-    if (!body && !selectedFiles.length) {
-      setStatus("Write something or choose an image first.", true);
+    if (!body && !selectedImages.length && !selectedAudio) {
+      setStatus("Write something or choose an attachment first.", true);
       return;
     }
 
@@ -179,6 +245,14 @@ import { supabase } from "./supabase.js";
       return;
     }
 
+    try {
+      validateImages(selectedImages);
+      validateAudio(selectedAudio);
+    } catch (error) {
+      setStatus(error.message, true);
+      return;
+    }
+
     submit.disabled = true;
     setStatus("Preparing your post...");
 
@@ -186,7 +260,7 @@ import { supabase } from "./supabase.js";
     let uploadedPaths = [];
 
     try {
-      uploadedPaths = await uploadImages(postId);
+      uploadedPaths = await uploadSelectedFiles(postId);
 
       setStatus("Publishing...");
 
@@ -211,9 +285,15 @@ import { supabase } from "./supabase.js";
       $("#profile-post-body").value = "";
       $("#profile-post-visibility").value = "public";
 
-      selectedFiles = [];
+      selectedImages = [];
+      selectedAudio = null;
+
+      $("#profile-post-images").value = "";
+      $("#profile-post-audio").value = "";
+
       renderPreviews();
       updateCounter();
+      setAudioStatus("");
 
       setStatus("Post published successfully.");
 
@@ -228,7 +308,7 @@ import { supabase } from "./supabase.js";
           .remove(uploadedPaths);
 
         if (cleanupError) {
-          console.warn("Temporary image cleanup failed:", cleanupError);
+          console.warn("Temporary upload cleanup failed:", cleanupError);
         }
       }
 
@@ -254,10 +334,13 @@ import { supabase } from "./supabase.js";
   function install() {
     const composer = $("#profile-post-composer");
     const form = $("#profile-post-form");
-    const fileInput = $("#profile-post-images");
+    const imageInput = $("#profile-post-images");
+    const audioInput = $("#profile-post-audio");
     const body = $("#profile-post-body");
 
-    if (!composer || !form || !fileInput || !body) return;
+    if (!composer || !form || !imageInput || !audioInput || !body) {
+      return;
+    }
 
     composer.hidden = true;
 
@@ -268,17 +351,16 @@ import { supabase } from "./supabase.js";
         composer.hidden = false;
 
         form.addEventListener("submit", publishPost);
-
         body.addEventListener("input", updateCounter);
 
-        fileInput.addEventListener("change", () => {
+        imageInput.addEventListener("change", () => {
           try {
-            const incoming = Array.from(fileInput.files || []);
-            const combined = [...selectedFiles, ...incoming];
+            const incoming = Array.from(imageInput.files || []);
+            const combined = [...selectedImages, ...incoming];
 
-            validateFiles(combined);
+            validateImages(combined);
 
-            selectedFiles = combined;
+            selectedImages = combined;
             renderPreviews();
             setStatus("");
 
@@ -286,13 +368,34 @@ import { supabase } from "./supabase.js";
             setStatus(error.message, true);
           }
 
-          fileInput.value = "";
+          imageInput.value = "";
+        });
+
+        audioInput.addEventListener("change", () => {
+          const file = audioInput.files?.[0] || null;
+
+          try {
+            selectedAudio = file;
+            validateAudio(selectedAudio);
+
+            setAudioStatus(
+              selectedAudio ? "Audio selected: " + selectedAudio.name : ""
+            );
+
+            setStatus("");
+
+          } catch (error) {
+            selectedAudio = null;
+            audioInput.value = "";
+            setAudioStatus(error.message, true);
+          }
         });
 
         updateCounter();
       })
       .catch(error => {
         console.error("Profile composer initialization failed:", error);
+
         setStatus(
           error.message || "The post composer could not load.",
           true
