@@ -6,7 +6,7 @@ import { supabase } from "./supabase.js";
   const details = document.querySelector("#details");
   if (!details) return;
 
-  const STATUS_LABELS = {
+  const LABELS = {
     not_set: "",
     single: "Single",
     in_relationship: "In a relationship",
@@ -16,8 +16,15 @@ import { supabase } from "./supabase.js";
     complicated: "It's complicated",
     separated: "Separated",
     divorced: "Divorced",
-    widowed: "Widowed"
+    widowed: "Widowed",
+    prefer_not_to_say: "Prefer not to say"
   };
+
+  const HIDE_DATE = new Set([
+    "not_set",
+    "single",
+    "prefer_not_to_say"
+  ]);
 
   function formatDate(value) {
     if (!value || typeof value !== "string") return "";
@@ -31,11 +38,12 @@ import { supabase } from "./supabase.js";
     const date = new Date(year, month - 1, day);
 
     if (
-      Number.isNaN(date.getTime()) ||
       date.getFullYear() !== year ||
       date.getMonth() !== month - 1 ||
       date.getDate() !== day
-    ) return "";
+    ) {
+      return "";
+    }
 
     return date.toLocaleDateString(undefined, {
       year: "numeric",
@@ -46,46 +54,42 @@ import { supabase } from "./supabase.js";
 
   function renderRelationship(statusValue, dateValue) {
     const status = String(statusValue || "not_set").toLowerCase();
-    const label = STATUS_LABELS[status] || "";
-
+    const label = LABELS[status] || "";
     const desired = [];
 
     if (label) {
       desired.push("Relationship: " + label);
 
-      if (status !== "single" && status !== "not_set") {
+      if (!HIDE_DATE.has(status)) {
         const date = formatDate(dateValue);
         if (date) desired.push("Since: " + date);
       }
     }
 
-    const currentRows = [
-      ...details.querySelectorAll(".profile-detail")
-    ].filter(item => {
-      const value = (item.textContent || "").trim();
+    const rows = [...details.children].filter(node => {
+      const value = (node.textContent || "").trim();
 
       return (
-        item.dataset.groveRelationshipRow === "true" ||
+        node.dataset.groveRelationshipRow === "true" ||
         /^relationship\s*:/i.test(value) ||
         /^since\s*:/i.test(value)
       );
     });
 
-    const currentText = currentRows.map(item =>
-      (item.textContent || "").trim()
+    const current = rows.map(node =>
+      (node.textContent || "").trim()
     );
 
-    if (
-      currentText.length === desired.length &&
-      currentText.every((value, index) => value === desired[index]) &&
-      currentRows.every(item =>
-        item.dataset.groveRelationshipRow === "true"
-      )
-    ) {
-      return;
-    }
+    const alreadyCorrect =
+      current.length === desired.length &&
+      current.every((value, index) => value === desired[index]) &&
+      rows.every(node =>
+        node.dataset.groveRelationshipRow === "true"
+      );
 
-    currentRows.forEach(item => item.remove());
+    if (alreadyCorrect) return;
+
+    rows.forEach(node => node.remove());
 
     for (const value of desired) {
       const row = document.createElement("span");
@@ -104,7 +108,6 @@ import { supabase } from "./supabase.js";
 
     const currentUser = auth.user || null;
     const params = new URLSearchParams(window.location.search);
-
     const requestedId = params.get("id");
     const requestedUsername = params.get("username");
 
@@ -168,9 +171,7 @@ import { supabase } from "./supabase.js";
 
     update();
 
-    const observer = new MutationObserver(update);
-
-    observer.observe(details, {
+    new MutationObserver(update).observe(details, {
       childList: true,
       subtree: false
     });
