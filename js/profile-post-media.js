@@ -4,11 +4,7 @@
   if (window.__groveProfilePostMediaInstalled) return;
   window.__groveProfilePostMediaInstalled = true;
 
-  const AUDIO_EXTENSIONS = new Set([
-    "mp3", "m4a", "wav", "ogg", "webm", "aac"
-  ]);
-
-  const MIME_TYPES = {
+  const AUDIO_TYPES = {
     mp3: "audio/mpeg",
     m4a: "audio/mp4",
     wav: "audio/wav",
@@ -17,17 +13,33 @@
     aac: "audio/aac"
   };
 
-  function getAudioType(url) {
+  const VIDEO_TYPES = {
+    mp4: "video/mp4",
+    webm: "video/webm"
+  };
+
+  function mediaInfo(url) {
     try {
       const parsed = new URL(url, window.location.href);
       const extension = parsed.pathname.split(".").pop().toLowerCase();
 
-      if (!AUDIO_EXTENSIONS.has(extension)) return null;
+      if (AUDIO_TYPES[extension]) {
+        return {
+          kind: "audio",
+          mime: AUDIO_TYPES[extension],
+          url: parsed.href
+        };
+      }
 
-      return {
-        url: parsed.href,
-        mime: MIME_TYPES[extension]
-      };
+      if (VIDEO_TYPES[extension]) {
+        return {
+          kind: "video",
+          mime: VIDEO_TYPES[extension],
+          url: parsed.href
+        };
+      }
+
+      return null;
     } catch {
       return null;
     }
@@ -45,13 +57,9 @@
       links.push(root);
     }
 
-    if (root.querySelectorAll) {
-      links.push(
-        ...root.querySelectorAll(
-          ".profile-post-gallery a.profile-post-media-link"
-        )
-      );
-    }
+    root.querySelectorAll?.(
+      ".profile-post-gallery a.profile-post-media-link"
+    ).forEach(link => links.push(link));
 
     for (const link of links) {
       if (
@@ -61,21 +69,31 @@
         continue;
       }
 
-      const media = getAudioType(link.href);
+      const media = mediaInfo(link.href);
       if (!media) continue;
 
-      const player = document.createElement("audio");
-      player.className = "profile-post-audio";
-      player.controls = true;
-      player.preload = "none";
-      player.setAttribute("aria-label", "Audio post");
+      let player;
+
+      if (media.kind === "audio") {
+        player = document.createElement("audio");
+        player.className = "profile-post-audio";
+        player.controls = true;
+        player.preload = "metadata";
+        player.setAttribute("aria-label", "Audio post");
+      } else {
+        player = document.createElement("video");
+        player.className = "profile-post-video";
+        player.controls = true;
+        player.playsInline = true;
+        player.preload = "metadata";
+        player.setAttribute("aria-label", "Video post");
+      }
 
       const source = document.createElement("source");
       source.src = media.url;
       source.type = media.mime;
 
       player.append(source);
-
       link.dataset.groveProfileMediaReady = "true";
       link.replaceWith(player);
     }
