@@ -1,26 +1,39 @@
 .audio-attach-button {
-  display: grid;
-  flex: 0 0 48px;
-  width: 48px;
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-width: 92px;
   min-height: 48px;
-  place-items: center;
+  padding: 0 13px;
   border: 1px solid rgba(233, 163, 75, .38);
   border-radius: 12px;
   background: rgba(233, 163, 75, .10);
   color: #f0bd78;
-  font-size: 1.25rem;
+  font: inherit;
+  font-size: .85rem;
+  font-weight: 700;
   cursor: pointer;
   transition: border-color .2s, background .2s, transform .2s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.audio-attach-button .attach-icon {
+  font-size: 1.15rem;
+  line-height: 1;
 }
 
 .audio-attach-button:hover:not(:disabled) {
-  border-color: rgba(233, 163, 75, .8);
-  background: rgba(233, 163, 75, .17);
+  border-color: rgba(240, 189, 120, .85);
+  background: rgba(233, 163, 75, .18);
+  transform: translateY(-1px);
 }
 
 .audio-attach-button:disabled {
   opacity: .4;
   cursor: not-allowed;
+  transform: none;
 }
 
 .audio-upload-status {
@@ -100,15 +113,17 @@
 }
 
 .message-file-download:hover {
-  border-color: rgba(233, 163, 75, .8);
+  border-color: rgba(240, 189, 120, .85);
   background: rgba(233, 163, 75, .15);
 }
 
 @media (max-width: 640px) {
   .audio-attach-button {
-    flex-basis: 42px;
-    width: 42px;
+    min-width: 76px;
     min-height: 44px;
+    padding: 0 9px;
+    gap: 6px;
+    font-size: .78rem;
   }
 
   .message-form {
