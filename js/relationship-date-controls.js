@@ -32,10 +32,17 @@ import { supabase } from "./supabase.js";
     prefer_not_to_say: "Prefer not to say"
   };
 
+  const HIDE_DATE = new Set([
+    "not_set",
+    "single",
+    "prefer_not_to_say"
+  ]);
+
   let userId = null;
   let savedValue = "";
   let initialized = false;
   let saving = false;
+  let currentStatus = "not_set";
 
   const wrapper = document.createElement("div");
   wrapper.className = "grove-date-fields";
@@ -49,25 +56,35 @@ import { supabase } from "./supabase.js";
 
   function showMessage(text, error = false) {
     message.textContent = text;
-    message.style.color = error ? "#ff8585" : "#05c9f4";
+    message.style.color = error ? "#ff8585" : "#c99a5a";
   }
 
-  function updateLabel(status) {
+  function updateVisibility(statusValue) {
+    currentStatus = String(statusValue || "not_set").toLowerCase();
+
+    const visible = !HIDE_DATE.has(currentStatus);
+
     if (label) {
-      label.textContent = status === "married"
+      label.textContent = currentStatus === "married"
         ? "Date married"
         : "Relationship start date";
+      label.hidden = !visible;
     }
+
+    wrapper.hidden = !visible;
+    saveButton.hidden = !visible;
+    message.hidden = !visible;
 
     if (statusDisplay) {
       statusDisplay.textContent =
-        "Current status: " + (labels[status] || "Not set");
+        "Current status: " + (labels[currentStatus] || "Not set");
     }
   }
 
   function focusNext(name) {
     const order = ["month", "day", "year"];
     const index = order.indexOf(name);
+
     if (index >= 0 && order[index + 1]) {
       inputs[order[index + 1]].focus();
       inputs[order[index + 1]].select();
@@ -75,7 +92,7 @@ import { supabase } from "./supabase.js";
   }
 
   function updateButton() {
-    if (!initialized || saving) return;
+    if (!initialized || saving || HIDE_DATE.has(currentStatus)) return;
 
     try {
       saveButton.disabled = readDate() === savedValue;
@@ -87,15 +104,14 @@ import { supabase } from "./supabase.js";
   function assignDate(value) {
     const digits = String(value || "").replace(/\D/g, "");
 
-    if (digits.length >= 8) {
-      inputs.month.value = digits.slice(0, 2);
-      inputs.day.value = digits.slice(2, 4);
-      inputs.year.value = digits.slice(4, 8);
-      updateButton();
-      return true;
-    }
+    if (digits.length < 8) return false;
 
-    return false;
+    inputs.month.value = digits.slice(4, 6);
+    inputs.day.value = digits.slice(6, 8);
+    inputs.year.value = digits.slice(0, 4);
+    updateButton();
+
+    return true;
   }
 
   definitions.forEach(([name, captionText, placeholder, max]) => {
@@ -117,12 +133,9 @@ import { supabase } from "./supabase.js";
 
     input.addEventListener("input", () => {
       input.value = input.value.replace(/\D/g, "").slice(0, max);
-
       updateButton();
 
-      if (input.value.length === max) {
-        focusNext(name);
-      }
+      if (input.value.length === max) focusNext(name);
     });
 
     input.addEventListener("paste", event => {
@@ -144,10 +157,7 @@ import { supabase } from "./supabase.js";
         return;
       }
 
-      if (
-        event.key === "Backspace" &&
-        input.value.length === 0
-      ) {
+      if (event.key === "Backspace" && input.value.length === 0) {
         const order = ["month", "day", "year"];
         const index = order.indexOf(name);
 
@@ -157,7 +167,10 @@ import { supabase } from "./supabase.js";
         }
       }
 
-      if (event.key === "ArrowRight" && input.selectionStart === input.value.length) {
+      if (
+        event.key === "ArrowRight" &&
+        input.selectionStart === input.value.length
+      ) {
         focusNext(name);
       }
 
@@ -209,15 +222,12 @@ import { supabase } from "./supabase.js";
       day.length !== 2 ||
       year.length !== 4
     ) {
-      throw new Error(
-        "Enter the month, day, and full four-digit year."
-      );
+      throw new Error("Enter the month, day, and full four-digit year.");
     }
 
     const m = Number(month);
     const d = Number(day);
     const y = Number(year);
-
     const date = new Date(y, m - 1, d);
 
     if (
@@ -241,7 +251,14 @@ import { supabase } from "./supabase.js";
   }
 
   async function saveDate() {
-    if (!userId || saving || !initialized) return;
+    if (
+      !userId ||
+      saving ||
+      !initialized ||
+      HIDE_DATE.has(currentStatus)
+    ) {
+      return;
+    }
 
     let value;
 
@@ -281,9 +298,7 @@ import { supabase } from "./supabase.js";
       if (error) throw error;
 
       if (!data) {
-        throw new Error(
-          "The date was not saved. Check your profile permissions."
-        );
+        throw new Error("The date was not saved. Check your profile permissions.");
       }
 
       savedValue = data.relationship_since || "";
@@ -295,9 +310,11 @@ import { supabase } from "./supabase.js";
           ? "Relationship date saved successfully."
           : "Relationship date cleared successfully."
       );
+
     } catch (error) {
       console.error("Grove relationship date save failed:", error);
       showMessage(error.message || "Could not save the date.", true);
+
     } finally {
       saving = false;
 
@@ -340,7 +357,7 @@ import { supabase } from "./supabase.js";
     originalInput.value = savedValue;
 
     formatDate(savedValue);
-    updateLabel(data.relationship_status || "not_set");
+    updateVisibility(data.relationship_status || "not_set");
 
     initialized = true;
 
@@ -349,14 +366,16 @@ import { supabase } from "./supabase.js";
     });
 
     updateButton();
-    showMessage("Your relationship date is ready to edit.");
+
+    if (!HIDE_DATE.has(currentStatus)) {
+      showMessage("Your relationship date is ready to edit.");
+    }
   }
 
-  if (statusSelect) {
-    statusSelect.addEventListener("change", () => {
-      updateLabel(statusSelect.value);
-    });
-  }
+  statusSelect?.addEventListener("change", () => {
+    updateVisibility(statusSelect.value);
+    updateButton();
+  });
 
   initialize().catch(error => {
     console.error("Grove relationship date control failed:", error);
