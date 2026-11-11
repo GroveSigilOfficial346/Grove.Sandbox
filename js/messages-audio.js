@@ -7,6 +7,7 @@ import { supabase } from "./supabase.js";
 
   const BUCKET = "grove-private";
   const MAX_AUDIO_SIZE = 20 * 1024 * 1024;
+  const MAX_RECORDING_TIME = 120000;
   const SIGNED_URL_LIFETIME = 3600;
 
   const AUDIO_TYPES = {
@@ -22,6 +23,13 @@ import { supabase } from "./supabase.js";
 
   let user = null;
   let uploading = false;
+  let recording = false;
+  let mediaRecorder = null;
+  let recordingStream = null;
+  let recordingChunks = [];
+  let recordingConversationId = null;
+  let recordingTimer = null;
+  let recordButton = null;
 
   const enhanced = new Set();
   const enhancing = new Set();
@@ -57,6 +65,10 @@ import { supabase } from "./supabase.js";
 
     if (button) button.disabled = !enabled || uploading;
     if (input) input.disabled = !enabled || uploading;
+
+    if (recordButton && !recording) {
+      recordButton.disabled = !enabled || uploading;
+    }
   }
 
   function wait(milliseconds) {
@@ -65,12 +77,13 @@ import { supabase } from "./supabase.js";
     });
   }
 
-  async function uploadAudio(file) {
+  async function uploadAudio(file, conversationIdOverride = null) {
     if (!user) {
       throw new Error("Sign in before sending audio.");
     }
 
-    const conversationId = activeConversationId();
+    const conversationId =
+      conversationIdOverride || activeConversationId();
 
     if (!conversationId) {
       throw new Error("Choose a conversation first.");
@@ -80,7 +93,7 @@ import { supabase } from "./supabase.js";
 
     if (!extension || !file.type.startsWith("audio/")) {
       throw new Error(
-        "Choose a supported MP3, M4A, WAV, OGG, WebM, or AAC audio file."
+        "Choose a supported MP3, M4A, WAV, OGG, WebM, or AAC file."
       );
     }
 
@@ -269,6 +282,271 @@ import { supabase } from "./supabase.js";
     });
   }
 
+  function installRecorderStyles() {
+    if ($("#grove-audio-recorder-styles")) return;
+
+    const style = document.createElement("style");
+    style.id = "grove-audio-recorder-styles";
+
+    style.textContent = `
+      .audio-record-button {
+        min-height: 42px;
+        padding: 8px 12px;
+        border: 1px solid rgba(235, 54, 237, .45);
+        border-radius: 10px;
+        background: rgba(133, 30, 255, .16);
+        color: #f7f5ff;
+        font: inherit;
+        font-weight: 750;
+        cursor: pointer;
+        transition: background .2s, border-color .2s;
+      }
+
+      .audio-record-button:hover:not(:disabled) {
+        background: rgba(133, 30, 255, .3);
+      }
+
+      .audio-record-button.recording {
+        border-color: #ff8585;
+        background: rgba(255, 80, 100, .18);
+        color: #ffb0b0;
+      }
+
+      .audio-record-button:disabled {
+        opacity: .45;
+        cursor: not-allowed;
+      }
+
+      .message-audio-player {
+        display: block;
+        width: 100%;
+        max-width: 340px;
+        margin: 10px 0;
+      }
+
+      .message-audio-label {
+        display: block;
+        font-size: .78rem;
+        opacity: .7;
+        margin-top: 4px;
+      }
+
+      @media (max-width: 640px) {
+        .audio-record-button {
+          min-height: 40px;
+          padding: 7px 9px;
+          font-size: .78rem;
+        }
+
+        .message-audio-player {
+          max-width: 100%;
+        }
+      }
+    `;
+
+    document.head.append(style);
+  }
+
+  function stopRecordingTracks() {
+    if (recordingTimer) {
+      window.clearTimeout(recordingTimer);
+      recordingTimer = null;
+    }
+
+    if (recordingStream) {
+      recordingStream.getTracks().forEach(track => track.stop());
+      recordingStream = null;
+    }
+  }
+
+  async function startVoiceRecording() {
+    if (!navigator.mediaDevices?.getUserMedia ||
+        !window.MediaRecorder) {
+      throw new Error(
+        "Voice recording is not supported by this browser."
+      );
+    }
+
+    const conversationId = activeConversationId();
+
+    if (!conversationId) {
+      throw new Error("Choose a conversation before recording.");
+    }
+
+    const candidates = [
+      "audio/webm;codecs=opus",
+      "audio/ogg;codecs=opus",
+      "audio/mp4"
+    ];
+
+    const mimeType = candidates.find(type =>
+      MediaRecorder.isTypeSupported?.(type)
+    );
+
+    recordingStream = await navigator.mediaDevices.getUserMedia({
+      audio: {
+        echoCancellation: true,
+        noiseSuppression: true,
+        autoGainControl: true
+      }
+    });
+
+    recordingConversationId = conversationId;
+    recordingChunks = [];
+
+    try {
+      mediaRecorder = mimeType
+        ? new MediaRecorder(recordingStream, { mimeType })
+        : new MediaRecorder(recordingStream);
+    } catch (error) {
+      stopRecordingTracks();
+      throw new Error("This browser could not start audio recording.");
+    }
+
+    recording = true;
+
+    recordButton.classList.add("recording");
+    recordButton.textContent = "■ Stop & send";
+
+    setControlsEnabled(true);
+    status("Recording voice message... Maximum 2 minutes.");
+
+    mediaRecorder.addEventListener("dataavailable", event => {
+      if (event.data?.size) {
+        recordingChunks.push(event.data);
+      }
+    });
+
+    mediaRecorder.addEventListener("error", () => {
+      status("The microphone recording encountered an error.", true);
+
+      if (mediaRecorder?.state === "recording") {
+        mediaRecorder.stop();
+      }
+    });
+
+    mediaRecorder.addEventListener("stop", async () => {
+      const chunks = recordingChunks;
+      const targetConversationId = recordingConversationId;
+      const recordedType =
+        mediaRecorder?.mimeType || mimeType || "audio/webm";
+
+      recordingChunks = [];
+      recordingConversationId = null;
+      recording = false;
+      mediaRecorder = null;
+
+      stopRecordingTracks();
+
+      recordButton.classList.remove("recording");
+      recordButton.textContent = "🎙 Record voice";
+
+      if (!chunks.length) {
+        status("No audio was captured. Try recording again.", true);
+        setControlsEnabled(Boolean(activeConversationId()));
+        return;
+      }
+
+      try {
+        const blob = new Blob(chunks, { type: recordedType });
+
+        if (blob.size > MAX_AUDIO_SIZE) {
+          throw new Error(
+            "This recording exceeds the 20 MB audio limit."
+          );
+        }
+
+        const extension = recordedType.includes("ogg") ? "ogg"
+          : recordedType.includes("mp4") ? "m4a"
+          : recordedType.includes("mpeg") ? "mp3"
+          : "webm";
+
+        const file = new File(
+          [blob],
+          "Grove-voice-message-" +
+            new Date().toISOString().replace(/[:.]/g, "-") +
+            "." + extension,
+          {
+            type: recordedType.split(";")[0] || "audio/webm"
+          }
+        );
+
+        await uploadAudio(file, targetConversationId);
+
+      } catch (error) {
+        console.error("Voice message send failed:", error);
+        status(
+          error.message || "Voice message could not be sent.",
+          true
+        );
+
+      } finally {
+        setControlsEnabled(Boolean(activeConversationId()));
+      }
+    }, { once: true });
+
+    recordingTimer = window.setTimeout(() => {
+      if (mediaRecorder?.state === "recording") {
+        status(
+          "Two-minute recording limit reached. Sending voice message..."
+        );
+        mediaRecorder.stop();
+      }
+    }, MAX_RECORDING_TIME);
+  }
+
+  function installVoiceRecorder(attachButton) {
+    installRecorderStyles();
+
+    recordButton = document.createElement("button");
+    recordButton.type = "button";
+    recordButton.id = "audio-record-button";
+    recordButton.className = "audio-record-button";
+    recordButton.textContent = "🎙 Record voice";
+    recordButton.disabled = true;
+
+    recordButton.setAttribute(
+      "aria-label",
+      "Record a voice message"
+    );
+
+    attachButton.insertAdjacentElement("afterend", recordButton);
+
+    recordButton.addEventListener("click", async () => {
+      if (recording && mediaRecorder?.state === "recording") {
+        status("Finishing voice message...");
+        mediaRecorder.stop();
+        return;
+      }
+
+      if (recording || uploading) return;
+
+      recordButton.disabled = true;
+
+      try {
+        await startVoiceRecording();
+
+      } catch (error) {
+        console.error("Microphone recording could not start:", error);
+
+        status(
+          error.message || "Microphone access was unavailable.",
+          true
+        );
+
+        recording = false;
+        stopRecordingTracks();
+
+        recordButton.classList.remove("recording");
+        recordButton.textContent = "🎙 Record voice";
+
+        setControlsEnabled(Boolean(activeConversationId()));
+      }
+    });
+
+    return recordButton;
+  }
+
   async function initialize() {
     const { data, error } = await supabase.auth.getUser();
 
@@ -282,6 +560,8 @@ import { supabase } from "./supabase.js";
     const fileInput = $("#audio-file-input");
 
     if (!attachButton || !fileInput) return;
+
+    installVoiceRecorder(attachButton);
 
     attachButton.addEventListener("click", () => {
       if (!uploading && activeConversationId()) {
@@ -297,6 +577,7 @@ import { supabase } from "./supabase.js";
 
       try {
         await uploadAudio(file);
+
       } catch (error) {
         console.error("Audio upload failed:", error);
         status(error.message || "Audio could not be sent.", true);
@@ -339,9 +620,11 @@ import { supabase } from "./supabase.js";
 
   initialize().catch(error => {
     console.error("Grove audio module failed:", error);
+
     status(
       error.message || "Audio messaging could not initialize.",
       true
     );
   });
+
 })();
