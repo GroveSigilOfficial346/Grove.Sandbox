@@ -6,20 +6,43 @@ import { supabase } from "./supabase.js";
   const $ = selector => document.querySelector(selector);
 
   const BUCKET = "grove-private";
-  const MAX_AUDIO_SIZE = 20 * 1024 * 1024;
+  const MAX_FILE_SIZE = 25 * 1024 * 1024;
+  const MAX_FILES_PER_SEND = 5;
   const MAX_RECORDING_TIME = 120000;
   const SIGNED_URL_LIFETIME = 3600;
 
-  const AUDIO_TYPES = {
-    "audio/mpeg": "mp3",
-    "audio/mp4": "m4a",
-    "audio/x-m4a": "m4a",
-    "audio/wav": "wav",
-    "audio/x-wav": "wav",
-    "audio/ogg": "ogg",
-    "audio/webm": "webm",
-    "audio/aac": "aac"
+  const MIME_BY_EXTENSION = {
+    jpg: "image/jpeg",
+    jpeg: "image/jpeg",
+    png: "image/png",
+    webp: "image/webp",
+    gif: "image/gif",
+    mp4: "video/mp4",
+    mov: "video/quicktime",
+    mp3: "audio/mpeg",
+    m4a: "audio/mp4",
+    wav: "audio/wav",
+    ogg: "audio/ogg",
+    aac: "audio/aac",
+    pdf: "application/pdf",
+    txt: "text/plain",
+    csv: "text/csv",
+    doc: "application/msword",
+    docx: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    xls: "application/vnd.ms-excel",
+    xlsx: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    ppt: "application/vnd.ms-powerpoint",
+    pptx: "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    zip: "application/zip"
   };
+
+  const ALLOWED_EXTENSIONS = new Set([
+    "jpg", "jpeg", "png", "webp", "gif",
+    "mp4", "webm", "mov",
+    "mp3", "m4a", "wav", "ogg", "aac",
+    "pdf", "txt", "csv", "doc", "docx",
+    "xls", "xlsx", "ppt", "pptx", "zip"
+  ]);
 
   let user = null;
   let uploading = false;
@@ -49,43 +72,37 @@ import { supabase } from "./supabase.js";
     )?.dataset.conversationId || null;
   }
 
-  function getExtension(file) {
-    const mime = (file.type || "")
+  function extensionOf(file) {
+    return String(file.name || "")
       .toLowerCase()
-      .split(";")[0]
-      .trim();
-
-    if (AUDIO_TYPES[mime]) {
-      return AUDIO_TYPES[mime];
-    }
-
-    const match = (file.name || "").toLowerCase().match(
-      /\.(mp3|m4a|wav|ogg|webm|aac)$/
-    );
-
-    return match?.[1] || null;
+      .split(".")
+      .pop();
   }
 
-  function getContentType(file, extension) {
-    const mime = (file.type || "")
+  function mimeOf(file) {
+    const supplied = String(file.type || "")
       .toLowerCase()
       .split(";")[0]
       .trim();
 
-    if (AUDIO_TYPES[mime]) {
-      return mime;
+    if (supplied && supplied !== "application/octet-stream") {
+      return supplied;
     }
 
-    const fallback = {
-      mp3: "audio/mpeg",
-      m4a: "audio/mp4",
-      wav: "audio/wav",
-      ogg: "audio/ogg",
-      webm: "audio/webm",
-      aac: "audio/aac"
-    };
+    const extension = extensionOf(file);
 
-    return fallback[extension] || "";
+    if (extension === "webm") {
+      return "video/webm";
+    }
+
+    return MIME_BY_EXTENSION[extension] || "";
+  }
+
+  function classify(mime) {
+    if (mime.startsWith("image/")) return "image";
+    if (mime.startsWith("video/")) return "video";
+    if (mime.startsWith("audio/")) return "audio";
+    return "file";
   }
 
   function setControlsEnabled(enabled) {
@@ -101,57 +118,41 @@ import { supabase } from "./supabase.js";
     }
 
     if (recordButton) {
-      // Keep the stop control usable while a recording is active.
       recordButton.disabled = recording
         ? false
         : (!enabled || uploading);
     }
   }
 
-  function wait(milliseconds) {
-    return new Promise(resolve => {
-      window.setTimeout(resolve, milliseconds);
-    });
+  function validateFile(file) {
+    const extension = extensionOf(file);
+    const mime = mimeOf(file);
+
+    if (!ALLOWED_EXTENSIONS.has(extension)) {
+      throw new Error("That file type is not supported.");
+    }
+
+    if (!mime) {
+      throw new Error("Grove could not identify this file type.");
+    }
+
+    if (file.size <= 0 || file.size > MAX_FILE_SIZE) {
+      throw new Error(
+        `${file.name} must be larger than 0 bytes and no more than 25 MB.`
+      );
+    }
+
+    return {
+      extension,
+      mime,
+      category: classify(mime)
+    };
   }
 
-  async function uploadAudio(file, conversationIdOverride = null) {
-    if (!user) {
-      throw new Error("Sign in before sending audio.");
-    }
-
-    const conversationId =
-      conversationIdOverride || activeConversationId();
-
-    if (!conversationId) {
-      throw new Error("Choose a conversation first.");
-    }
-
-    const extension = getExtension(file);
-
-    if (!extension) {
-      throw new Error(
-        "Choose MP3, M4A, WAV, OGG, WebM, or AAC audio."
-      );
-    }
-
-    if (file.size <= 0 || file.size > MAX_AUDIO_SIZE) {
-      throw new Error(
-        "Audio files must be larger than 0 and no more than 20 MB."
-      );
-    }
-
-    const contentType = getContentType(file, extension);
-
-    if (!contentType) {
-      throw new Error("This audio format is not supported.");
-    }
-
-    const safeName = crypto.randomUUID() + "." + extension;
+  async function uploadOne(file, conversationId) {
+    const details = validateFile(file);
+    const safeName = crypto.randomUUID() + "." + details.extension;
     const path = `${conversationId}/${user.id}/${safeName}`;
-
-    uploading = true;
-    setControlsEnabled(false);
-    status("Uploading private audio...");
 
     let uploaded = false;
 
@@ -159,7 +160,7 @@ import { supabase } from "./supabase.js";
       const { error: uploadError } = await supabase.storage
         .from(BUCKET)
         .upload(path, file, {
-          contentType,
+          contentType: details.mime,
           cacheControl: "3600",
           upsert: false
         });
@@ -167,32 +168,27 @@ import { supabase } from "./supabase.js";
       if (uploadError) throw uploadError;
 
       uploaded = true;
-      status("Sending audio message...");
+
+      const body = `Shared a ${details.category} attachment`;
 
       const { data, error } = await supabase
         .from("conversation_messages")
         .insert({
           conversation_id: conversationId,
           sender_id: user.id,
-          body: "Audio message",
+          body,
           attachment_path: path,
-          attachment_mime_type: contentType,
-          attachment_filename: (
-            file.name || `Grove-audio.${extension}`
-          ).slice(0, 180)
+          attachment_mime_type: details.mime,
+          attachment_filename: String(file.name || safeName).slice(0, 180)
         })
         .select("id")
         .single();
 
       if (error) throw error;
-
-      if (!data?.id) {
-        throw new Error("The audio message could not be saved.");
-      }
-
-      status("Audio message sent.");
+      if (!data?.id) throw new Error("The attachment message was not saved.");
 
       await enhanceMessage(data.id, 12);
+      return data.id;
 
     } catch (error) {
       if (uploaded) {
@@ -201,11 +197,46 @@ import { supabase } from "./supabase.js";
           .remove([path]);
 
         if (cleanupError) {
-          console.warn("Audio cleanup failed:", cleanupError);
+          console.warn("Attachment cleanup failed:", cleanupError);
         }
       }
 
       throw error;
+    }
+  }
+
+  async function sendFiles(files, conversationOverride = null) {
+    if (!user) throw new Error("Sign in before sending attachments.");
+
+    const conversationId =
+      conversationOverride || activeConversationId();
+
+    if (!conversationId) {
+      throw new Error("Choose a conversation first.");
+    }
+
+    if (!files.length) return;
+
+    if (files.length > MAX_FILES_PER_SEND) {
+      throw new Error(`Choose no more than ${MAX_FILES_PER_SEND} files at once.`);
+    }
+
+    files.forEach(validateFile);
+
+    uploading = true;
+    setControlsEnabled(false);
+
+    try {
+      for (let index = 0; index < files.length; index += 1) {
+        status(`Uploading file ${index + 1} of ${files.length}...`);
+        await uploadOne(files[index], conversationId);
+      }
+
+      status(
+        files.length === 1
+          ? "Attachment sent."
+          : `${files.length} attachments sent.`
+      );
 
     } finally {
       uploading = false;
@@ -213,7 +244,7 @@ import { supabase } from "./supabase.js";
     }
   }
 
-  async function getAudioUrl(path) {
+  async function getSignedUrl(path) {
     const cached = signedUrlCache.get(path);
 
     if (cached && cached.expiresAt > Date.now()) {
@@ -225,9 +256,8 @@ import { supabase } from "./supabase.js";
       .createSignedUrl(path, SIGNED_URL_LIFETIME);
 
     if (error) throw error;
-
     if (!data?.signedUrl) {
-      throw new Error("Audio playback link could not be created.");
+      throw new Error("The private attachment link could not be created.");
     }
 
     signedUrlCache.set(path, {
@@ -238,12 +268,74 @@ import { supabase } from "./supabase.js";
     return data.signedUrl;
   }
 
+  function attachmentElement(url, data) {
+    const mime = String(data.attachment_mime_type || "").toLowerCase();
+    const category = classify(mime);
+    const filename = data.attachment_filename || "Grove attachment";
+
+    const wrap = document.createElement("div");
+    wrap.className = "message-attachment";
+
+    if (category === "image") {
+      const link = document.createElement("a");
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.className = "message-attachment-image-link";
+
+      const image = document.createElement("img");
+      image.src = url;
+      image.alt = filename;
+      image.loading = "lazy";
+      image.className = "message-attachment-image";
+
+      link.append(image);
+      wrap.append(link);
+
+    } else if (category === "video") {
+      const video = document.createElement("video");
+      video.className = "message-attachment-video";
+      video.controls = true;
+      video.playsInline = true;
+      video.preload = "metadata";
+
+      const source = document.createElement("source");
+      source.src = url;
+      source.type = mime;
+
+      video.append(source);
+      wrap.append(video);
+
+    } else if (category === "audio") {
+      const audio = document.createElement("audio");
+      audio.className = "message-audio-player";
+      audio.controls = true;
+      audio.preload = "metadata";
+      audio.src = url;
+      audio.setAttribute("aria-label", "Audio attachment");
+      wrap.append(audio);
+
+    } else {
+      const link = document.createElement("a");
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.className = "message-file-download";
+      link.textContent = `Download ${filename}`;
+      link.download = filename;
+      wrap.append(link);
+    }
+
+    const label = document.createElement("span");
+    label.className = "message-attachment-label";
+    label.textContent = filename;
+    wrap.append(label);
+
+    return wrap;
+  }
+
   async function enhanceMessage(messageId, attempts = 1) {
-    if (
-      !messageId ||
-      enhanced.has(messageId) ||
-      enhancing.has(messageId)
-    ) {
+    if (!messageId || enhanced.has(messageId) || enhancing.has(messageId)) {
       return;
     }
 
@@ -252,7 +344,7 @@ import { supabase } from "./supabase.js";
     );
 
     if (!article && attempts > 0) {
-      await wait(250);
+      await new Promise(resolve => window.setTimeout(resolve, 250));
       return enhanceMessage(messageId, attempts - 1);
     }
 
@@ -263,9 +355,7 @@ import { supabase } from "./supabase.js";
     try {
       const { data, error } = await supabase
         .from("conversation_messages")
-        .select(
-          "attachment_path,attachment_mime_type,attachment_filename"
-        )
+        .select("attachment_path,attachment_mime_type,attachment_filename")
         .eq("id", messageId)
         .maybeSingle();
 
@@ -276,42 +366,30 @@ import { supabase } from "./supabase.js";
         return;
       }
 
-      const url = await getAudioUrl(data.attachment_path);
+      const url = await getSignedUrl(data.attachment_path);
 
       article = document.querySelector(
         `[data-message-id="${messageId}"]`
       );
 
-      if (!article || article.querySelector(".message-audio-player")) {
+      if (!article || article.querySelector(".message-attachment")) {
         enhanced.add(messageId);
         return;
       }
 
-      const player = document.createElement("audio");
-      player.className = "message-audio-player";
-      player.controls = true;
-      player.preload = "metadata";
-      player.src = url;
-      player.setAttribute("aria-label", "Audio message");
-
-      const label = document.createElement("span");
-      label.className = "message-audio-label";
-      label.textContent =
-        data.attachment_filename || "Audio attachment";
-
       const body = article.querySelector("p");
+      const media = attachmentElement(url, data);
 
       if (body) {
-        body.insertAdjacentElement("afterend", player);
-        player.insertAdjacentElement("afterend", label);
+        body.insertAdjacentElement("afterend", media);
       } else {
-        article.prepend(player, label);
+        article.prepend(media);
       }
 
       enhanced.add(messageId);
 
     } catch (error) {
-      console.warn("Audio attachment could not load:", error);
+      console.warn("Message attachment could not load:", error);
 
     } finally {
       enhancing.delete(messageId);
@@ -333,59 +411,36 @@ import { supabase } from "./supabase.js";
 
     const style = document.createElement("style");
     style.id = "grove-audio-recorder-styles";
-
     style.textContent = `
       .audio-record-button {
-        min-height: 42px;
+        min-height: 44px;
         padding: 8px 12px;
-        border: 1px solid rgba(235, 54, 237, .45);
+        border: 1px solid rgba(233,163,75,.4);
         border-radius: 10px;
-        background: rgba(133, 30, 255, .16);
+        background: rgba(233,163,75,.10);
         color: #f7f5ff;
         font: inherit;
-        font-weight: 750;
+        font-weight: 700;
         cursor: pointer;
-        transition: background .2s, border-color .2s;
       }
-
       .audio-record-button:hover:not(:disabled) {
-        background: rgba(133, 30, 255, .3);
+        border-color: rgba(233,163,75,.8);
+        background: rgba(233,163,75,.17);
       }
-
       .audio-record-button.recording {
         border-color: #ff8585;
-        background: rgba(255, 80, 100, .18);
+        background: rgba(255,80,100,.16);
         color: #ffb0b0;
       }
-
       .audio-record-button:disabled {
         opacity: .45;
         cursor: not-allowed;
       }
-
-      .message-audio-player {
-        display: block;
-        width: 100%;
-        max-width: 340px;
-        margin: 10px 0;
-      }
-
-      .message-audio-label {
-        display: block;
-        font-size: .78rem;
-        opacity: .7;
-        margin-top: 4px;
-      }
-
-      @media (max-width: 640px) {
+      @media(max-width:640px) {
         .audio-record-button {
-          min-height: 40px;
+          min-height: 42px;
           padding: 7px 9px;
-          font-size: .78rem;
-        }
-
-        .message-audio-player {
-          max-width: 100%;
+          font-size: .75rem;
         }
       }
     `;
@@ -410,25 +465,16 @@ import { supabase } from "./supabase.js";
 
     recordButton.classList.remove("recording");
     recordButton.textContent = "🎙 Record voice";
-    recordButton.disabled =
-      !activeConversationId() || uploading;
+    recordButton.disabled = !activeConversationId() || uploading;
   }
 
   async function startVoiceRecording() {
-    if (
-      !navigator.mediaDevices?.getUserMedia ||
-      !window.MediaRecorder
-    ) {
-      throw new Error(
-        "Voice recording is not supported by this browser."
-      );
+    if (!navigator.mediaDevices?.getUserMedia || !window.MediaRecorder) {
+      throw new Error("Voice recording is not supported by this browser.");
     }
 
     const conversationId = activeConversationId();
-
-    if (!conversationId) {
-      throw new Error("Choose a conversation before recording.");
-    }
+    if (!conversationId) throw new Error("Choose a conversation first.");
 
     const candidates = [
       "audio/webm;codecs=opus",
@@ -455,13 +501,12 @@ import { supabase } from "./supabase.js";
       mediaRecorder = mimeType
         ? new MediaRecorder(recordingStream, { mimeType })
         : new MediaRecorder(recordingStream);
-    } catch (error) {
+    } catch {
       stopRecordingTracks();
       throw new Error("This browser could not start audio recording.");
     }
 
     recording = true;
-
     recordButton.classList.add("recording");
     recordButton.textContent = "■ Stop & send";
     recordButton.disabled = false;
@@ -470,24 +515,18 @@ import { supabase } from "./supabase.js";
     status("Recording voice message... Maximum 2 minutes.");
 
     mediaRecorder.addEventListener("dataavailable", event => {
-      if (event.data?.size) {
-        recordingChunks.push(event.data);
-      }
+      if (event.data?.size) recordingChunks.push(event.data);
     });
 
     mediaRecorder.addEventListener("error", () => {
       status("The microphone recording encountered an error.", true);
-
-      if (mediaRecorder?.state === "recording") {
-        mediaRecorder.stop();
-      }
+      if (mediaRecorder?.state === "recording") mediaRecorder.stop();
     });
 
     mediaRecorder.addEventListener("stop", async () => {
       const chunks = recordingChunks;
       const targetConversationId = recordingConversationId;
-      const recordedType =
-        mediaRecorder?.mimeType || mimeType || "audio/webm";
+      const recordedType = mediaRecorder?.mimeType || mimeType || "audio/webm";
 
       recordingChunks = [];
       recordingConversationId = null;
@@ -498,7 +537,7 @@ import { supabase } from "./supabase.js";
       resetRecorderButton();
 
       if (!chunks.length) {
-        status("No audio was captured. Try recording again.", true);
+        status("No audio was captured. Try again.", true);
         setControlsEnabled(Boolean(activeConversationId()));
         return;
       }
@@ -506,42 +545,33 @@ import { supabase } from "./supabase.js";
       try {
         const blob = new Blob(chunks, { type: recordedType });
 
-        if (blob.size > MAX_AUDIO_SIZE) {
-          throw new Error(
-            "This recording exceeds the 20 MB audio limit."
-          );
+        if (blob.size > 20 * 1024 * 1024) {
+          throw new Error("This recording exceeds the 20 MB voice limit.");
         }
 
-        const normalizedType = recordedType
-          .split(";")[0]
-          .toLowerCase();
-
-        const extension = normalizedType.includes("ogg") ? "ogg"
-          : normalizedType.includes("mp4") ? "m4a"
-          : normalizedType.includes("mpeg") ? "mp3"
+        const mime = recordedType.split(";")[0].toLowerCase();
+        const extension = mime.includes("ogg") ? "ogg"
+          : mime.includes("mp4") ? "m4a"
           : "webm";
 
         const file = new File(
           [blob],
-          "Grove-voice-message-" +
-            new Date().toISOString().replace(/[:.]/g, "-") +
-            "." + extension,
-          {
-            type: normalizedType || "audio/webm"
-          }
+          `Grove-voice-${Date.now()}.${extension}`,
+          { type: mime }
         );
 
-        await uploadAudio(file, targetConversationId);
+        uploading = true;
+        setControlsEnabled(false);
+        status("Sending voice message...");
+        await uploadOne(file, targetConversationId);
+        status("Voice message sent.");
 
       } catch (error) {
         console.error("Voice message send failed:", error);
-
-        status(
-          error.message || "Voice message could not be sent.",
-          true
-        );
+        status(error.message || "Voice message could not be sent.", true);
 
       } finally {
+        uploading = false;
         setControlsEnabled(Boolean(activeConversationId()));
         resetRecorderButton();
       }
@@ -549,9 +579,7 @@ import { supabase } from "./supabase.js";
 
     recordingTimer = window.setTimeout(() => {
       if (mediaRecorder?.state === "recording") {
-        status(
-          "Two-minute recording limit reached. Sending voice message..."
-        );
+        status("Two-minute recording limit reached. Sending...");
         mediaRecorder.stop();
       }
     }, MAX_RECORDING_TIME);
@@ -566,11 +594,7 @@ import { supabase } from "./supabase.js";
     recordButton.className = "audio-record-button";
     recordButton.textContent = "🎙 Record voice";
     recordButton.disabled = true;
-
-    recordButton.setAttribute(
-      "aria-label",
-      "Record a voice message"
-    );
+    recordButton.setAttribute("aria-label", "Record a voice message");
 
     attachButton.insertAdjacentElement("afterend", recordButton);
 
@@ -588,36 +612,25 @@ import { supabase } from "./supabase.js";
 
       try {
         await startVoiceRecording();
-
       } catch (error) {
         console.error("Microphone recording could not start:", error);
-
-        status(
-          error.message || "Microphone access was unavailable.",
-          true
-        );
-
+        status(error.message || "Microphone access was unavailable.", true);
         recording = false;
         mediaRecorder = null;
         recordingChunks = [];
         recordingConversationId = null;
-
         stopRecordingTracks();
         resetRecorderButton();
         setControlsEnabled(Boolean(activeConversationId()));
       }
     });
-
-    return recordButton;
   }
 
   async function initialize() {
     const { data, error } = await supabase.auth.getUser();
-
     if (error) throw error;
 
     user = data.user || null;
-
     if (!user) return;
 
     const attachButton = $("#audio-attach-button");
@@ -628,23 +641,20 @@ import { supabase } from "./supabase.js";
     installVoiceRecorder(attachButton);
 
     attachButton.addEventListener("click", () => {
-      if (!uploading && activeConversationId()) {
-        fileInput.click();
-      }
+      if (!uploading && activeConversationId()) fileInput.click();
     });
 
     fileInput.addEventListener("change", async () => {
-      const file = fileInput.files?.[0];
+      const files = Array.from(fileInput.files || []);
       fileInput.value = "";
 
-      if (!file || uploading) return;
+      if (!files.length || uploading) return;
 
       try {
-        await uploadAudio(file);
-
+        await sendFiles(files);
       } catch (error) {
-        console.error("Audio upload failed:", error);
-        status(error.message || "Audio could not be sent.", true);
+        console.error("Message attachment upload failed:", error);
+        status(error.message || "Attachments could not be sent.", true);
       }
     });
 
@@ -666,9 +676,7 @@ import { supabase } from "./supabase.js";
       new MutationObserver(records => {
         for (const record of records) {
           for (const node of record.addedNodes) {
-            if (node instanceof Element) {
-              scanMessages(node);
-            }
+            if (node instanceof Element) scanMessages(node);
           }
         }
       }).observe(messageList, {
@@ -683,20 +691,12 @@ import { supabase } from "./supabase.js";
   }
 
   window.addEventListener("beforeunload", () => {
-    if (mediaRecorder?.state === "recording") {
-      mediaRecorder.stop();
-    }
-
+    if (mediaRecorder?.state === "recording") mediaRecorder.stop();
     stopRecordingTracks();
   });
 
   initialize().catch(error => {
-    console.error("Grove audio module failed:", error);
-
-    status(
-      error.message || "Audio messaging could not initialize.",
-      true
-    );
+    console.error("Grove message attachments failed to initialize:", error);
+    status(error.message || "Message attachments could not initialize.", true);
   });
-
 })();
