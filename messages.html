@@ -6,24 +6,27 @@
   <meta name="theme-color" content="#050019">
   <meta name="description" content="Private messages on Grove.">
   <title>Messages | Grove</title>
+
   <link rel="icon" type="image/svg+xml" href="/assets/neural-tree.svg">
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="/css/messages.css">
-  <link rel="stylesheet" href="/css/messages-composer-fix.css">
+
+  <link rel="stylesheet" href="/css/messages.css?v=20261111-2">
+  <link rel="stylesheet" href="/css/messages-composer-fix.css?v=20261111-2">
   <link rel="stylesheet" href="/css/grove-ui.css?v=20261105-2">
   <link rel="stylesheet" href="/css/messages-themes.css?v=20261105-2">
   <link rel="stylesheet" href="/css/messages-extras.css?v=20261105-2">
   <link rel="stylesheet" href="/css/group-conversations.css?v=20261105-2">
-  <link rel="stylesheet" href="/css/messages-audio.css?v=20261111-2">
-  <link rel="stylesheet" href="/css/grove-warm-controls.css?v=20261111-1">
+  <link rel="stylesheet" href="/css/messages-audio.css?v=20261111-3">
+  <link rel="stylesheet" href="/css/grove-warm-controls.css?v=20261111-2">
 
-  <script type="module" src="/js/messages.js"></script>
+  <script type="module" src="/js/messages.js?v=20261111-2"></script>
   <script type="module" src="/js/messages-themes.js?v=20261105-2"></script>
   <script type="module" src="/js/messages-extras.js?v=20261105-2"></script>
   <script type="module" src="/js/group-conversations.js?v=20261105-2"></script>
-  <script type="module" src="/js/messages-audio.js?v=20261111-2"></script>
+  <script type="module" src="/js/messages-audio.js?v=20261111-3"></script>
   <script type="module" src="/js/grove-link-previews.js?v=20261106-1"></script>
   <script defer src="/js/grove-media-previews.js?v=20261110-1"></script>
 </head>
@@ -50,7 +53,8 @@
       </nav>
     </header>
 
-    <p id="messages-status" class="messages-status" role="status" aria-live="polite"></p>
+    <p id="messages-status" class="messages-status"
+      role="status" aria-live="polite"></p>
 
     <section class="messages-layout">
       <aside class="conversation-sidebar">
@@ -61,7 +65,12 @@
           </div>
         </div>
 
-        <div id="conversation-list" class="conversation-list" aria-label="Your conversations" aria-live="polite">
+        <div
+          id="conversation-list"
+          class="conversation-list"
+          aria-label="Your conversations"
+          aria-live="polite"
+        >
           <p class="conversation-loading">Loading conversations...</p>
         </div>
       </aside>
@@ -70,6 +79,7 @@
         <header class="chat-heading">
           <div class="chat-heading-content">
             <span class="chat-status-indicator"></span>
+
             <div class="chat-heading-text">
               <h2 id="chat-title">Choose a conversation</h2>
               <span id="chat-subtitle">Your private Grove inbox</span>
@@ -77,16 +87,26 @@
           </div>
         </header>
 
-        <div id="message-list" class="message-list" aria-live="polite" aria-label="Messages">
+        <div
+          id="message-list"
+          class="message-list"
+          aria-live="polite"
+          aria-label="Messages"
+        >
           <div class="empty-chat">
             <span class="empty-chat-icon">✉</span>
             <h3>Your conversations start here</h3>
-            <p>Choose a conversation to read messages or start a new one from a member's profile.</p>
+            <p>
+              Choose a conversation to read messages or start a new one
+              from a member's profile.
+            </p>
           </div>
         </div>
 
         <form id="message-form" class="message-form">
-          <label class="sr-only" for="message-input">Write a message</label>
+          <label class="sr-only" for="message-input">
+            Write a message
+          </label>
 
           <div class="composer-input-wrap">
             <textarea
@@ -104,27 +124,49 @@
             id="audio-attach-button"
             class="audio-attach-button"
             disabled
-            aria-label="Attach files"
+            aria-label="Attach a file or media"
             title="Attach images, videos, audio, or documents"
           >
-            <span aria-hidden="true">📎</span>
+            <span class="attach-icon" aria-hidden="true">📎</span>
+            <span class="attach-label">Attach</span>
           </button>
 
           <input
             id="audio-file-input"
             type="file"
             multiple
-            accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime,audio/mpeg,audio/mp4,audio/wav,audio/ogg,audio/webm,audio/aac,application/pdf,text/plain,text/csv,.jpg,.jpeg,.png,.webp,.gif,.mp4,.webm,.mov,.mp3,.m4a,.wav,.ogg,.aac,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip"
+            accept="
+              image/jpeg,image/png,image/webp,image/gif,
+              video/mp4,video/webm,video/quicktime,
+              audio/mpeg,audio/mp4,audio/wav,audio/ogg,audio/webm,audio/aac,
+              application/pdf,text/plain,text/csv,
+              .jpg,.jpeg,.png,.webp,.gif,
+              .mp4,.webm,.mov,
+              .mp3,.m4a,.wav,.ogg,.aac,
+              .pdf,.txt,.csv,
+              .doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip
+            "
             hidden
           >
 
-          <button type="submit" id="send-message" class="send-button" disabled>
+          <button
+            type="submit"
+            id="send-message"
+            class="send-button"
+            disabled
+          >
             <span>Send</span>
             <span aria-hidden="true">➤</span>
           </button>
         </form>
 
-        <p id="audio-upload-status" class="audio-upload-status" role="status" aria-live="polite"></p>
+        <p
+          id="audio-upload-status"
+          class="audio-upload-status"
+          role="status"
+          aria-live="polite"
+        ></p>
+
         <p class="composer-note">Private conversations on Grove</p>
       </section>
     </section>
