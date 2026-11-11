@@ -37,8 +37,8 @@
 
 .profile-post-composer textarea:focus,
 .profile-post-composer select:focus {
-  border-color: var(--cyan);
-  box-shadow: 0 0 0 2px rgba(5, 201, 244, .12);
+  border-color: #e9a34b;
+  box-shadow: 0 0 0 2px rgba(233, 163, 75, .12);
 }
 
 .profile-post-composer-meta {
@@ -57,14 +57,16 @@
   width: fit-content;
   max-width: 100%;
   padding: 11px 15px;
-  border: 1px solid var(--border);
+  border: 1px solid rgba(233, 163, 75, .38);
   border-radius: 10px;
   cursor: pointer;
-  background: var(--night);
+  background: rgba(233, 163, 75, .08);
+  color: #f0bd78;
 }
 
 .profile-post-file-label:hover {
-  border-color: var(--cyan);
+  border-color: rgba(240, 189, 120, .85);
+  background: rgba(233, 163, 75, .16);
 }
 
 .profile-post-file-label small {
@@ -142,14 +144,23 @@
   min-width: 135px;
 }
 
-.profile-post-audio {
+.profile-post-audio,
+.profile-post-video {
   display: block;
   width: 100%;
   max-width: 560px;
-  min-height: 42px;
   margin: 10px 0;
   border-radius: 12px;
   background: var(--night);
+}
+
+.profile-post-audio {
+  min-height: 42px;
+}
+
+.profile-post-video {
+  max-height: 440px;
+  object-fit: contain;
 }
 
 @media (max-width: 600px) {
@@ -166,7 +177,12 @@
     width: 100%;
   }
 
-  .profile-post-audio {
+  .profile-post-audio,
+  .profile-post-video {
     max-width: 100%;
+  }
+
+  .profile-post-video {
+    max-height: 280px;
   }
 }
