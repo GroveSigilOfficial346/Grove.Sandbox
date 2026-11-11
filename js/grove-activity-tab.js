@@ -196,6 +196,15 @@ export function installGroveActivityTab(supabase) {
       letter-spacing: .12em;
     }
 
+    .grove-activity-message {
+      display: block;
+    }
+
+    .grove-activity-actor {
+      color: #F4D6FF;
+      font-weight: 850;
+    }
+
     .grove-activity-time {
       display: block;
       margin-top: 5px;
@@ -414,8 +423,20 @@ export function installGroveActivityTab(supabase) {
     }
 
     const message = document.createElement("span");
-    message.textContent =
+    message.className = "grove-activity-message";
+
+    if (row.actor_name) {
+      const actor = document.createElement("strong");
+      actor.className = "grove-activity-actor";
+      actor.textContent = row.actor_name;
+      message.append(actor, document.createTextNode(" "));
+    }
+
+    const messageText = document.createElement("span");
+    messageText.textContent =
       row.message || `New ${row.kind || "Grove"} activity`;
+
+    message.append(messageText);
 
     const time = document.createElement("time");
     time.className = "grove-activity-time";
@@ -439,6 +460,49 @@ export function installGroveActivityTab(supabase) {
     } else {
       list.append(link);
     }
+  }
+
+  async function attachActorNames(rows) {
+    const actorIds = [...new Set(
+      rows.map(row => row.actor_id).filter(Boolean)
+    )];
+
+    if (!actorIds.length) return rows;
+
+    const { data, error } = await supabase
+      .from("profile_directory")
+      .select("id,display_name,username")
+      .in("id", actorIds);
+
+    if (error) {
+      console.warn(
+        "Grove could not resolve notification actor names:",
+        error
+      );
+      return rows;
+    }
+
+    const names = new Map(
+      (data || []).map(profile => [
+        profile.id,
+        profile.display_name?.trim() ||
+          (profile.username ? `@${profile.username}` : "Grove member")
+      ])
+    );
+
+    return rows.map(row => ({
+      ...row,
+      actor_name: row.actor_id
+        ? names.get(row.actor_id) || "Grove member"
+        : ""
+    }));
+  }
+
+  async function attachActorName(row) {
+    if (!row?.actor_id) return row;
+
+    const [enriched] = await attachActorNames([row]);
+    return enriched || row;
   }
 
   async function loadHistory() {
@@ -484,7 +548,12 @@ export function installGroveActivityTab(supabase) {
         return;
       }
 
-      visibleRows.forEach(row => renderNotification(row, false));
+      const namedRows = await attachActorNames(visibleRows);
+
+      namedRows.forEach(row =>
+        renderNotification(row, false)
+      );
+
       updateCount();
 
     } catch (error) {
@@ -555,7 +624,8 @@ export function installGroveActivityTab(supabase) {
       list.replaceChildren();
     }
 
-    renderNotification(row, true);
+    const namedRow = await attachActorName(row);
+    renderNotification(namedRow, true);
 
     try {
       await refreshUnreadCount();
