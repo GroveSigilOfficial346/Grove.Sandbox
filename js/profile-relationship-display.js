@@ -19,13 +19,18 @@ import { supabase } from "./supabase.js";
     widowed: "Widowed"
   };
 
+  const SINGLE_STATUSES = new Set(["single", "not_set", "", null]);
+
   function formatDate(value) {
     if (!value || typeof value !== "string") return "";
 
-    const parts = value.split("-").map(Number);
-    if (parts.length !== 3) return "";
+    const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value);
+    if (!match) return "";
 
-    const [year, month, day] = parts;
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+
     const date = new Date(year, month - 1, day);
 
     if (
@@ -44,54 +49,47 @@ import { supabase } from "./supabase.js";
     });
   }
 
-  function removeDuplicateStatusRows() {
+  function clearRelationshipRows() {
     details.querySelectorAll(".profile-detail").forEach(item => {
-      if (item.dataset.groveRelationshipCombined === "true") return;
-
       const text = (item.textContent || "").trim();
 
-      if (/^relationship\s*:/i.test(text)) {
+      if (
+        item.dataset.groveRelationshipRow === "true" ||
+        /^relationship\s*:/i.test(text) ||
+        /^since\s*:/i.test(text)
+      ) {
         item.remove();
       }
     });
   }
 
-  function renderRelationship(status, dateValue) {
-    removeDuplicateStatusRows();
+  function renderRelationship(statusValue, dateValue) {
+    clearRelationshipRows();
 
-    const existing = details.querySelector(
-      "[data-grove-relationship-combined]"
-    );
-
+    const status = String(statusValue || "not_set").toLowerCase();
     const label = STATUS_LABELS[status] || "";
+
+    if (!label) return;
+
+    const relationshipRow = document.createElement("span");
+    relationshipRow.className = "profile-detail grove-relationship-row";
+    relationshipRow.dataset.groveRelationshipRow = "true";
+    relationshipRow.textContent = "Relationship: " + label;
+
+    details.append(relationshipRow);
+
+    // A Single or unset relationship never displays a start date.
+    if (SINGLE_STATUSES.has(status)) return;
+
     const date = formatDate(dateValue);
+    if (!date) return;
 
-    if (!label) {
-      existing?.remove();
-      return;
-    }
+    const sinceRow = document.createElement("span");
+    sinceRow.className = "profile-detail grove-relationship-row";
+    sinceRow.dataset.groveRelationshipRow = "true";
+    sinceRow.textContent = "Since: " + date;
 
-    let text = label;
-
-    if (date) {
-      text += status === "married"
-        ? " · " + date
-        : " · Since " + date;
-    }
-
-    if (existing?.textContent === text) return;
-
-    if (existing) {
-      existing.textContent = text;
-      return;
-    }
-
-    const item = document.createElement("span");
-    item.className = "profile-detail grove-relationship-date";
-    item.dataset.groveRelationshipCombined = "true";
-    item.textContent = text;
-
-    details.append(item);
+    details.append(sinceRow);
   }
 
   async function initialize() {
@@ -159,27 +157,37 @@ import { supabase } from "./supabase.js";
     if (error) throw error;
     if (!relationship) return;
 
-    const updateDisplay = () => {
-      renderRelationship(
-        relationship.relationship_status,
-        relationship.relationship_since
-      );
-    };
+    renderRelationship(
+      relationship.relationship_status,
+      relationship.relationship_since
+    );
 
-    const observer = new MutationObserver(updateDisplay);
+    // profile-view.js may rebuild #details after this module loads.
+    // Re-render only when another script changes its children.
+    let scheduled = false;
+
+    const observer = new MutationObserver(() => {
+      if (scheduled) return;
+
+      scheduled = true;
+
+      queueMicrotask(() => {
+        scheduled = false;
+
+        renderRelationship(
+          relationship.relationship_status,
+          relationship.relationship_since
+        );
+      });
+    });
 
     observer.observe(details, {
       childList: true,
       subtree: false
     });
-
-    updateDisplay();
   }
 
   initialize().catch(error => {
-    console.error(
-      "Grove relationship display failed:",
-      error
-    );
+    console.error("Grove relationship display failed:", error);
   });
 })();
