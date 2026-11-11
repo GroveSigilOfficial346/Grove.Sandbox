@@ -14,7 +14,7 @@
   <link rel="stylesheet" href="css/profile-post-actions.css?v=20261105-2">
   <link rel="stylesheet" href="css/profile-quick-edit.css?v=20261105-2">
   <link rel="stylesheet" href="css/profile-relationship.css?v=20261105-3">
-  <link rel="stylesheet" href="css/profile-post-composer.css?v=20261106-1">
+  <link rel="stylesheet" href="css/profile-post-composer.css?v=20261111-2">
 
   <script type="module" src="js/profile-view.js?v=20261105-2"></script>
   <script type="module" src="js/profile-pins.js?v=20261105-2"></script>
@@ -25,7 +25,8 @@
   <script type="module" src="js/profile-relationship-display.js?v=20261106-2"></script>
   <script type="module" src="js/profile-followers.js?v=20261105-1"></script>
   <script type="module" src="js/member-safety.js?v=20261105-1"></script>
-  <script type="module" src="js/profile-post-composer.js?v=20261106-1"></script>
+  <script type="module" src="js/profile-post-composer.js?v=20261111-2"></script>
+  <script type="module" src="js/profile-post-media.js?v=20261111-1"></script>
   <script type="module" src="js/grove-link-previews.js?v=20261106-1"></script>
   <script defer src="js/grove-media-previews.js?v=20261111-1"></script>
 </head>
@@ -74,13 +75,9 @@
         <div id="profile-stats" class="profile-stats" aria-label="Profile statistics"></div>
 
         <div class="profile-actions">
-
           <button id="follow-button" class="button primary" type="button" hidden>Follow</button>
-
           <button id="message-button" class="button secondary" type="button" hidden>Message</button>
-
           <button id="edit-profile-button" class="button secondary" type="button" hidden>Edit profile</button>
-
         </div>
 
         <div id="profile-upload-actions" class="upload-actions" hidden>
@@ -139,7 +136,7 @@
 
           <div class="profile-post-composer-meta">
             <span id="profile-post-counter">0 / 5000</span>
-            <span>Text and images supported</span>
+            <span>Text, images, and audio supported</span>
           </div>
 
           <label for="profile-post-images" class="profile-post-file-label">
@@ -156,6 +153,20 @@
           >
 
           <div id="profile-post-preview" class="profile-post-preview"></div>
+
+          <label for="profile-post-audio" class="profile-post-file-label">
+            <span>♫ Add audio</span>
+            <small>One audio file · 20 MB maximum</small>
+          </label>
+
+          <input
+            id="profile-post-audio"
+            type="file"
+            accept="audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav,audio/ogg,audio/webm,audio/aac,.mp3,.m4a,.wav,.ogg,.webm,.aac"
+            hidden
+          >
+
+          <p id="profile-post-audio-status" class="profile-post-audio-status" role="status" aria-live="polite"></p>
 
           <label for="profile-post-visibility">Who can see this post?</label>
 
