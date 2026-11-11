@@ -55,6 +55,7 @@
   flex-direction: column;
   gap: 5px;
   width: fit-content;
+  max-width: 100%;
   padding: 11px 15px;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -107,6 +108,17 @@
   cursor: pointer;
 }
 
+.profile-post-audio-status {
+  margin: -5px 0 2px;
+  color: var(--muted);
+  font-size: .82rem;
+  overflow-wrap: anywhere;
+}
+
+.profile-post-audio-status.error {
+  color: #ff8585;
+}
+
 .profile-post-submit-row {
   display: flex;
   justify-content: space-between;
@@ -130,6 +142,16 @@
   min-width: 135px;
 }
 
+.profile-post-audio {
+  display: block;
+  width: 100%;
+  max-width: 560px;
+  min-height: 42px;
+  margin: 10px 0;
+  border-radius: 12px;
+  background: var(--night);
+}
+
 @media (max-width: 600px) {
   .profile-post-composer {
     padding: 13px;
@@ -142,5 +164,9 @@
 
   .profile-post-submit-row button {
     width: 100%;
+  }
+
+  .profile-post-audio {
+    max-width: 100%;
   }
 }
