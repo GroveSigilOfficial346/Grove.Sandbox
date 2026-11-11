@@ -163,6 +163,40 @@ export function installGroveNotifications(supabase) {
     return preferences;
   }
 
+  async function resolveActorName(actorId) {
+    if (!actorId) return "";
+
+    try {
+      const { data, error } = await supabase
+        .from("profile_directory")
+        .select("display_name,username")
+        .eq("id", actorId)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      return (
+        data?.display_name?.trim() ||
+        (data?.username ? `@${data.username}` : "") ||
+        "Grove member"
+      );
+    } catch (error) {
+      console.warn("Could not resolve notification sender:", error);
+      return "Grove member";
+    }
+  }
+
+  async function enrichNotification(row) {
+    if (!row) return row;
+
+    const actorName = await resolveActorName(row.actor_id);
+
+    return {
+      ...row,
+      actor_name: actorName
+    };
+  }
+
   function destinationFor(row) {
     if (row.kind === "message") {
       return "/messages.html";
@@ -194,13 +228,20 @@ export function installGroveNotifications(supabase) {
     try {
       const registration = await navigator.serviceWorker.ready;
 
+      const body = [
+        row.actor_name,
+        row.message || "You have a new notification."
+      ].filter(Boolean).join(" ");
+
       await registration.showNotification("Grove", {
-        body: row.message || "You have a new notification.",
+        body,
         icon: "/assets/neural-tree.svg",
         badge: "/assets/neural-tree.svg",
         tag: `grove-${row.id}`,
         data: {
-          url: destinationFor(row)
+          url: destinationFor(row),
+          actor_id: row.actor_id || null,
+          actor_name: row.actor_name || ""
         }
       });
     } catch (error) {
@@ -237,16 +278,20 @@ export function installGroveNotifications(supabase) {
 
           if (!row || !categoryEnabled(row.kind)) return;
 
+          const enriched = await enrichNotification(row);
+
           playNotificationSound();
-          await showBrowserAlert(row);
+          await showBrowserAlert(enriched);
 
           window.dispatchEvent(
             new CustomEvent("grove:notification-received", {
               detail: {
-                id: row.id,
-                kind: row.kind,
-                message: row.message,
-                created_at: row.created_at
+                id: enriched.id,
+                kind: enriched.kind,
+                message: enriched.message,
+                actor_id: enriched.actor_id || null,
+                actor_name: enriched.actor_name || "",
+                created_at: enriched.created_at
               }
             })
           );
