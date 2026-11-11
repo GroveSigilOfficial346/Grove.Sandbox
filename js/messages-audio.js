@@ -50,24 +50,61 @@ import { supabase } from "./supabase.js";
   }
 
   function getExtension(file) {
-    if (AUDIO_TYPES[file.type]) return AUDIO_TYPES[file.type];
+    const mime = (file.type || "")
+      .toLowerCase()
+      .split(";")[0]
+      .trim();
 
-    const match = file.name.toLowerCase().match(
+    if (AUDIO_TYPES[mime]) {
+      return AUDIO_TYPES[mime];
+    }
+
+    const match = (file.name || "").toLowerCase().match(
       /\.(mp3|m4a|wav|ogg|webm|aac)$/
     );
 
     return match?.[1] || null;
   }
 
+  function getContentType(file, extension) {
+    const mime = (file.type || "")
+      .toLowerCase()
+      .split(";")[0]
+      .trim();
+
+    if (AUDIO_TYPES[mime]) {
+      return mime;
+    }
+
+    const fallback = {
+      mp3: "audio/mpeg",
+      m4a: "audio/mp4",
+      wav: "audio/wav",
+      ogg: "audio/ogg",
+      webm: "audio/webm",
+      aac: "audio/aac"
+    };
+
+    return fallback[extension] || "";
+  }
+
   function setControlsEnabled(enabled) {
-    const button = $("#audio-attach-button");
-    const input = $("#audio-file-input");
+    const attachButton = $("#audio-attach-button");
+    const fileInput = $("#audio-file-input");
 
-    if (button) button.disabled = !enabled || uploading;
-    if (input) input.disabled = !enabled || uploading;
+    if (attachButton) {
+      attachButton.disabled = !enabled || uploading;
+    }
 
-    if (recordButton && !recording) {
-      recordButton.disabled = !enabled || uploading;
+    if (fileInput) {
+      fileInput.disabled = !enabled || uploading;
+    }
+
+    if (recordButton) {
+      // Keep the stop control usable while a recording is active.
+      recordButton.disabled = recording
+        ? false
+        : (!enabled || uploading);
     }
   }
 
@@ -91,9 +128,9 @@ import { supabase } from "./supabase.js";
 
     const extension = getExtension(file);
 
-    if (!extension || !file.type.startsWith("audio/")) {
+    if (!extension) {
       throw new Error(
-        "Choose a supported MP3, M4A, WAV, OGG, WebM, or AAC file."
+        "Choose MP3, M4A, WAV, OGG, WebM, or AAC audio."
       );
     }
 
@@ -101,6 +138,12 @@ import { supabase } from "./supabase.js";
       throw new Error(
         "Audio files must be larger than 0 and no more than 20 MB."
       );
+    }
+
+    const contentType = getContentType(file, extension);
+
+    if (!contentType) {
+      throw new Error("This audio format is not supported.");
     }
 
     const safeName = crypto.randomUUID() + "." + extension;
@@ -116,7 +159,7 @@ import { supabase } from "./supabase.js";
       const { error: uploadError } = await supabase.storage
         .from(BUCKET)
         .upload(path, file, {
-          contentType: file.type,
+          contentType,
           cacheControl: "3600",
           upsert: false
         });
@@ -133,8 +176,10 @@ import { supabase } from "./supabase.js";
           sender_id: user.id,
           body: "Audio message",
           attachment_path: path,
-          attachment_mime_type: file.type,
-          attachment_filename: file.name.slice(0, 180)
+          attachment_mime_type: contentType,
+          attachment_filename: (
+            file.name || `Grove-audio.${extension}`
+          ).slice(0, 180)
         })
         .select("id")
         .single();
@@ -247,6 +292,7 @@ import { supabase } from "./supabase.js";
       player.controls = true;
       player.preload = "metadata";
       player.src = url;
+      player.setAttribute("aria-label", "Audio message");
 
       const label = document.createElement("span");
       label.className = "message-audio-label";
@@ -359,9 +405,20 @@ import { supabase } from "./supabase.js";
     }
   }
 
+  function resetRecorderButton() {
+    if (!recordButton) return;
+
+    recordButton.classList.remove("recording");
+    recordButton.textContent = "🎙 Record voice";
+    recordButton.disabled =
+      !activeConversationId() || uploading;
+  }
+
   async function startVoiceRecording() {
-    if (!navigator.mediaDevices?.getUserMedia ||
-        !window.MediaRecorder) {
+    if (
+      !navigator.mediaDevices?.getUserMedia ||
+      !window.MediaRecorder
+    ) {
       throw new Error(
         "Voice recording is not supported by this browser."
       );
@@ -407,6 +464,7 @@ import { supabase } from "./supabase.js";
 
     recordButton.classList.add("recording");
     recordButton.textContent = "■ Stop & send";
+    recordButton.disabled = false;
 
     setControlsEnabled(true);
     status("Recording voice message... Maximum 2 minutes.");
@@ -437,9 +495,7 @@ import { supabase } from "./supabase.js";
       mediaRecorder = null;
 
       stopRecordingTracks();
-
-      recordButton.classList.remove("recording");
-      recordButton.textContent = "🎙 Record voice";
+      resetRecorderButton();
 
       if (!chunks.length) {
         status("No audio was captured. Try recording again.", true);
@@ -456,9 +512,13 @@ import { supabase } from "./supabase.js";
           );
         }
 
-        const extension = recordedType.includes("ogg") ? "ogg"
-          : recordedType.includes("mp4") ? "m4a"
-          : recordedType.includes("mpeg") ? "mp3"
+        const normalizedType = recordedType
+          .split(";")[0]
+          .toLowerCase();
+
+        const extension = normalizedType.includes("ogg") ? "ogg"
+          : normalizedType.includes("mp4") ? "m4a"
+          : normalizedType.includes("mpeg") ? "mp3"
           : "webm";
 
         const file = new File(
@@ -467,7 +527,7 @@ import { supabase } from "./supabase.js";
             new Date().toISOString().replace(/[:.]/g, "-") +
             "." + extension,
           {
-            type: recordedType.split(";")[0] || "audio/webm"
+            type: normalizedType || "audio/webm"
           }
         );
 
@@ -475,6 +535,7 @@ import { supabase } from "./supabase.js";
 
       } catch (error) {
         console.error("Voice message send failed:", error);
+
         status(
           error.message || "Voice message could not be sent.",
           true
@@ -482,6 +543,7 @@ import { supabase } from "./supabase.js";
 
       } finally {
         setControlsEnabled(Boolean(activeConversationId()));
+        resetRecorderButton();
       }
     }, { once: true });
 
@@ -515,6 +577,7 @@ import { supabase } from "./supabase.js";
     recordButton.addEventListener("click", async () => {
       if (recording && mediaRecorder?.state === "recording") {
         status("Finishing voice message...");
+        recordButton.disabled = true;
         mediaRecorder.stop();
         return;
       }
@@ -535,11 +598,12 @@ import { supabase } from "./supabase.js";
         );
 
         recording = false;
+        mediaRecorder = null;
+        recordingChunks = [];
+        recordingConversationId = null;
+
         stopRecordingTracks();
-
-        recordButton.classList.remove("recording");
-        recordButton.textContent = "🎙 Record voice";
-
+        resetRecorderButton();
         setControlsEnabled(Boolean(activeConversationId()));
       }
     });
@@ -617,6 +681,14 @@ import { supabase } from "./supabase.js";
 
     setControlsEnabled(Boolean(activeConversationId()));
   }
+
+  window.addEventListener("beforeunload", () => {
+    if (mediaRecorder?.state === "recording") {
+      mediaRecorder.stop();
+    }
+
+    stopRecordingTracks();
+  });
 
   initialize().catch(error => {
     console.error("Grove audio module failed:", error);
