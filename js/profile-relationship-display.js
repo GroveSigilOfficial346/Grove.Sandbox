@@ -19,8 +19,6 @@ import { supabase } from "./supabase.js";
     widowed: "Widowed"
   };
 
-  const SINGLE_STATUSES = new Set(["single", "not_set", "", null]);
-
   function formatDate(value) {
     if (!value || typeof value !== "string") return "";
 
@@ -30,7 +28,6 @@ import { supabase } from "./supabase.js";
     const year = Number(match[1]);
     const month = Number(match[2]);
     const day = Number(match[3]);
-
     const date = new Date(year, month - 1, day);
 
     if (
@@ -38,9 +35,7 @@ import { supabase } from "./supabase.js";
       date.getFullYear() !== year ||
       date.getMonth() !== month - 1 ||
       date.getDate() !== day
-    ) {
-      return "";
-    }
+    ) return "";
 
     return date.toLocaleDateString(undefined, {
       year: "numeric",
@@ -49,47 +44,56 @@ import { supabase } from "./supabase.js";
     });
   }
 
-  function clearRelationshipRows() {
-    details.querySelectorAll(".profile-detail").forEach(item => {
-      const text = (item.textContent || "").trim();
-
-      if (
-        item.dataset.groveRelationshipRow === "true" ||
-        /^relationship\s*:/i.test(text) ||
-        /^since\s*:/i.test(text)
-      ) {
-        item.remove();
-      }
-    });
-  }
-
   function renderRelationship(statusValue, dateValue) {
-    clearRelationshipRows();
-
     const status = String(statusValue || "not_set").toLowerCase();
     const label = STATUS_LABELS[status] || "";
 
-    if (!label) return;
+    const desired = [];
 
-    const relationshipRow = document.createElement("span");
-    relationshipRow.className = "profile-detail grove-relationship-row";
-    relationshipRow.dataset.groveRelationshipRow = "true";
-    relationshipRow.textContent = "Relationship: " + label;
+    if (label) {
+      desired.push("Relationship: " + label);
 
-    details.append(relationshipRow);
+      if (status !== "single" && status !== "not_set") {
+        const date = formatDate(dateValue);
+        if (date) desired.push("Since: " + date);
+      }
+    }
 
-    // A Single or unset relationship never displays a start date.
-    if (SINGLE_STATUSES.has(status)) return;
+    const currentRows = [
+      ...details.querySelectorAll(".profile-detail")
+    ].filter(item => {
+      const value = (item.textContent || "").trim();
 
-    const date = formatDate(dateValue);
-    if (!date) return;
+      return (
+        item.dataset.groveRelationshipRow === "true" ||
+        /^relationship\s*:/i.test(value) ||
+        /^since\s*:/i.test(value)
+      );
+    });
 
-    const sinceRow = document.createElement("span");
-    sinceRow.className = "profile-detail grove-relationship-row";
-    sinceRow.dataset.groveRelationshipRow = "true";
-    sinceRow.textContent = "Since: " + date;
+    const currentText = currentRows.map(item =>
+      (item.textContent || "").trim()
+    );
 
-    details.append(sinceRow);
+    if (
+      currentText.length === desired.length &&
+      currentText.every((value, index) => value === desired[index]) &&
+      currentRows.every(item =>
+        item.dataset.groveRelationshipRow === "true"
+      )
+    ) {
+      return;
+    }
+
+    currentRows.forEach(item => item.remove());
+
+    for (const value of desired) {
+      const row = document.createElement("span");
+      row.className = "profile-detail grove-relationship-row";
+      row.dataset.groveRelationshipRow = "true";
+      row.textContent = value;
+      details.append(row);
+    }
   }
 
   async function initialize() {
@@ -157,29 +161,14 @@ import { supabase } from "./supabase.js";
     if (error) throw error;
     if (!relationship) return;
 
-    renderRelationship(
+    const update = () => renderRelationship(
       relationship.relationship_status,
       relationship.relationship_since
     );
 
-    // profile-view.js may rebuild #details after this module loads.
-    // Re-render only when another script changes its children.
-    let scheduled = false;
+    update();
 
-    const observer = new MutationObserver(() => {
-      if (scheduled) return;
-
-      scheduled = true;
-
-      queueMicrotask(() => {
-        scheduled = false;
-
-        renderRelationship(
-          relationship.relationship_status,
-          relationship.relationship_since
-        );
-      });
-    });
+    const observer = new MutationObserver(update);
 
     observer.observe(details, {
       childList: true,
