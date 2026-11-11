@@ -4,131 +4,220 @@
   --grove-accent-dark: #8c5726;
   --grove-accent-border: rgba(233, 163, 75, .42);
   --grove-accent-wash: rgba(233, 163, 75, .10);
+  --grove-accent-hover: rgba(233, 163, 75, .18);
 }
 
-button,
-.button,
-.file-button,
-.primary-link,
-input[type="button"],
-input[type="submit"] {
-  accent-color: var(--grove-accent);
-  -webkit-tap-highlight-color: transparent;
-}
-
-button:focus-visible,
-.button:focus-visible,
-a.button:focus-visible,
-input:focus-visible,
-textarea:focus-visible,
-select:focus-visible {
-  outline: 2px solid var(--grove-accent);
+/* Focus and browser controls */
+html body button:focus-visible,
+html body a:focus-visible,
+html body input:focus-visible,
+html body textarea:focus-visible,
+html body select:focus-visible {
+  outline: 2px solid var(--grove-accent) !important;
   outline-offset: 3px;
 }
 
-.button,
-.file-button,
-.primary-link,
-.feed-action,
-.send-button,
-.audio-attach-button,
-.audio-record-button,
-.profile-post-file-label {
-  border-color: var(--grove-accent-border);
+html body input,
+html body textarea,
+html body select {
+  accent-color: var(--grove-accent);
 }
 
-.button.primary,
-.primary-link,
-.send-button,
-.account-navigation #join-button {
-  border: 1px solid rgba(233, 163, 75, .45);
-  background: linear-gradient(110deg, #805027, #b87936);
-  color: #fffaf2;
+/* Shared action buttons */
+html body button:not(.danger):not(.delete-button):not(.remove-button),
+html body .button:not(.danger),
+html body .file-button,
+html body .primary-link,
+html body input[type="button"],
+html body input[type="submit"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+html body button.primary,
+html body button.button.primary,
+html body .button.primary,
+html body .primary-link,
+html body .send-button,
+html body form > button,
+html body .account-navigation #join-button,
+html body .member-follow-button:not(.following):not(.pending),
+html body .live-card button,
+html body .chat-form button,
+html body .auth-container form > button {
+  border: 1px solid rgba(233, 163, 75, .5) !important;
+  background: linear-gradient(110deg, #805027, #b87936) !important;
+  color: #fffaf2 !important;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, .13);
+  transition:
+    background .2s ease,
+    border-color .2s ease,
+    box-shadow .2s ease,
+    transform .2s ease,
+    color .2s ease;
 }
 
-.button.primary:hover:not(:disabled),
-.primary-link:hover,
-.send-button:hover:not(:disabled),
-.account-navigation #join-button:hover {
-  border-color: rgba(240, 189, 120, .85);
-  background: linear-gradient(110deg, #95602e, #c48643);
-  box-shadow: 0 7px 20px rgba(0, 0, 0, .22);
+html body button.primary:hover:not(:disabled),
+html body .button.primary:hover:not(:disabled),
+html body .primary-link:hover,
+html body .send-button:hover:not(:disabled),
+html body form > button:hover:not(:disabled),
+html body .account-navigation #join-button:hover,
+html body .member-follow-button:not(.following):not(.pending):hover,
+html body .live-card button:hover:not(:disabled),
+html body .chat-form button:hover:not(:disabled),
+html body .auth-container form > button:hover:not(:disabled) {
+  border-color: rgba(240, 189, 120, .9) !important;
+  background: linear-gradient(110deg, #95602e, #c48643) !important;
+  color: #fffaf2 !important;
+  box-shadow: 0 7px 20px rgba(0, 0, 0, .24);
   transform: translateY(-1px);
 }
 
-.button.secondary,
-.file-button,
-.feed-action,
-.audio-attach-button,
-.audio-record-button {
-  border-color: var(--grove-accent-border);
-  background: var(--grove-accent-wash);
-  color: #f0bd78;
+/* Secondary and neutral actions */
+html body .button.secondary,
+html body .file-button,
+html body .feed-action,
+html body .quiet,
+html body .member-profile-link,
+html body .media-controls button,
+html body .audio-attach-button,
+html body .audio-record-button,
+html body .profile-post-file-label {
+  border: 1px solid var(--grove-accent-border) !important;
+  background: var(--grove-accent-wash) !important;
+  color: var(--grove-accent-light) !important;
 }
 
-.button.secondary:hover:not(:disabled),
-.file-button:hover,
-.feed-action:hover:not(:disabled),
-.audio-attach-button:hover:not(:disabled),
-.audio-record-button:hover:not(:disabled),
-.profile-post-file-label:hover {
-  border-color: rgba(240, 189, 120, .85);
-  background: rgba(233, 163, 75, .17);
-  color: #fff1dc;
+html body .button.secondary:hover:not(:disabled),
+html body .file-button:hover,
+html body .feed-action:hover:not(:disabled),
+html body .quiet:hover:not(:disabled),
+html body .member-profile-link:hover,
+html body .media-controls button:hover:not(:disabled),
+html body .audio-attach-button:hover:not(:disabled),
+html body .audio-record-button:hover:not(:disabled),
+html body .profile-post-file-label:hover {
+  border-color: rgba(240, 189, 120, .85) !important;
+  background: var(--grove-accent-hover) !important;
+  color: #fff1dc !important;
 }
 
-button:not(:disabled):active,
-.button:active,
-.file-button:active,
-.primary-link:active {
-  transform: translateY(1px);
+/* Active feed and follow states */
+html body .feed-action.active {
+  border-color: rgba(233, 163, 75, .7) !important;
+  background: rgba(233, 163, 75, .2) !important;
+  color: #ffe0b4 !important;
 }
 
-.site-header nav a:hover,
-.site-header nav a[aria-current="page"],
-.messages-navigation a:hover,
-.feed-header nav a:hover,
-.feed-header nav a[aria-current="page"] {
-  border-color: rgba(233, 163, 75, .28);
-  background: rgba(233, 163, 75, .08);
-  color: #f0bd78;
+html body .member-follow-button.following,
+html body .member-follow-button.pending {
+  border: 1px solid rgba(233, 163, 75, .35) !important;
+  background: rgba(233, 163, 75, .07) !important;
+  color: #e5c59d !important;
 }
 
-.profile-actions .button,
-.upload-actions .button {
-  border-color: var(--grove-accent-border);
+/* Authentication links and inline controls */
+html body .switch button,
+html body .session-notice a,
+html body .back-link:hover {
+  color: var(--grove-accent-light) !important;
 }
 
-.profile-form input:focus,
-.profile-form textarea:focus,
-.profile-form select:focus,
-.profile-post-composer textarea:focus,
-.profile-post-composer select:focus,
-.message-form textarea:focus {
-  border-color: var(--grove-accent);
-  box-shadow: 0 0 0 2px rgba(233, 163, 75, .12);
+html body .switch button:hover {
+  color: #fff1dc !important;
 }
 
-.profile-detail a,
-a.profile-detail,
-.grove-profile-link,
-.grove-message-link {
+html body #auth-message,
+html body .status {
+  color: var(--grove-accent-light);
+}
+
+/* Navigation hover and selected states */
+html body .site-header nav a:hover,
+html body .site-header nav a[aria-current="page"],
+html body .messages-navigation a:hover,
+html body .messages-navigation a[aria-current="page"],
+html body .feed-header nav a:hover,
+html body .feed-header nav a[aria-current="page"],
+html body .discover-header nav a:hover,
+html body .discover-header nav a[aria-current="page"] {
+  border-color: rgba(233, 163, 75, .3);
+  background: rgba(233, 163, 75, .09);
+  color: var(--grove-accent-light);
+}
+
+/* Form focus */
+html body .profile-form input:focus,
+html body .profile-form textarea:focus,
+html body .profile-form select:focus,
+html body .profile-post-composer textarea:focus,
+html body .profile-post-composer select:focus,
+html body .message-form textarea:focus,
+html body .search-input-wrap:focus-within,
+html body .host-card input:focus {
+  border-color: var(--grove-accent) !important;
+  box-shadow: 0 0 0 2px rgba(233, 163, 75, .13) !important;
+}
+
+/* Warm link treatment for action-like links only */
+html body .profile-detail a,
+html body a.profile-detail,
+html body .grove-profile-link,
+html body .grove-message-link {
   color: #e9c18c;
 }
 
+/* Preserve destructive action colors */
+html body button.danger,
+html body .danger,
+html body .delete-button,
+html body .remove-button,
+html body [data-action="delete"],
+html body [data-action="block"],
+html body [data-action="ban"] {
+  border-color: rgba(255, 133, 133, .4) !important;
+  background: rgba(255, 133, 133, .13) !important;
+  color: #ffaaaa !important;
+}
+
+/* Disabled controls */
+html body button:disabled,
+html body .button:disabled,
+html body input[type="submit"]:disabled {
+  opacity: .48;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* Mobile consistency */
 @media (max-width: 640px) {
-  button,
-  .button,
-  .file-button,
-  .primary-link,
-  .feed-action {
+  html body button,
+  html body .button,
+  html body .file-button,
+  html body .primary-link {
     -webkit-tap-highlight-color: transparent;
   }
 
-  .button.primary,
-  .button.secondary,
-  .send-button {
+  html body button.primary,
+  html body .button.primary,
+  html body .button.secondary,
+  html body .send-button,
+  html body .member-follow-button,
+  html body .member-profile-link {
     min-height: 42px;
+  }
+
+  html body .audio-attach-button {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html body button,
+  html body .button,
+  html body .file-button,
+  html body .primary-link {
+    transition-duration: .01ms !important;
   }
 }
