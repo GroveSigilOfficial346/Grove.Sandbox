@@ -4,17 +4,18 @@
   width: 48px;
   min-height: 48px;
   place-items: center;
-  border: 1px solid var(--border-bright);
+  border: 1px solid rgba(233, 163, 75, .38);
   border-radius: 12px;
-  background: rgba(133, 30, 255, .13);
-  color: var(--cyan);
-  font-size: 1.35rem;
+  background: rgba(233, 163, 75, .10);
+  color: #f0bd78;
+  font-size: 1.25rem;
   cursor: pointer;
+  transition: border-color .2s, background .2s, transform .2s;
 }
 
 .audio-attach-button:hover:not(:disabled) {
-  border-color: var(--cyan);
-  background: rgba(5, 201, 244, .12);
+  border-color: rgba(233, 163, 75, .8);
+  background: rgba(233, 163, 75, .17);
 }
 
 .audio-attach-button:disabled {
@@ -27,7 +28,7 @@
   margin: 0;
   padding: 0 20px 8px;
   background: rgba(16, 11, 37, .96);
-  color: var(--cyan);
+  color: #e9b66f;
   font-size: .76rem;
   overflow-wrap: anywhere;
 }
@@ -37,34 +38,90 @@
 }
 
 .audio-upload-status.error {
-  color: var(--danger);
+  color: #ff8585;
+}
+
+.message-attachment {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  width: min(360px, 100%);
+  max-width: 100%;
+  margin-top: 10px;
+}
+
+.message-attachment-image-link {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  border-radius: 10px;
+}
+
+.message-attachment-image {
+  display: block;
+  width: 100%;
+  max-height: 340px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, .18);
+}
+
+.message-attachment-video {
+  display: block;
+  width: 100%;
+  max-height: 360px;
+  border-radius: 10px;
+  background: #000;
 }
 
 .message-audio-player {
   display: block;
-  width: min(310px, 100%);
-  max-width: 100%;
-  margin-top: 9px;
-  accent-color: var(--cyan);
+  width: 100%;
+  max-width: 340px;
+  margin: 3px 0;
 }
 
-.message-audio-label {
-  display: block;
-  margin-top: 8px;
+.message-attachment-label {
   color: var(--muted);
-  font-size: .75rem;
+  font-size: .73rem;
   overflow-wrap: anywhere;
+}
+
+.message-file-download {
+  display: inline-flex;
+  width: fit-content;
+  max-width: 100%;
+  padding: 10px 13px;
+  border: 1px solid rgba(233, 163, 75, .32);
+  border-radius: 9px;
+  background: rgba(233, 163, 75, .08);
+  color: #f0bd78;
+  overflow-wrap: anywhere;
+}
+
+.message-file-download:hover {
+  border-color: rgba(233, 163, 75, .8);
+  background: rgba(233, 163, 75, .15);
 }
 
 @media (max-width: 640px) {
   .audio-attach-button {
-    flex-basis: 40px;
-    width: 40px;
+    flex-basis: 42px;
+    width: 42px;
     min-height: 44px;
   }
 
   .message-form {
     gap: 7px;
+  }
+
+  .message-attachment {
+    width: 100%;
+  }
+
+  .message-attachment-video,
+  .message-attachment-image {
+    max-height: 250px;
   }
 
   .message-audio-player {
