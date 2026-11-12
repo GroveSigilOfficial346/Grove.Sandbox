@@ -18,6 +18,7 @@
   <link rel="stylesheet" href="/css/messages-compose-actions.css?v=20261112-1">
   <link rel="stylesheet" href="/css/messages-search.css?v=20261112-1">
   <link rel="stylesheet" href="/css/messages-read-receipts.css?v=20261112-2">
+  <link rel="stylesheet" href="/css/messages-thread-replies.css?v=20261112-3">
   <link rel="stylesheet" href="/css/messages-composer-fix.css?v=20261111-2">
   <link rel="stylesheet" href="/css/grove-ui.css?v=20261105-2">
   <link rel="stylesheet" href="/css/messages-themes.css?v=20261105-2">
@@ -26,7 +27,7 @@
   <link rel="stylesheet" href="/css/messages-audio.css?v=20261111-3">
   <link rel="stylesheet" href="/css/grove-warm-controls.css?v=20261111-2">
 
-  <script type="module" src="/js/messages.js?v=20261111-2"></script>
+  <script type="module" src="/js/messages.js?v=20261112-3"></script>
   <script type="module" src="/js/messages-actions.js?v=20261112-1"></script>
   <script type="module" src="/js/messages-compose-actions.js?v=20261112-1"></script>
   <script type="module" src="/js/messages-search.js?v=20261112-1"></script>
@@ -96,9 +97,7 @@
 
             <div class="chat-heading-text">
               <h2 id="chat-title">Choose a conversation</h2>
-              <span id="chat-subtitle">
-                Your private Grove inbox
-              </span>
+              <span id="chat-subtitle">Your private Grove inbox</span>
             </div>
           </div>
         </header>
@@ -120,6 +119,29 @@
         </div>
 
         <form id="message-form" class="message-form">
+          <div
+            id="message-reply-context"
+            class="message-reply-context"
+            hidden
+          >
+            <div class="message-reply-context-copy">
+              <span class="message-reply-context-label">
+                REPLYING TO
+              </span>
+              <span id="message-reply-context-text"></span>
+            </div>
+
+            <button
+              type="button"
+              id="cancel-message-reply"
+              class="message-reply-cancel"
+              aria-label="Cancel reply"
+              title="Cancel reply"
+            >
+              ×
+            </button>
+          </div>
+
           <label class="sr-only" for="message-input">
             Write a message
           </label>
@@ -183,9 +205,7 @@
           aria-live="polite"
         ></p>
 
-        <p class="composer-note">
-          Private conversations on Grove
-        </p>
+        <p class="composer-note">Private conversations on Grove</p>
       </section>
     </section>
   </main>
