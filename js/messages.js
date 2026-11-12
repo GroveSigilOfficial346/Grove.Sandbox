@@ -3,8 +3,9 @@ import { supabase } from "./supabase.js";
 const $ = (selector) => document.querySelector(selector);
 
 const MAX_MESSAGE_LENGTH = 5000;
-const MESSAGE_HISTORY_LIMIT = 300;
-const LATEST_MESSAGE_CONCURRENCY = 4;
+const MESSAGE_HISTORY_LIMIT = 100;
+const LATEST_MESSAGE_BATCH_SIZE = 10;
+const LATEST_MESSAGE_BATCH_LIMIT = 1000;
 
 let user = null;
 let activeConversationId = null;
@@ -129,6 +130,7 @@ async function removeActiveChannel() {
   }
 
   const channel = activeChannel;
+
   activeChannel = null;
   activeChannelConversationId = null;
 
@@ -227,7 +229,7 @@ function renderConversationButton(conversation) {
 
   button.addEventListener("click", () => {
     openConversation(conversation.id, conversation.label)
-      .catch((error) =>
+      .catch(error =>
         showError(error, "Conversation could not open.")
       );
   });
@@ -259,7 +261,7 @@ function renderConversationList() {
 
 function updateConversationPreview(conversationId, message) {
   const conversation = conversations.find(
-    (item) => item.id === conversationId
+    item => item.id === conversationId
   );
 
   if (!conversation) return;
@@ -289,54 +291,80 @@ function updateConversationPreview(conversationId, message) {
 }
 
 /* ==========================================
-   LOAD CONVERSATIONS
+   LOAD LATEST MESSAGES IN SMALL GROUPS
+
+   Previous behavior: one database request per
+   conversation.
+
+   New behavior: one request for a group of
+   conversations, then select the newest message
+   for each conversation in memory.
    ========================================== */
 
 async function loadLatestMessagesInBatches(ids, token) {
-  const results = [];
+  const latestByConversation = new Map();
 
   for (
     let start = 0;
     start < ids.length;
-    start += LATEST_MESSAGE_CONCURRENCY
+    start += LATEST_MESSAGE_BATCH_SIZE
   ) {
     if (token !== conversationLoadToken) return null;
 
     const batch = ids.slice(
       start,
-      start + LATEST_MESSAGE_CONCURRENCY
+      start + LATEST_MESSAGE_BATCH_SIZE
     );
 
-    const batchResults = await Promise.all(
-      batch.map(async (conversationId) => {
-        const { data, error } = await supabase
-          .from("conversation_messages")
-          .select(
-            "id,conversation_id,sender_id,body,created_at,deleted_for_everyone_at,reply_to_message_id"
-          )
-          .eq("conversation_id", conversationId)
-          .is("deleted_for_everyone_at", null)
-          .order("created_at", { ascending: false })
-          .limit(1);
+    const { data, error } = await supabase
+      .from("conversation_messages")
+      .select(
+        "id,conversation_id,sender_id,body,created_at,deleted_for_everyone_at,reply_to_message_id"
+      )
+      .in("conversation_id", batch)
+      .is("deleted_for_everyone_at", null)
+      .order("created_at", { ascending: false })
+      .limit(LATEST_MESSAGE_BATCH_LIMIT);
 
-        if (error) {
-          console.warn(
-            "Could not load latest conversation message.",
-            error
-          );
+    if (error) {
+      console.warn(
+        "Could not load latest conversation messages.",
+        error
+      );
 
-          return [conversationId, null];
-        }
+      for (const conversationId of batch) {
+        latestByConversation.set(conversationId, null);
+      }
 
-        return [conversationId, data?.[0] || null];
-      })
-    );
+      continue;
+    }
 
-    results.push(...batchResults);
+    if (token !== conversationLoadToken) return null;
+
+    for (const message of data || []) {
+      if (!latestByConversation.has(message.conversation_id)) {
+        latestByConversation.set(
+          message.conversation_id,
+          message
+        );
+      }
+    }
+
+    for (const conversationId of batch) {
+      if (!latestByConversation.has(conversationId)) {
+        latestByConversation.set(conversationId, null);
+      }
+    }
   }
 
-  return token === conversationLoadToken ? results : null;
+  return token === conversationLoadToken
+    ? [...latestByConversation.entries()]
+    : null;
 }
+
+/* ==========================================
+   LOAD CONVERSATIONS
+   ========================================== */
 
 async function loadConversationList({
   processRequestedUser = true,
@@ -354,7 +382,7 @@ async function loadConversationList({
   if (token !== conversationLoadToken) return;
 
   const ids = (memberships || []).map(
-    (membership) => membership.conversation_id
+    membership => membership.conversation_id
   );
 
   if (!ids.length) {
@@ -402,8 +430,8 @@ async function loadConversationList({
   const otherUserIds = [
     ...new Set(
       (members || [])
-        .filter((member) => member.user_id !== user.id)
-        .map((member) => member.user_id)
+        .filter(member => member.user_id !== user.id)
+        .map(member => member.user_id)
     )
   ];
 
@@ -423,7 +451,10 @@ async function loadConversationList({
       );
     } else {
       profilesById = new Map(
-        (profiles || []).map((profile) => [profile.id, profile])
+        (profiles || []).map(profile => [
+          profile.id,
+          profile
+        ])
       );
     }
   }
@@ -442,19 +473,28 @@ async function loadConversationList({
   );
 
   const membershipByConversation = new Map(
-    (memberships || []).map((membership) => [
+    (memberships || []).map(membership => [
       membership.conversation_id,
       membership
     ])
   );
 
-  conversations = (rows || []).map((conversation) => {
-    const conversationMembers = (members || []).filter(
-      (member) => member.conversation_id === conversation.id
-    );
+  const membersByConversation = new Map();
+
+  for (const member of members || []) {
+    if (!membersByConversation.has(member.conversation_id)) {
+      membersByConversation.set(member.conversation_id, []);
+    }
+
+    membersByConversation.get(member.conversation_id).push(member);
+  }
+
+  conversations = (rows || []).map(conversation => {
+    const conversationMembers =
+      membersByConversation.get(conversation.id) || [];
 
     const otherMembers = conversationMembers.filter(
-      (member) => member.user_id !== user.id
+      member => member.user_id !== user.id
     );
 
     let label = conversation.title?.trim();
@@ -474,7 +514,9 @@ async function loadConversationList({
     if (!label) label = "Grove conversation";
 
     const membership = membershipByConversation.get(conversation.id);
-    const lastMessage = latestMessageByConversation.get(conversation.id);
+    const lastMessage = latestMessageByConversation.get(
+      conversation.id
+    );
 
     const hasUnread = Boolean(
       lastMessage &&
@@ -500,6 +542,8 @@ async function loadConversationList({
 
     return new Date(bTime) - new Date(aTime);
   });
+
+  if (token !== conversationLoadToken) return;
 
   renderConversationList();
 
@@ -561,7 +605,7 @@ async function startOrOpenDirectConversation(targetUserId) {
   });
 
   const existing = conversations.find(
-    (conversation) => conversation.id === conversationId
+    conversation => conversation.id === conversationId
   );
 
   let label = existing?.label;
@@ -601,7 +645,7 @@ function updateReplyPreview(messageId, originalMessage) {
     ? safeMessageText(originalMessage)
     : "Original message unavailable";
 
-  previews.forEach((preview) => {
+  previews.forEach(preview => {
     preview.textContent = label;
     preview.title = "Jump to original message";
   });
@@ -611,7 +655,7 @@ async function hydrateReplyPreviews(messages) {
   const referencedIds = [
     ...new Set(
       (messages || [])
-        .map((message) => message.reply_to_message_id)
+        .map(message => message.reply_to_message_id)
         .filter(Boolean)
     )
   ];
@@ -621,7 +665,7 @@ async function hydrateReplyPreviews(messages) {
   const conversationId = activeConversationId;
 
   const cachedIds = referencedIds.filter(
-    (id) => !messageById.has(id)
+    id => !messageById.has(id)
   );
 
   let fetched = [];
@@ -636,7 +680,10 @@ async function hydrateReplyPreviews(messages) {
       .in("id", cachedIds);
 
     if (error) {
-      console.warn("Could not load original replied-to messages.", error);
+      console.warn(
+        "Could not load original replied-to messages.",
+        error
+      );
     } else {
       fetched = data || [];
 
@@ -723,8 +770,11 @@ function appendMessageToView(message) {
   scrollMessagesToBottom();
 
   if (message.reply_to_message_id) {
-    hydrateReplyPreviews([message]).catch((error) => {
-      console.warn("Reply preview could not load.", error);
+    hydrateReplyPreviews([message]).catch(error => {
+      console.warn(
+        "Reply preview could not load.",
+        error
+      );
     });
   }
 }
@@ -800,11 +850,14 @@ async function updateReadMarker(conversationId) {
     .eq("user_id", user.id);
 
   if (error) {
-    console.warn("Could not update message read marker.", error);
+    console.warn(
+      "Could not update message read marker.",
+      error
+    );
   }
 
   const conversation = conversations.find(
-    (item) => item.id === conversationId
+    item => item.id === conversationId
   );
 
   if (conversation) {
@@ -933,7 +986,7 @@ async function openConversation(id, label) {
           table: "conversation_messages",
           filter: `conversation_id=eq.${id}`
         },
-        async (payload) => {
+        async payload => {
           if (activeConversationId !== id) return;
 
           const message = payload.new;
@@ -953,10 +1006,13 @@ async function openConversation(id, label) {
           }
         }
       )
-      .subscribe((status) => {
+      .subscribe(status => {
         if (activeConversationId !== id) return;
 
-        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+        if (
+          status === "CHANNEL_ERROR" ||
+          status === "TIMED_OUT"
+        ) {
           setStatus(
             "Live updates are temporarily unavailable. Refresh the conversation to check for new messages.",
             true
@@ -1000,7 +1056,10 @@ async function sendMessage(event) {
   if (!body) return;
 
   if (body.length > MAX_MESSAGE_LENGTH) {
-    setStatus("Messages must be 5,000 characters or fewer.", true);
+    setStatus(
+      "Messages must be 5,000 characters or fewer.",
+      true
+    );
     return;
   }
 
@@ -1051,8 +1110,10 @@ async function sendMessage(event) {
     }
 
     setStatus("");
+
   } catch (error) {
     showError(error, "Your message could not be sent.");
+
   } finally {
     isSending = false;
     setComposerEnabled(Boolean(activeConversationId));
@@ -1078,6 +1139,7 @@ async function initialize() {
       if (form) form.hidden = true;
 
       const list = $("#conversation-list");
+
       if (list) {
         list.textContent = "Sign in to view your conversations.";
       }
@@ -1106,12 +1168,16 @@ async function initialize() {
     const cancelReply = $("#cancel-message-reply");
 
     if (cancelReply) {
-      cancelReply.addEventListener("click", clearReplyTarget);
+      cancelReply.addEventListener(
+        "click",
+        clearReplyTarget
+      );
     }
 
     await loadConversationList();
 
     setStatus("");
+
   } catch (error) {
     showError(error, "Messages could not load.");
   }
