@@ -1,0 +1,271 @@
+:root {
+  color-scheme: dark;
+  --bg: #050019;
+  --panel: #100b25;
+  --panel-soft: #17102f;
+  --purple: #851eff;
+  --pink: #eb36ed;
+  --cyan: #05c9f4;
+  --text: #f7f5ff;
+  --muted: #aaa2bd;
+  --border: rgba(133,30,255,.35);
+  --danger: #ff8585;
+  --success: #7bd7a2;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(133,30,255,.18), transparent 40%),
+    var(--bg);
+  color: var(--text);
+  font-family: "DM Sans", system-ui, sans-serif;
+}
+
+.admin-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 18px clamp(16px, 4vw, 42px);
+  border-bottom: 1px solid var(--border);
+}
+
+.admin-brand {
+  color: var(--text);
+  font-weight: 900;
+  letter-spacing: .2em;
+  text-decoration: none;
+}
+
+.admin-header nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.admin-header nav a {
+  color: var(--muted);
+  font-size: .84rem;
+  text-decoration: none;
+}
+
+.admin-header nav a:hover {
+  color: var(--cyan);
+}
+
+.admin-container {
+  width: min(100% - 32px, 960px);
+  margin: 38px auto 70px;
+}
+
+.admin-heading {
+  margin-bottom: 26px;
+}
+
+.admin-eyebrow {
+  color: var(--cyan);
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .18em;
+}
+
+.admin-heading h1 {
+  margin: 8px 0;
+  font-family: "Space Grotesk", sans-serif;
+  font-size: clamp(1.8rem, 5vw, 2.7rem);
+}
+
+.admin-heading p {
+  max-width: 690px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.admin-notice,
+.admin-queue,
+.adult-request-card {
+  padding: 20px;
+  border: 1px solid var(--border);
+  border-radius: 15px;
+  background: rgba(16,11,37,.92);
+}
+
+.admin-notice {
+  margin-bottom: 24px;
+  border-color: rgba(235,54,237,.4);
+}
+
+.admin-notice strong {
+  color: #e9c5ff;
+}
+
+.admin-notice p {
+  margin-bottom: 0;
+  color: var(--muted);
+  font-size: .86rem;
+  line-height: 1.6;
+}
+
+.admin-queue-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.admin-queue-heading h2 {
+  margin: 0;
+}
+
+.admin-queue-heading p {
+  margin: 5px 0 0;
+  color: var(--muted);
+  font-size: .8rem;
+}
+
+button {
+  min-height: 40px;
+  padding: 9px 14px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: rgba(133,30,255,.2);
+  color: var(--text);
+  font: inherit;
+  font-size: .82rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+button:hover {
+  border-color: var(--cyan);
+}
+
+button:disabled {
+  cursor: not-allowed;
+  opacity: .5;
+}
+
+#adult-admin-status {
+  min-height: 22px;
+  margin: 0 0 12px;
+  color: var(--success);
+  font-size: .85rem;
+}
+
+#adult-admin-status.error {
+  color: var(--danger);
+}
+
+#adult-admin-list {
+  display: grid;
+  gap: 14px;
+}
+
+.adult-request-card {
+  display: grid;
+  gap: 13px;
+  background: var(--panel-soft);
+}
+
+.adult-request-identity {
+  display: grid;
+  gap: 4px;
+}
+
+.adult-request-identity strong {
+  font-size: 1rem;
+}
+
+.adult-request-identity small,
+.adult-request-meta {
+  color: var(--muted);
+  font-size: .78rem;
+  overflow-wrap: anywhere;
+}
+
+.adult-request-fields {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.adult-request-fields label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.adult-request-fields input {
+  width: 100%;
+  min-height: 42px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #08051a;
+  color: var(--text);
+}
+
+.adult-request-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.adult-request-actions .approve {
+  border-color: rgba(123,215,162,.4);
+  background: rgba(123,215,162,.13);
+  color: var(--success);
+}
+
+.adult-request-actions .deny {
+  border-color: rgba(255,133,133,.4);
+  background: rgba(255,133,133,.1);
+  color: var(--danger);
+}
+
+.admin-empty {
+  color: var(--muted);
+  font-size: .88rem;
+  line-height: 1.6;
+}
+
+@media (max-width: 600px) {
+  .admin-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .admin-container {
+    width: calc(100% - 22px);
+    margin-top: 22px;
+  }
+
+  .admin-notice,
+  .admin-queue,
+  .adult-request-card {
+    padding: 15px;
+  }
+
+  .adult-request-fields {
+    grid-template-columns: 1fr;
+  }
+
+  .adult-request-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .adult-request-actions button {
+    width: 100%;
+  }
+}
