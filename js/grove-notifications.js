@@ -6,6 +6,7 @@ export function installGroveNotifications(supabase) {
 
   const SOUND_KEY = id => `grove:notification-sound:${id}`;
   const VOLUME_KEY = id => `grove:notification-volume:${id}`;
+  const TONE_KEY = id => `grove:notification-tone:${id}`;
 
   const DEFAULTS = {
     notify_messages: true,
@@ -16,27 +17,76 @@ export function installGroveNotifications(supabase) {
     notify_mentions: true
   };
 
+  const TONES = {
+    classic: [
+      { frequency: 660, start: 0, duration: 0.12 },
+      { frequency: 880, start: 0.14, duration: 0.17 }
+    ],
+    soft: [
+      { frequency: 523, start: 0, duration: 0.19 },
+      { frequency: 659, start: 0.21, duration: 0.22 }
+    ],
+    digital: [
+      { frequency: 880, start: 0, duration: 0.07, type: "square" },
+      { frequency: 1175, start: 0.09, duration: 0.07, type: "square" },
+      { frequency: 880, start: 0.18, duration: 0.09, type: "square" }
+    ],
+    gothic: [
+      { frequency: 392, start: 0, duration: 0.25 },
+      { frequency: 523, start: 0.28, duration: 0.25 },
+      { frequency: 659, start: 0.56, duration: 0.3 }
+    ],
+    pulse: [
+      { frequency: 740, start: 0, duration: 0.09, type: "triangle" },
+      { frequency: 740, start: 0.2, duration: 0.09, type: "triangle" },
+      { frequency: 988, start: 0.4, duration: 0.16, type: "triangle" }
+    ]
+  };
+
   let user = null;
   let preferences = { ...DEFAULTS };
   let channel = null;
   let audioContext = null;
-  let interacted = false;
+  let audioUnlocked = false;
 
-  document.addEventListener(
-    "pointerdown",
-    () => {
-      interacted = true;
-    },
-    { once: true }
-  );
+  function getAudioContext() {
+    const AudioContextClass =
+      window.AudioContext || window.webkitAudioContext;
 
-  document.addEventListener(
-    "keydown",
-    () => {
-      interacted = true;
-    },
-    { once: true }
-  );
+    if (!AudioContextClass) return null;
+
+    if (!audioContext) {
+      audioContext = new AudioContextClass();
+    }
+
+    return audioContext;
+  }
+
+  function primeAudio() {
+    try {
+      const context = getAudioContext();
+      if (!context) return;
+
+      audioUnlocked = true;
+
+      if (context.state === "suspended") {
+        context.resume().catch(error => {
+          console.warn("Grove audio could not resume:", error);
+        });
+      }
+    } catch (error) {
+      console.warn("Grove audio could not initialize:", error);
+    }
+  }
+
+  document.addEventListener("pointerdown", primeAudio, {
+    once: true,
+    passive: true
+  });
+
+  document.addEventListener("keydown", primeAudio, {
+    once: true
+  });
 
   function categoryEnabled(kind) {
     switch (kind) {
@@ -90,54 +140,73 @@ export function installGroveNotifications(supabase) {
     }
   }
 
-  function playNotificationSound() {
-    if (!user || !interacted || !soundEnabled()) return;
+  function selectedTone() {
+    if (!user) return "classic";
 
     try {
-      const AudioContextClass =
-        window.AudioContext || window.webkitAudioContext;
+      const value = localStorage.getItem(TONE_KEY(user.id));
 
-      if (!AudioContextClass) return;
+      return Object.hasOwn(TONES, value) ? value : "classic";
+    } catch {
+      return "classic";
+    }
+  }
 
-      audioContext ||= new AudioContextClass();
+  async function playNotificationSound(force = false) {
+    if (!user || (!force && (!audioUnlocked || !soundEnabled()))) {
+      return false;
+    }
 
-      if (audioContext.state === "suspended") {
-        audioContext.resume();
+    try {
+      const context = getAudioContext();
+      if (!context) return false;
+
+      if (context.state === "suspended") {
+        await context.resume();
       }
 
-      const now = audioContext.currentTime;
+      if (context.state !== "running") return false;
+
       const volume = soundVolume();
 
-      [
-        { frequency: 660, start: 0, duration: 0.12 },
-        { frequency: 880, start: 0.13, duration: 0.16 }
-      ].forEach(note => {
-        const oscillator = audioContext.createOscillator();
-        const gain = audioContext.createGain();
+      if (volume <= 0) return false;
 
-        oscillator.type = "sine";
-        oscillator.frequency.value = note.frequency;
+      const notes = TONES[selectedTone()] || TONES.classic;
+      const now = context.currentTime;
 
-        gain.gain.setValueAtTime(0, now + note.start);
+      for (const note of notes) {
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
 
-        gain.gain.linearRampToValueAtTime(
-          volume * 0.12,
-          now + note.start + 0.02
+        oscillator.type = note.type || "sine";
+        oscillator.frequency.setValueAtTime(
+          note.frequency,
+          now + note.start
         );
 
+        const peak = volume * 0.12;
+
+        gain.gain.setValueAtTime(0.0001, now + note.start);
+        gain.gain.linearRampToValueAtTime(
+          peak,
+          now + note.start + 0.018
+        );
         gain.gain.exponentialRampToValueAtTime(
-          0.001,
+          0.0001,
           now + note.start + note.duration
         );
 
         oscillator.connect(gain);
-        gain.connect(audioContext.destination);
+        gain.connect(context.destination);
 
         oscillator.start(now + note.start);
-        oscillator.stop(now + note.start + note.duration);
-      });
+        oscillator.stop(now + note.start + note.duration + 0.02);
+      }
+
+      return true;
     } catch (error) {
       console.warn("Grove notification sound unavailable:", error);
+      return false;
     }
   }
 
@@ -278,9 +347,15 @@ export function installGroveNotifications(supabase) {
 
           if (!row || !categoryEnabled(row.kind)) return;
 
+          // Play immediately; do not wait for sender-name lookup.
+          if (row.kind === "message") {
+            playNotificationSound();
+          } else {
+            playNotificationSound();
+          }
+
           const enriched = await enrichNotification(row);
 
-          playNotificationSound();
           await showBrowserAlert(enriched);
 
           window.dispatchEvent(
@@ -328,7 +403,7 @@ export function installGroveNotifications(supabase) {
       connectRealtime();
 
       window.GroveNotifications = Object.freeze({
-        playTestSound: playNotificationSound,
+        playTestSound: () => playNotificationSound(true),
         reloadPreferences: loadPreferences
       });
     } catch (error) {
