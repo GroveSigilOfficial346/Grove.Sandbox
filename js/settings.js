@@ -32,8 +32,38 @@ import { supabase } from "./supabase.js";
   const VOLUME_KEY = userId =>
     `grove:notification-volume:${userId}`;
 
+  const TONE_KEY = userId =>
+    `grove:notification-tone:${userId}`;
+
+  const TONES = {
+    classic: [
+      { frequency: 660, start: 0, duration: 0.12 },
+      { frequency: 880, start: 0.14, duration: 0.17 }
+    ],
+    soft: [
+      { frequency: 523, start: 0, duration: 0.19 },
+      { frequency: 659, start: 0.21, duration: 0.22 }
+    ],
+    digital: [
+      { frequency: 880, start: 0, duration: 0.07, type: "square" },
+      { frequency: 1175, start: 0.09, duration: 0.07, type: "square" },
+      { frequency: 880, start: 0.18, duration: 0.09, type: "square" }
+    ],
+    gothic: [
+      { frequency: 392, start: 0, duration: 0.25 },
+      { frequency: 523, start: 0.28, duration: 0.25 },
+      { frequency: 659, start: 0.56, duration: 0.3 }
+    ],
+    pulse: [
+      { frequency: 740, start: 0, duration: 0.09, type: "triangle" },
+      { frequency: 740, start: 0.2, duration: 0.09, type: "triangle" },
+      { frequency: 988, start: 0.4, duration: 0.16, type: "triangle" }
+    ]
+  };
+
   let user = null;
   let saving = false;
+  let audioContext = null;
 
   function setStatus(message, error = false) {
     if (!status) return;
@@ -73,37 +103,78 @@ import { supabase } from "./supabase.js";
     }
   }
 
-  function playPreview() {
+  function selectedTone() {
+    if (!user) return "classic";
+
+    try {
+      const value = localStorage.getItem(TONE_KEY(user.id));
+      return Object.hasOwn(TONES, value) ? value : "classic";
+    } catch {
+      return "classic";
+    }
+  }
+
+  function getAudioContext() {
     const AudioContextClass =
       window.AudioContext || window.webkitAudioContext;
 
-    if (!AudioContextClass) {
-      setStatus("Audio preview is not supported in this browser.", true);
+    if (!AudioContextClass) return null;
+
+    if (!audioContext) {
+      audioContext = new AudioContextClass();
+    }
+
+    return audioContext;
+  }
+
+  async function playPreview() {
+    const context = getAudioContext();
+
+    if (!context) {
+      setStatus(
+        "Audio preview is not supported in this browser.",
+        true
+      );
       return;
     }
 
     try {
-      const context = new AudioContextClass();
-      const now = context.currentTime;
+      if (context.state === "suspended") {
+        await context.resume();
+      }
+
+      if (context.state !== "running") {
+        throw new Error("Browser audio is not available.");
+      }
+
       const volume = Number($("sound-volume")?.value ?? 0.35);
 
-      [
-        { frequency: 660, start: 0, duration: 0.12 },
-        { frequency: 880, start: 0.13, duration: 0.16 }
-      ].forEach(note => {
+      if (volume <= 0) {
+        setStatus("Increase the volume to preview the sound.", true);
+        return;
+      }
+
+      const tone = $("sound-tone")?.value || selectedTone();
+      const notes = TONES[tone] || TONES.classic;
+      const now = context.currentTime;
+
+      for (const note of notes) {
         const oscillator = context.createOscillator();
         const gain = context.createGain();
 
-        oscillator.type = "sine";
-        oscillator.frequency.value = note.frequency;
+        oscillator.type = note.type || "sine";
+        oscillator.frequency.setValueAtTime(
+          note.frequency,
+          now + note.start
+        );
 
-        gain.gain.setValueAtTime(0, now + note.start);
+        gain.gain.setValueAtTime(0.0001, now + note.start);
         gain.gain.linearRampToValueAtTime(
           volume * 0.12,
-          now + note.start + 0.02
+          now + note.start + 0.018
         );
         gain.gain.exponentialRampToValueAtTime(
-          0.001,
+          0.0001,
           now + note.start + note.duration
         );
 
@@ -111,13 +182,17 @@ import { supabase } from "./supabase.js";
         gain.connect(context.destination);
 
         oscillator.start(now + note.start);
-        oscillator.stop(now + note.start + note.duration);
-      });
+        oscillator.stop(now + note.start + note.duration + 0.02);
+      }
 
-      window.setTimeout(() => context.close(), 800);
+      setStatus("Playing sound preview.");
+
     } catch (error) {
       console.error("Grove sound preview failed:", error);
-      setStatus("Could not play the sound preview.", true);
+      setStatus(
+        error.message || "Could not play the sound preview.",
+        true
+      );
     }
   }
 
@@ -152,6 +227,7 @@ import { supabase } from "./supabase.js";
           .maybeSingle();
 
         if (insert.error) throw insert.error;
+
         if (!insert.data) {
           throw new Error("Your preference could not be saved.");
         }
@@ -164,10 +240,16 @@ import { supabase } from "./supabase.js";
           detail: { [column]: value }
         })
       );
+
     } catch (error) {
       console.error("Grove preference save failed:", error);
-      setStatus(error.message || "Could not save this preference.", true);
+      setStatus(
+        error.message || "Could not save this preference.",
+        true
+      );
+
       await loadPreferences();
+
     } finally {
       saving = false;
     }
@@ -199,7 +281,9 @@ import { supabase } from "./supabase.js";
   function connectSoundControls() {
     const enabled = $("sound-enabled");
     const volume = $("sound-volume");
+    const tone = $("sound-tone");
     const preview = $("test-sound");
+    const volumeValue = $("sound-volume-value");
 
     if (enabled) {
       enabled.checked = soundEnabled();
@@ -211,10 +295,17 @@ import { supabase } from "./supabase.js";
             enabled.checked ? "true" : "false"
           );
 
-          setStatus("Sound preference saved on this device.");
+          setStatus(
+            enabled.checked
+              ? "Notification sounds enabled on this device."
+              : "Notification sounds disabled on this device."
+          );
         } catch (error) {
           console.error(error);
-          setStatus("Could not save the sound preference.", true);
+          setStatus(
+            "Could not save the sound preference.",
+            true
+          );
         }
       });
     }
@@ -222,14 +313,45 @@ import { supabase } from "./supabase.js";
     if (volume) {
       volume.value = String(soundVolume());
 
+      if (volumeValue) {
+        volumeValue.value = `${Math.round(Number(volume.value) * 100)}%`;
+        volumeValue.textContent = volumeValue.value;
+      }
+
       volume.addEventListener("input", () => {
+        const currentVolume = Number(volume.value);
+
+        if (volumeValue) {
+          volumeValue.value = `${Math.round(currentVolume * 100)}%`;
+          volumeValue.textContent = volumeValue.value;
+        }
+
         try {
           localStorage.setItem(
             VOLUME_KEY(user.id),
-            String(volume.value)
+            String(currentVolume)
           );
         } catch (error) {
+          console.error("Could not save sound volume:", error);
+        }
+      });
+    }
+
+    if (tone) {
+      tone.value = selectedTone();
+
+      tone.addEventListener("change", () => {
+        try {
+          const value = TONES[tone.value] ? tone.value : "classic";
+
+          localStorage.setItem(TONE_KEY(user.id), value);
+          setStatus("Notification sound style saved.");
+        } catch (error) {
           console.error(error);
+          setStatus(
+            "Could not save the sound style.",
+            true
+          );
         }
       });
     }
@@ -270,7 +392,10 @@ import { supabase } from "./supabase.js";
 
   async function enableDeviceNotifications() {
     if (!("Notification" in window)) {
-      setDeviceStatus("This browser does not support notifications.", true);
+      setDeviceStatus(
+        "This browser does not support notifications.",
+        true
+      );
       return;
     }
 
@@ -295,8 +420,10 @@ import { supabase } from "./supabase.js";
       }
 
       await updateDeviceStatus();
+
     } catch (error) {
       console.error("Device notification permission failed:", error);
+
       setDeviceStatus(
         error.message || "Could not enable device notifications.",
         true
@@ -306,7 +433,10 @@ import { supabase } from "./supabase.js";
 
   async function disableDeviceNotifications() {
     if (!("serviceWorker" in navigator)) {
-      setDeviceStatus("Service workers are not supported here.", true);
+      setDeviceStatus(
+        "Service workers are not supported here.",
+        true
+      );
       return;
     }
 
@@ -338,8 +468,13 @@ import { supabase } from "./supabase.js";
       setDeviceStatus(
         "This device's Grove push subscription has been turned off. Browser permission can be managed separately in site settings."
       );
+
     } catch (error) {
-      console.error("Could not disable device notifications:", error);
+      console.error(
+        "Could not disable device notifications:",
+        error
+      );
+
       setDeviceStatus(
         error.message || "Could not turn off device notifications.",
         true
@@ -387,9 +522,14 @@ import { supabase } from "./supabase.js";
       );
 
       setStatus("");
+
     } catch (error) {
       console.error("Grove settings failed to initialize:", error);
-      setStatus(error.message || "Could not load settings.", true);
+
+      setStatus(
+        error.message || "Could not load settings.",
+        true
+      );
     }
   }
 
