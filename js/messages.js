@@ -4,6 +4,7 @@ const $ = (selector) => document.querySelector(selector);
 
 const MAX_MESSAGE_LENGTH = 5000;
 const MESSAGE_HISTORY_LIMIT = 300;
+const LATEST_MESSAGE_CONCURRENCY = 4;
 
 let user = null;
 let activeConversationId = null;
@@ -15,7 +16,6 @@ let conversations = [];
 let conversationLoadToken = 0;
 let messageLoadToken = 0;
 let isSending = false;
-
 let replyTarget = null;
 
 const messageById = new Map();
@@ -292,6 +292,52 @@ function updateConversationPreview(conversationId, message) {
    LOAD CONVERSATIONS
    ========================================== */
 
+async function loadLatestMessagesInBatches(ids, token) {
+  const results = [];
+
+  for (
+    let start = 0;
+    start < ids.length;
+    start += LATEST_MESSAGE_CONCURRENCY
+  ) {
+    if (token !== conversationLoadToken) return null;
+
+    const batch = ids.slice(
+      start,
+      start + LATEST_MESSAGE_CONCURRENCY
+    );
+
+    const batchResults = await Promise.all(
+      batch.map(async (conversationId) => {
+        const { data, error } = await supabase
+          .from("conversation_messages")
+          .select(
+            "id,conversation_id,sender_id,body,created_at,deleted_for_everyone_at,reply_to_message_id"
+          )
+          .eq("conversation_id", conversationId)
+          .is("deleted_for_everyone_at", null)
+          .order("created_at", { ascending: false })
+          .limit(1);
+
+        if (error) {
+          console.warn(
+            "Could not load latest conversation message.",
+            error
+          );
+
+          return [conversationId, null];
+        }
+
+        return [conversationId, data?.[0] || null];
+      })
+    );
+
+    results.push(...batchResults);
+  }
+
+  return token === conversationLoadToken ? results : null;
+}
+
 async function loadConversationList({
   processRequestedUser = true,
   autoOpenFirst = true
@@ -305,6 +351,7 @@ async function loadConversationList({
       .eq("user_id", user.id);
 
   if (membershipError) throw membershipError;
+  if (token !== conversationLoadToken) return;
 
   const ids = (memberships || []).map(
     (membership) => membership.conversation_id
@@ -341,6 +388,7 @@ async function loadConversationList({
       .order("updated_at", { ascending: false });
 
   if (conversationError) throw conversationError;
+  if (token !== conversationLoadToken) return;
 
   const { data: members, error: membersError } =
     await supabase
@@ -349,6 +397,7 @@ async function loadConversationList({
       .in("conversation_id", ids);
 
   if (membersError) throw membersError;
+  if (token !== conversationLoadToken) return;
 
   const otherUserIds = [
     ...new Set(
@@ -381,31 +430,12 @@ async function loadConversationList({
 
   if (token !== conversationLoadToken) return;
 
-  const latestMessageResults = await Promise.all(
-    ids.map(async (conversationId) => {
-      const { data, error } = await supabase
-        .from("conversation_messages")
-        .select(
-          "id,conversation_id,sender_id,body,created_at,deleted_for_everyone_at,reply_to_message_id"
-        )
-        .eq("conversation_id", conversationId)
-        .is("deleted_for_everyone_at", null)
-        .order("created_at", { ascending: false })
-        .limit(1);
-
-      if (error) {
-        console.warn(
-          "Could not load latest conversation message.",
-          error
-        );
-        return [conversationId, null];
-      }
-
-      return [conversationId, data?.[0] || null];
-    })
+  const latestMessageResults = await loadLatestMessagesInBatches(
+    ids,
+    token
   );
 
-  if (token !== conversationLoadToken) return;
+  if (!latestMessageResults || token !== conversationLoadToken) return;
 
   const latestMessageByConversation = new Map(
     latestMessageResults
@@ -837,6 +867,13 @@ async function loadMessages() {
     await hydrateReplyPreviews(data);
   }
 
+  if (
+    token !== messageLoadToken ||
+    conversationId !== activeConversationId
+  ) {
+    return;
+  }
+
   scrollMessagesToBottom();
 
   await updateReadMarker(conversationId);
@@ -879,6 +916,8 @@ async function openConversation(id, label) {
 
   try {
     await removeActiveChannel();
+
+    if (activeConversationId !== id) return;
 
     await loadMessages();
 
@@ -926,6 +965,11 @@ async function openConversation(id, label) {
           setStatus("");
         }
       });
+
+    if (activeConversationId !== id) {
+      await supabase.removeChannel(channel);
+      return;
+    }
 
     activeChannel = channel;
     activeChannelConversationId = id;
@@ -1078,6 +1122,9 @@ async function initialize() {
    ========================================== */
 
 window.addEventListener("beforeunload", () => {
+  conversationLoadToken++;
+  messageLoadToken++;
+
   if (activeChannel) {
     supabase.removeChannel(activeChannel);
   }
