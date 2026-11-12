@@ -6,12 +6,11 @@ import { installGroveNotifications } from "./grove-notifications.js";
 import { installGroveActivityTab } from "./grove-activity-tab.js";
 import { installGroveSanctionStatus } from "./grove-sanction-status.js";
 import { installGroveButtonTheme } from "./grove-button-theme.js";
+import { installGroveUpdates } from "./grove-updates.js";
 
 const SUPABASE_URL =
   "https://fpkrvgcpbnrusbfmhinj.supabase.co";
 
-// Active Grove.Sandbox publishable key.
-// Never place a service-role key in browser code.
 const SUPABASE_ANON_KEY =
   "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
 
@@ -37,6 +36,7 @@ const groveAuthStorage = {
 
       localStorage.removeItem(key);
       return sessionStorage.getItem(key);
+
     } catch (error) {
       console.error("Grove session storage error:", error);
       return null;
@@ -52,6 +52,7 @@ const groveAuthStorage = {
         sessionStorage.setItem(key, value);
         localStorage.removeItem(key);
       }
+
     } catch (error) {
       console.error("Grove could not save the session:", error);
       throw error;
@@ -62,6 +63,7 @@ const groveAuthStorage = {
     try {
       localStorage.removeItem(key);
       sessionStorage.removeItem(key);
+
     } catch (error) {
       console.error("Grove could not clear the session:", error);
     }
@@ -87,6 +89,7 @@ installGroveShell(supabase);
 installGroveCompactUI();
 installGroveSanctionStatus(supabase);
 installGroveButtonTheme(supabase);
+installGroveUpdates(supabase);
 
 const isLandingPage = Boolean(
   document.querySelector("main .account-navigation")
