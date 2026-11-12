@@ -1,0 +1,34 @@
+.account-type-label {
+  display: block;
+  margin: 14px 0 7px;
+  color: #e4d8f7;
+  font-size: .83rem;
+  font-weight: 750;
+  text-align: left;
+}
+
+#register-account-type {
+  display: block;
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 13px;
+  border: 1px solid rgba(133,30,255,.45);
+  border-radius: 10px;
+  background: #0b0620;
+  color: #f7f5ff;
+  font: inherit;
+}
+
+#register-account-type:focus {
+  border-color: #05c9f4;
+  outline: 2px solid rgba(5,201,244,.14);
+  outline-offset: 2px;
+}
+
+.account-type-note {
+  margin: 8px 0 13px;
+  color: #aaa1c8;
+  font-size: .76rem;
+  line-height: 1.55;
+  text-align: left;
+}
