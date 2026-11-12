@@ -9,6 +9,31 @@ import { supabase } from "./supabase.js";
   const POST_MEDIA_BUCKET = "post-media-private";
   const MAX_IMAGE_SIZE = 5 * 1024 * 1024;
 
+  const PROFILE_TIMEOUTS = {
+    auth: 8000,
+    profile: 12000,
+    relationship: 9000,
+    appearance: 7000,
+    secondary: 18000
+  };
+
+  function withTimeout(task, milliseconds, label) {
+    let timer;
+
+    return Promise.race([
+      Promise.resolve().then(() => (
+        typeof task === "function" ? task() : task
+      )),
+      new Promise((_, reject) => {
+        timer = window.setTimeout(() => {
+          reject(new Error(label + " timed out. Refresh the page and try again."));
+        }, milliseconds);
+      })
+    ]).finally(() => {
+      if (timer) window.clearTimeout(timer);
+    });
+  }
+
   const PROFILE_COLUMNS = [
     "id", "username", "display_name", "bio", "avatar_url", "cover_url",
     "created_at", "updated_at", "location", "website", "pronouns",
@@ -1126,11 +1151,13 @@ import { supabase } from "./supabase.js";
     try {
       setStatus("Loading profile...");
 
-      const { data: auth, error: authError } =
-        await supabase.auth.getUser();
+      const { data: auth, error: authError } = await withTimeout(
+        () => supabase.auth.getUser(),
+        PROFILE_TIMEOUTS.auth,
+        "Authentication"
+      );
 
       if (authError) throw authError;
-
       currentUser = auth.user || null;
 
       const params = new URLSearchParams(window.location.search);
@@ -1145,11 +1172,15 @@ import { supabase } from "./supabase.js";
       }
 
       if (!requestedId && !requestedUsername && currentUser) {
-        const { data, error } = await supabase
-          .from("profiles")
-          .select(PROFILE_COLUMNS)
-          .eq("id", currentUser.id)
-          .maybeSingle();
+        const { data, error } = await withTimeout(
+          () => supabase
+            .from("profiles")
+            .select(PROFILE_COLUMNS)
+            .eq("id", currentUser.id)
+            .maybeSingle(),
+          PROFILE_TIMEOUTS.profile,
+          "Your profile lookup"
+        );
 
         if (error) throw error;
         if (!data) throw new Error("Your profile could not be found.");
@@ -1166,7 +1197,11 @@ import { supabase } from "./supabase.js";
           ? query.eq("id", requestedId)
           : query.eq("username", requestedUsername.toLowerCase());
 
-        const { data, error } = await query.maybeSingle();
+        const { data, error } = await withTimeout(
+          () => query.maybeSingle(),
+          PROFILE_TIMEOUTS.profile,
+          "Directory profile lookup"
+        );
 
         if (error) throw error;
 
@@ -1187,16 +1222,45 @@ import { supabase } from "./supabase.js";
         };
       }
 
-      await loadRelationship();
-      await loadFullProfile();
+      try {
+        await withTimeout(
+          () => loadRelationship(),
+          PROFILE_TIMEOUTS.relationship,
+          "Relationship lookup"
+        );
+      } catch (error) {
+        console.warn("Relationship lookup failed:", error);
+        isFollowing = false;
+        isFollowPending = false;
+        // Fail closed for private profiles if access cannot be verified.
+        canViewPrivateContent = isOwner || !profile.is_private;
+      }
 
-      const appearance = isOwner
-        ? await loadOwnerAppearance()
-        : directoryAppearance || {
-            theme_id: "midnight-violet",
-            background_mode: "preset",
-            custom_background_path: null
-          };
+      if (canViewPrivateContent) {
+        await withTimeout(
+          () => loadFullProfile(),
+          PROFILE_TIMEOUTS.profile,
+          "Extended profile lookup"
+        );
+      }
+
+      let appearance = directoryAppearance || {
+        theme_id: "midnight-violet",
+        background_mode: "preset",
+        custom_background_path: null
+      };
+
+      if (isOwner) {
+        try {
+          appearance = await withTimeout(
+            () => loadOwnerAppearance(),
+            PROFILE_TIMEOUTS.appearance,
+            "Profile appearance"
+          );
+        } catch (error) {
+          console.warn("Appearance lookup failed; using defaults:", error);
+        }
+      }
 
       applyProfileAppearance(appearance);
 
@@ -1246,7 +1310,31 @@ import { supabase } from "./supabase.js";
         tasks.push(loadIncomingFollowRequests());
       }
 
-      await Promise.all(tasks);
+      const sectionResults = await withTimeout(
+        () => Promise.allSettled(tasks),
+        PROFILE_TIMEOUTS.secondary,
+        "Profile posts and statistics"
+      );
+
+      for (const result of sectionResults) {
+        if (result.status === "rejected") {
+          console.warn("A profile section could not load:", result.reason);
+        }
+      }
+
+      const postsContainer = $("#posts-list");
+      if (
+        postsContainer &&
+        postsContainer.textContent.includes("Loading posts")
+      ) {
+        postsContainer.replaceChildren(
+          element(
+            "p",
+            "muted",
+            "Posts are taking longer than expected. Refresh to try again."
+          )
+        );
+      }
 
     } catch (error) {
       console.error("Profile initialization failed:", error);
