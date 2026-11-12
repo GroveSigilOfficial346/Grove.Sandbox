@@ -18,6 +18,31 @@ import { supabase } from "./supabase.js";
     ["mono", "Monospace — IBM Plex Mono"]
   ];
 
+  const ACCOUNT_TYPES = [
+    ["personal", "Personal"],
+    ["creator", "Creator"],
+    ["professional", "Professional"],
+    ["business", "Business"],
+    ["organization", "Organization"],
+    ["adult", "Adult — age-restricted access"]
+  ];
+
+  const ADULT_PROFILE_TYPES = [
+    ["general", "General Adult"],
+    ["bdsm_community", "BDSM Community"],
+    ["adult_creator", "Adult Creator"],
+    ["lifestyle_discussion", "Lifestyle Discussion"],
+    ["relationship_community", "Relationship Community"]
+  ];
+
+  const ROLE_OPTIONS = [
+    ["undisclosed", "Undisclosed"],
+    ["domme", "Domme"],
+    ["dominant", "Dominant"],
+    ["submissive", "Submissive"],
+    ["switch", "Switch"]
+  ];
+
   const THEME_OPTIONS = [
     ["midnight-galaxy", "Midnight Galaxy"],
     ["velvet-noir", "Velvet Noir"],
@@ -30,22 +55,6 @@ import { supabase } from "./supabase.js";
     ["enchanted-lock", "Enchanted Lock"],
     ["celestial-velvet", "Celestial Velvet"],
     ["neon-noir", "Neon Noir"]
-  ];
-
-  const ACCOUNT_TYPES = [
-    ["personal", "Personal"],
-    ["creator", "Creator"],
-    ["professional", "Professional"],
-    ["business", "Business"],
-    ["organization", "Organization"],
-    ["adult", "Adult — age-restricted access"]
-  ];
-
-  const ROLE_OPTIONS = [
-    ["undisclosed", "Undisclosed"],
-    ["dominant", "Dominant"],
-    ["submissive", "Submissive"],
-    ["switch", "Switch"]
   ];
 
   let user = null;
@@ -132,10 +141,11 @@ import { supabase } from "./supabase.js";
   section.id = "grove-account-experience";
 
   const heading = node("h2", "", "Account type & experience");
+
   const intro = node(
     "p",
     "grove-experience-description",
-    "Choose the account category and personalize your Grove experience."
+    "Choose your account category and personalize your Grove experience."
   );
 
   const accountField = makeSelect(
@@ -174,11 +184,16 @@ import { supabase } from "./supabase.js";
   adultPanel.id = "grove-adult-options";
   adultPanel.hidden = true;
 
-  const adultHeading = node("h3", "", "Adult community preferences");
+  const adultHeading = node(
+    "h3",
+    "",
+    "Adult community preferences"
+  );
+
   const adultDescription = node(
     "p",
     "grove-experience-description",
-    "These preferences are private by default. Public labels and adult discovery require verified access and explicit opt-in."
+    "Choose a community category and participation preference. These settings are private by default."
   );
 
   const verificationMessage = node(
@@ -187,6 +202,12 @@ import { supabase } from "./supabase.js";
   );
   verificationMessage.setAttribute("role", "status");
   verificationMessage.setAttribute("aria-live", "polite");
+
+  const profileTypeField = makeSelect(
+    "grove-adult-profile-type",
+    "Adult community category",
+    ADULT_PROFILE_TYPES
+  );
 
   const roleField = makeSelect(
     "grove-participation-style",
@@ -215,7 +236,7 @@ import { supabase } from "./supabase.js";
   const showRole = makeCheckbox(
     "grove-show-participation-label",
     "Display participation label",
-    "Allows the selected label to appear on your profile."
+    "Allows your selected label to appear on your profile."
   );
 
   const adultDiscovery = makeCheckbox(
@@ -242,6 +263,7 @@ import { supabase } from "./supabase.js";
     adultHeading,
     adultDescription,
     verificationMessage,
+    profileTypeField.wrapper,
     roleField.wrapper,
     themeField.wrapper,
     nicknameField.wrapper,
@@ -267,6 +289,7 @@ import { supabase } from "./supabase.js";
 
   const accountSelect = accountField.select;
   const fontSelect = fontField.select;
+  const profileTypeSelect = profileTypeField.select;
   const roleSelect = roleField.select;
   const themeSelect = themeField.select;
   const nicknameInput = nicknameField.input;
@@ -274,6 +297,7 @@ import { supabase } from "./supabase.js";
 
   function setAdultControlsEnabled(enabled) {
     for (const control of [
+      profileTypeSelect,
       roleSelect,
       themeSelect,
       nicknameInput,
@@ -317,7 +341,7 @@ import { supabase } from "./supabase.js";
         denied:
           "Adult access was not approved. Contact Grove support for review.",
         disabled:
-          "Adult access is disabled. Re-selecting Adult requires a new review.",
+          "Adult access is disabled. Selecting Adult again requires a new review.",
         not_requested:
           "Save the Adult account type to create an access review request."
       };
@@ -333,8 +357,9 @@ import { supabase } from "./supabase.js";
     const { data: preferences, error } = await supabase
       .from("grove_adult_preferences")
       .select(
-        "participation_style,profile_label,private_nickname," +
-        "theme_id,show_participation_label,adult_discovery_enabled"
+        "adult_profile_type,participation_style,profile_label," +
+        "private_nickname,theme_id,show_participation_label," +
+        "adult_discovery_enabled"
       )
       .eq("user_id", user.id)
       .maybeSingle();
@@ -342,12 +367,24 @@ import { supabase } from "./supabase.js";
     if (error) throw error;
 
     if (preferences) {
-      roleSelect.value = preferences.participation_style || "undisclosed";
-      themeSelect.value = preferences.theme_id || "midnight-galaxy";
-      nicknameInput.value = preferences.private_nickname || "";
-      labelInput.value = preferences.profile_label || "";
+      profileTypeSelect.value =
+        preferences.adult_profile_type || "general";
+
+      roleSelect.value =
+        preferences.participation_style || "undisclosed";
+
+      themeSelect.value =
+        preferences.theme_id || "midnight-galaxy";
+
+      nicknameInput.value =
+        preferences.private_nickname || "";
+
+      labelInput.value =
+        preferences.profile_label || "";
+
       showRole.input.checked =
         Boolean(preferences.show_participation_label);
+
       adultDiscovery.input.checked =
         Boolean(preferences.adult_discovery_enabled);
     }
@@ -394,6 +431,7 @@ import { supabase } from "./supabase.js";
         .maybeSingle();
 
       if (error) throw error;
+
       if (!data) {
         throw new Error("Account preferences were not saved.");
       }
@@ -405,7 +443,7 @@ import { supabase } from "./supabase.js";
       if (accountType === "adult") {
         setMessage(
           accountMessage,
-          "Adult account selected. Access remains restricted until verification is approved."
+          "Adult account selected. Restricted access remains locked until an authorized review verifies eligibility."
         );
       } else {
         setMessage(
@@ -416,6 +454,7 @@ import { supabase } from "./supabase.js";
 
     } catch (error) {
       console.error("Grove account settings failed:", error);
+
       setMessage(
         accountMessage,
         error.message || "Could not save account preferences.",
@@ -449,6 +488,7 @@ import { supabase } from "./supabase.js";
     try {
       const payload = {
         user_id: user.id,
+        adult_profile_type: profileTypeSelect.value,
         participation_style: roleSelect.value,
         theme_id: themeSelect.value,
         private_nickname: nicknameInput.value.trim(),
@@ -459,11 +499,15 @@ import { supabase } from "./supabase.js";
       };
 
       if (payload.private_nickname.length > 40) {
-        throw new Error("Private nicknames must be 40 characters or fewer.");
+        throw new Error(
+          "Private nicknames must be 40 characters or fewer."
+        );
       }
 
       if (payload.profile_label.length > 40) {
-        throw new Error("Profile labels must be 40 characters or fewer.");
+        throw new Error(
+          "Profile labels must be 40 characters or fewer."
+        );
       }
 
       setMessage(adultMessage, "Saving private preferences...");
@@ -515,7 +559,9 @@ import { supabase } from "./supabase.js";
         .maybeSingle();
 
       if (error) throw error;
-      if (!profile) throw new Error("Your profile could not be found.");
+      if (!profile) {
+        throw new Error("Your profile could not be found.");
+      }
 
       accountSelect.value = profile.account_type || "personal";
       fontSelect.value = profile.profile_font || "modern";
