@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#050019">
+  <meta name="description" content="Grove announcements and updates.">
+
+  <title>Grove Updates</title>
+
+  <link rel="stylesheet" href="/css/grove-ui.css">
+  <link rel="stylesheet" href="/css/grove-updates.css?v=20261112-1">
+
+  <script type="module" src="/js/updates.js?v=20261112-1"></script>
+</head>
+
+<body class="grove-updates-page">
+  <header class="site-header">
+    <a class="grove-updates-brand" href="/profile.html">
+      GROVE
+    </a>
+
+    <nav aria-label="Main navigation">
+      <a href="/profile.html">Profile</a>
+      <a href="/community.html">Community</a>
+      <a href="/messages.html">Messages</a>
+      <a href="/updates.html" aria-current="page">Updates</a>
+    </nav>
+  </header>
+
+  <main class="grove-updates-admin">
+    <section class="grove-updates-page-heading">
+      <span class="grove-updates-eyebrow">GROVE NETWORK</span>
+      <h1>Updates Headquarters</h1>
+      <p>
+        Publish announcements, release notes, new features,
+        improvements, and maintenance notices.
+      </p>
+    </section>
+
+    <p id="updates-admin-status" role="status" aria-live="polite"></p>
+
+    <section id="updates-admin-area" hidden>
+      <form id="grove-update-form" class="grove-update-form">
+        <div class="grove-update-form-heading">
+          <h2 id="grove-update-form-title">Create an update</h2>
+          <button id="grove-update-reset" type="button">
+            Clear
+          </button>
+        </div>
+
+        <label for="update-title">Update title</label>
+        <input
+          id="update-title"
+          name="title"
+          type="text"
+          maxlength="100"
+          required
+          placeholder="Example: New messaging features"
+        >
+
+        <label for="update-summary">Short summary</label>
+        <input
+          id="update-summary"
+          name="summary"
+          type="text"
+          maxlength="240"
+          required
+          placeholder="A short description for the ticker"
+        >
+
+        <label for="update-category">Category</label>
+        <select id="update-category" name="category" required>
+          <option value="announcement">Announcement</option>
+          <option value="release">Release</option>
+          <option value="feature">New feature</option>
+          <option value="fix">Fix or improvement</option>
+          <option value="maintenance">Maintenance</option>
+        </select>
+
+        <label for="update-body">Full update details</label>
+        <textarea
+          id="update-body"
+          name="body"
+          rows="8"
+          maxlength="12000"
+          placeholder="Describe what changed, what members can do, and anything they should know."
+        ></textarea>
+
+        <label for="update-status">Publishing status</label>
+        <select id="update-status" name="status">
+          <option value="draft">Save as draft</option>
+          <option value="published">Publish now</option>
+        </select>
+
+        <button id="grove-update-save" type="submit">
+          Save update
+        </button>
+      </form>
+
+      <section class="grove-update-admin-list">
+        <h2>Published updates and drafts</h2>
+        <div id="grove-update-records"></div>
+      </section>
+    </section>
+  </main>
+</body>
+</html>
