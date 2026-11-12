@@ -1,0 +1,521 @@
+/* GROVE UPDATES TICKER */
+
+.grove-updates-ticker {
+  position: sticky;
+  top: 0;
+  z-index: 9500;
+  width: 100%;
+  overflow: hidden;
+  border-top: 1px solid rgba(133,30,255,.25);
+  border-bottom: 1px solid rgba(133,30,255,.42);
+  background: rgba(8,3,26,.96);
+  backdrop-filter: blur(16px);
+}
+
+.grove-updates-trigger {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-height: 39px;
+  gap: 14px;
+  padding: 0 16px;
+  border: 0;
+  background: transparent;
+  color: #f7f5ff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.grove-updates-label {
+  flex: 0 0 auto;
+  color: #05c9f4;
+  font-size: .66rem;
+  font-weight: 800;
+  letter-spacing: .16em;
+}
+
+.grove-updates-viewport {
+  display: block;
+  flex: 1 1 auto;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.grove-updates-track {
+  display: inline-flex;
+  width: max-content;
+  animation: grove-updates-marquee 35s linear infinite;
+}
+
+.grove-updates-track-copy {
+  display: inline-block;
+  padding-right: 45px;
+  color: #d8c9ff;
+  font-size: .73rem;
+  letter-spacing: .04em;
+}
+
+.grove-updates-track.is-static {
+  animation: none;
+}
+
+.grove-updates-open-icon {
+  flex: 0 0 auto;
+  color: #eb36ed;
+  font-size: 1rem;
+}
+
+.grove-updates-trigger:hover .grove-updates-open-icon {
+  color: #05c9f4;
+}
+
+@keyframes grove-updates-marquee {
+  from {
+    transform: translateX(0);
+  }
+
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+.grove-updates-ticker:hover .grove-updates-track,
+.grove-updates-ticker:focus-within .grove-updates-track {
+  animation-play-state: paused;
+}
+
+/* UPDATES DIALOG */
+
+.grove-updates-dialog {
+  width: min(900px, calc(100vw - 28px));
+  max-width: 900px;
+  max-height: min(82vh, 760px);
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(133,30,255,.55);
+  border-radius: 18px;
+  background: #0c071f;
+  color: #f7f5ff;
+  box-shadow: 0 25px 100px rgba(0,0,0,.65);
+}
+
+.grove-updates-dialog::backdrop {
+  background: rgba(2,0,12,.78);
+  backdrop-filter: blur(8px);
+}
+
+.grove-updates-panel {
+  display: flex;
+  flex-direction: column;
+  max-height: min(82vh, 760px);
+}
+
+.grove-updates-dialog-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 24px;
+  border-bottom: 1px solid rgba(133,30,255,.25);
+  background:
+    radial-gradient(ellipse at 15% 0%, rgba(133,30,255,.22), transparent 60%),
+    #0c071f;
+}
+
+.grove-updates-eyebrow {
+  color: #05c9f4;
+  font-size: .65rem;
+  font-weight: 800;
+  letter-spacing: .18em;
+}
+
+.grove-updates-dialog-header h2 {
+  margin: 7px 0;
+  font-size: clamp(1.25rem, 3vw, 1.8rem);
+}
+
+.grove-updates-dialog-header p {
+  margin: 0;
+  color: #aaa0c9;
+  font-size: .85rem;
+}
+
+.grove-updates-close {
+  flex: 0 0 auto;
+  width: 38px;
+  height: 38px;
+  border: 1px solid rgba(190,155,255,.3);
+  border-radius: 10px;
+  background: rgba(133,30,255,.12);
+  color: #fff;
+  font-size: 1.5rem;
+  cursor: pointer;
+}
+
+.grove-updates-content {
+  display: grid;
+  grid-template-columns: minmax(210px, .8fr) minmax(0, 1.5fr);
+  flex: 1 1 auto;
+  min-height: 250px;
+  overflow: hidden;
+}
+
+.grove-updates-list {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  padding: 14px;
+  overflow-y: auto;
+  border-right: 1px solid rgba(133,30,255,.22);
+}
+
+.grove-update-list-item {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 5px;
+  width: 100%;
+  padding: 12px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: rgba(133,30,255,.07);
+  color: #f7f5ff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.grove-update-list-item:hover,
+.grove-update-list-item.active {
+  border-color: rgba(133,30,255,.65);
+  background: rgba(133,30,255,.19);
+}
+
+.grove-update-list-item span {
+  color: #05c9f4;
+  font-size: .59rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+}
+
+.grove-update-list-item strong {
+  font-size: .82rem;
+}
+
+.grove-update-list-item small {
+  color: #9e94b9;
+  font-size: .68rem;
+}
+
+.grove-updates-detail {
+  padding: 25px;
+  overflow-y: auto;
+}
+
+.grove-update-category {
+  display: inline-block;
+  padding: 5px 9px;
+  border: 1px solid rgba(5,201,244,.35);
+  border-radius: 20px;
+  color: #05c9f4;
+  font-size: .62rem;
+  font-weight: 800;
+  letter-spacing: .1em;
+}
+
+.grove-update-date {
+  display: block;
+  margin-top: 13px;
+  color: #9d91b8;
+  font-size: .72rem;
+}
+
+.grove-updates-detail h3 {
+  margin: 13px 0 9px;
+  font-size: clamp(1.2rem, 3vw, 1.65rem);
+}
+
+.grove-update-summary {
+  color: #d3c6ef;
+  font-size: .94rem;
+  line-height: 1.6;
+}
+
+.grove-update-body {
+  margin-top: 18px;
+  color: #b7accf;
+  font-size: .88rem;
+  line-height: 1.75;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.grove-updates-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 13px 18px;
+  border-top: 1px solid rgba(133,30,255,.22);
+}
+
+.grove-updates-page-button,
+.grove-updates-manage {
+  padding: 9px 13px;
+  border: 1px solid rgba(133,30,255,.48);
+  border-radius: 8px;
+  background: rgba(133,30,255,.14);
+  color: #f7f5ff;
+  font-size: .76rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.grove-updates-page-button:disabled {
+  opacity: .35;
+  cursor: not-allowed;
+}
+
+.grove-updates-position {
+  color: #a89bbf;
+  font-size: .72rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.grove-updates-manage {
+  align-self: flex-start;
+  margin: 0 18px 16px;
+  color: #05c9f4;
+}
+
+.grove-updates-empty {
+  padding: 16px;
+  color: #aaa0c9;
+  font-size: .85rem;
+}
+
+/* ADMIN PAGE */
+
+.grove-updates-page {
+  min-height: 100vh;
+  background: #050019;
+  color: #f7f5ff;
+  font-family: "DM Sans", sans-serif;
+}
+
+.grove-updates-brand {
+  color: #f7f5ff;
+  font-weight: 800;
+  letter-spacing: .2em;
+  text-decoration: none;
+}
+
+.grove-updates-admin {
+  width: min(900px, calc(100% - 32px));
+  margin: 40px auto;
+}
+
+.grove-updates-page-heading {
+  margin-bottom: 30px;
+}
+
+.grove-updates-page-heading h1 {
+  margin: 9px 0;
+  font-size: clamp(1.8rem, 5vw, 2.8rem);
+}
+
+.grove-updates-page-heading p {
+  max-width: 650px;
+  color: #aaa0c9;
+  line-height: 1.7;
+}
+
+.grove-update-form {
+  display: flex;
+  flex-direction: column;
+  gap: 11px;
+  padding: 22px;
+  border: 1px solid rgba(133,30,255,.4);
+  border-radius: 15px;
+  background: rgba(12,7,31,.88);
+}
+
+.grove-update-form-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.grove-update-form-heading h2 {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.grove-update-form label {
+  margin-top: 6px;
+  color: #c9b9ed;
+  font-size: .78rem;
+  font-weight: 700;
+}
+
+.grove-update-form input,
+.grove-update-form textarea,
+.grove-update-form select {
+  width: 100%;
+  min-height: 42px;
+  padding: 11px 12px;
+  border: 1px solid rgba(133,30,255,.4);
+  border-radius: 8px;
+  outline: none;
+  background: #100a28;
+  color: #f7f5ff;
+  font: inherit;
+}
+
+.grove-update-form textarea {
+  resize: vertical;
+}
+
+.grove-update-form input:focus,
+.grove-update-form textarea:focus,
+.grove-update-form select:focus {
+  border-color: #05c9f4;
+}
+
+.grove-update-form button,
+.grove-update-admin-actions button,
+.grove-update-form-heading button {
+  min-height: 38px;
+  padding: 9px 13px;
+  border: 1px solid rgba(133,30,255,.5);
+  border-radius: 8px;
+  background: rgba(133,30,255,.2);
+  color: #f7f5ff;
+  font: inherit;
+  font-size: .8rem;
+  cursor: pointer;
+}
+
+#grove-update-save {
+  margin-top: 9px;
+  background: linear-gradient(90deg, #851eff, #b52de8);
+  font-weight: 800;
+}
+
+.grove-update-admin-list {
+  margin-top: 32px;
+}
+
+.grove-update-admin-list h2 {
+  font-size: 1.2rem;
+}
+
+#grove-update-records {
+  display: grid;
+  gap: 12px;
+}
+
+.grove-update-admin-card {
+  padding: 16px;
+  border: 1px solid rgba(133,30,255,.3);
+  border-radius: 12px;
+  background: rgba(12,7,31,.8);
+}
+
+.grove-update-admin-card h3 {
+  margin: 0 0 7px;
+}
+
+.grove-update-admin-meta {
+  color: #05c9f4;
+  font-size: .66rem;
+  letter-spacing: .08em;
+}
+
+.grove-update-admin-summary {
+  color: #b7accf;
+  font-size: .85rem;
+}
+
+.grove-update-admin-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.grove-update-admin-actions .danger {
+  border-color: rgba(255,133,133,.45);
+  color: #ff9999;
+}
+
+.grove-update-empty {
+  color: #aaa0c9;
+}
+
+#updates-admin-status {
+  min-height: 22px;
+  font-size: .82rem;
+}
+
+/* MOBILE */
+
+@media (max-width: 650px) {
+  .grove-updates-trigger {
+    min-height: 36px;
+    gap: 9px;
+    padding: 0 10px;
+  }
+
+  .grove-updates-label {
+    font-size: .58rem;
+  }
+
+  .grove-updates-track-copy {
+    font-size: .66rem;
+  }
+
+  .grove-updates-content {
+    grid-template-columns: 1fr;
+    grid-template-rows: minmax(110px, 30%) minmax(170px, 1fr);
+  }
+
+  .grove-updates-list {
+    flex-direction: row;
+    border-right: 0;
+    border-bottom: 1px solid rgba(133,30,255,.22);
+  }
+
+  .grove-update-list-item {
+    flex: 0 0 180px;
+  }
+
+  .grove-updates-detail {
+    padding: 17px;
+  }
+
+  .grove-updates-dialog-header {
+    padding: 17px;
+  }
+
+  .grove-updates-footer {
+    padding: 10px;
+  }
+
+  .grove-updates-page-heading h1 {
+    font-size: 1.8rem;
+  }
+
+  .grove-update-form {
+    padding: 15px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grove-updates-track {
+    animation: none !important;
+  }
+
+  .grove-updates-dialog {
+    scroll-behavior: auto;
+  }
+}
