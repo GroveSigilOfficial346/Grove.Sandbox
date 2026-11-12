@@ -11,6 +11,7 @@ import { supabase } from "./supabase.js";
   const MAX_VIDEO_SIZE = 50 * 1024 * 1024;
   const MAX_IMAGES = 10;
   const MAX_BODY_LENGTH = 5000;
+  const MAX_WARNING_LENGTH = 120;
 
   const IMAGE_TYPES = {
     "image/jpeg": "jpg",
@@ -36,6 +37,7 @@ import { supabase } from "./supabase.js";
   };
 
   let currentUser = null;
+  let canPublishAdult = false;
   let selectedImages = [];
   let selectedAudio = null;
   let selectedVideo = null;
@@ -167,7 +169,9 @@ import { supabase } from "./supabase.js";
     }
 
     if (file.size <= 0 || file.size > MAX_AUDIO_SIZE) {
-      throw new Error("Audio must be larger than 0 bytes and 20 MB or smaller.");
+      throw new Error(
+        "Audio must be larger than 0 bytes and 20 MB or smaller."
+      );
     }
 
     return {
@@ -193,13 +197,47 @@ import { supabase } from "./supabase.js";
     }
 
     if (file.size <= 0 || file.size > MAX_VIDEO_SIZE) {
-      throw new Error("Video must be larger than 0 bytes and 50 MB or smaller.");
+      throw new Error(
+        "Video must be larger than 0 bytes and 50 MB or smaller."
+      );
     }
 
     return {
       extension,
       contentType: VIDEO_TYPES[file.type] || `video/${extension}`
     };
+  }
+
+  function updateContentRatingControls() {
+    const rating = $("#profile-post-rating");
+    const warningWrap = $("#profile-post-warning-wrap");
+    const warning = $("#profile-post-content-warning");
+    const hint = $("#profile-post-rating-hint");
+
+    if (!rating) return;
+
+    const adultOption = rating.querySelector(
+      'option[value="adult"]'
+    );
+
+    if (adultOption) {
+      adultOption.disabled = !canPublishAdult;
+    }
+
+    if (!canPublishAdult && rating.value === "adult") {
+      rating.value = "general";
+    }
+
+    const isAdult = rating.value === "adult";
+
+    if (warningWrap) warningWrap.hidden = !isAdult;
+    if (warning) warning.required = isAdult;
+
+    if (hint) {
+      hint.textContent = canPublishAdult
+        ? "Adult posts require a content warning and are only visible to verified Adult accounts."
+        : "Adult posting requires verified Adult account access.";
+    }
   }
 
   async function resolveOwnProfile() {
@@ -223,11 +261,32 @@ import { supabase } from "./supabase.js";
       const { data, error } = await supabase
         .from("profiles")
         .select("id")
-        .eq("username", requestedUsername)
+        .eq("username", requestedUsername.toLowerCase())
         .maybeSingle();
 
       if (error) throw error;
       if (data?.id !== currentUser.id) return false;
+    }
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("account_type")
+      .eq("id", currentUser.id)
+      .maybeSingle();
+
+    if (profileError) throw profileError;
+
+    if (profile?.account_type === "adult") {
+      const { data: access, error: accessError } = await supabase
+        .from("grove_adult_access")
+        .select("verification_status")
+        .eq("user_id", currentUser.id)
+        .maybeSingle();
+
+      if (accessError) throw accessError;
+
+      canPublishAdult =
+        access?.verification_status === "verified";
     }
 
     return true;
@@ -285,6 +344,10 @@ import { supabase } from "./supabase.js";
 
     const body = $("#profile-post-body").value.trim();
     const visibility = $("#profile-post-visibility").value;
+    const rating = $("#profile-post-rating")?.value || "general";
+    const warning =
+      $("#profile-post-content-warning")?.value.trim() || "";
+
     const submit = $("#profile-post-submit");
 
     if (
@@ -293,7 +356,10 @@ import { supabase } from "./supabase.js";
       !selectedAudio &&
       !selectedVideo
     ) {
-      setStatus("Write something or choose an attachment first.", true);
+      setStatus(
+        "Write something or choose an attachment first.",
+        true
+      );
       return;
     }
 
@@ -304,6 +370,30 @@ import { supabase } from "./supabase.js";
 
     if (!["public", "followers", "private"].includes(visibility)) {
       setStatus("Choose a valid post visibility setting.", true);
+      return;
+    }
+
+    if (!["general", "adult"].includes(rating)) {
+      setStatus("Choose a valid content rating.", true);
+      return;
+    }
+
+    if (rating === "adult" && !canPublishAdult) {
+      setStatus(
+        "Verified Adult access is required to publish Adult posts.",
+        true
+      );
+      return;
+    }
+
+    if (
+      rating === "adult" &&
+      (warning.length < 3 || warning.length > MAX_WARNING_LENGTH)
+    ) {
+      setStatus(
+        "Adult posts need a content warning between 3 and 120 characters.",
+        true
+      );
       return;
     }
 
@@ -334,7 +424,9 @@ import { supabase } from "./supabase.js";
           author_id: currentUser.id,
           body,
           media_urls: uploadedPaths,
-          visibility
+          visibility,
+          content_rating: rating,
+          content_warning: rating === "adult" ? warning : ""
         })
         .select("id")
         .maybeSingle();
@@ -342,11 +434,21 @@ import { supabase } from "./supabase.js";
       if (error) throw error;
 
       if (!data) {
-        throw new Error("The post was not saved. Please try again.");
+        throw new Error(
+          "The post was not saved. Please try again."
+        );
       }
 
       $("#profile-post-body").value = "";
       $("#profile-post-visibility").value = "public";
+
+      if ($("#profile-post-rating")) {
+        $("#profile-post-rating").value = "general";
+      }
+
+      if ($("#profile-post-content-warning")) {
+        $("#profile-post-content-warning").value = "";
+      }
 
       selectedImages = [];
       selectedAudio = null;
@@ -358,6 +460,7 @@ import { supabase } from "./supabase.js";
 
       renderPreviews();
       updateCounter();
+      updateContentRatingControls();
       setAudioStatus("");
       setVideoStatus("");
 
@@ -373,7 +476,10 @@ import { supabase } from "./supabase.js";
           .remove(uploadedPaths);
 
         if (cleanupError) {
-          console.warn("Temporary upload cleanup failed:", cleanupError);
+          console.warn(
+            "Temporary upload cleanup failed:",
+            cleanupError
+          );
         }
       }
 
@@ -403,6 +509,7 @@ import { supabase } from "./supabase.js";
     const audioInput = $("#profile-post-audio");
     const videoInput = $("#profile-post-video");
     const body = $("#profile-post-body");
+    const rating = $("#profile-post-rating");
 
     if (
       !composer ||
@@ -425,6 +532,15 @@ import { supabase } from "./supabase.js";
 
         form.addEventListener("submit", publishPost);
         body.addEventListener("input", updateCounter);
+
+        if (rating) {
+          rating.addEventListener(
+            "change",
+            updateContentRatingControls
+          );
+        }
+
+        updateContentRatingControls();
 
         imageInput.addEventListener("change", () => {
           try {
@@ -491,7 +607,10 @@ import { supabase } from "./supabase.js";
         updateCounter();
       })
       .catch(error => {
-        console.error("Profile composer initialization failed:", error);
+        console.error(
+          "Profile composer initialization failed:",
+          error
+        );
 
         setStatus(
           error.message || "The post composer could not load.",
