@@ -1,0 +1,108 @@
+/* Grove message actions: unsend, local deletion, and conversation pins. */
+
+.message-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 9px;
+}
+
+.message-action-button {
+  min-height: 28px;
+  padding: 5px 9px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(5, 0, 25, 0.38);
+  color: rgba(247, 245, 255, 0.78);
+  font: inherit;
+  font-size: 0.68rem;
+  line-height: 1.2;
+  cursor: pointer;
+  transition: background 0.16s ease, border-color 0.16s ease, color 0.16s ease;
+}
+
+.message-action-button:hover:not(:disabled) {
+  border-color: rgba(5, 201, 244, 0.5);
+  background: rgba(133, 30, 255, 0.2);
+  color: #f7f5ff;
+}
+
+.message-action-button:focus-visible {
+  outline: 2px solid #05c9f4;
+  outline-offset: 2px;
+}
+
+.message-action-button:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.message-unsent-placeholder {
+  opacity: 0.78;
+}
+
+.message-unsent-placeholder p {
+  color: rgba(247, 245, 255, 0.62);
+  font-style: italic;
+}
+
+.message-pins-bar {
+  flex: 0 0 auto;
+  margin: 0 18px;
+  padding: 10px 12px;
+  border: 1px solid rgba(5, 201, 244, 0.22);
+  border-radius: 12px;
+  background: rgba(133, 30, 255, 0.1);
+}
+
+.message-pins-bar[hidden] {
+  display: none;
+}
+
+.message-pins-heading {
+  display: block;
+  margin-bottom: 7px;
+  color: #f7f5ff;
+  font-size: 0.76rem;
+  letter-spacing: 0.02em;
+}
+
+.message-pins-items {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.message-pin-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+  color: rgba(247, 245, 255, 0.78);
+  font-size: 0.76rem;
+}
+
+.message-pin-item > span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .message-pins-bar {
+    margin: 0 10px;
+  }
+
+  .message-action-row {
+    justify-content: flex-start;
+  }
+
+  .message-action-button {
+    min-height: 32px;
+    padding: 6px 9px;
+  }
+}
