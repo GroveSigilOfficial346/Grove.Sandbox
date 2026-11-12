@@ -4,7 +4,6 @@ import { supabase } from "./supabase.js";
   "use strict";
 
   const $ = (selector, root = document) => root.querySelector(selector);
-  const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
 
   const messageList = $("#message-list");
   const conversationList = $("#conversation-list");
@@ -14,15 +13,22 @@ import { supabase } from "./supabase.js";
   if (!messageList || !conversationList || !composer || !chatPanel) return;
 
   const MAX_LENGTH = 5000;
+  const INDICATOR_BATCH_SIZE = 80;
 
   let user = null;
   let realtimeChannel = null;
   let dialog = null;
-  let editedMessages = new Set();
-  let checkedMessages = new Set();
+
+  const editedMessages = new Set();
+  const checkedMessages = new Set();
+  const pendingIndicatorIds = new Set();
+
+  let indicatorRequestRunning = false;
+  let indicatorRequestScheduled = false;
 
   function status(message, isError = false) {
     const node = $("#messages-status");
+
     if (!node) return;
 
     node.textContent = message || "";
@@ -30,8 +36,10 @@ import { supabase } from "./supabase.js";
   }
 
   function activeConversationId() {
-    return $(".conversation-item.active[data-conversation-id]", conversationList)
-      ?.dataset.conversationId || null;
+    return $(
+      ".conversation-item.active[data-conversation-id]",
+      conversationList
+    )?.dataset.conversationId || null;
   }
 
   function messageBody(article) {
@@ -59,7 +67,9 @@ import { supabase } from "./supabase.js";
     const button = document.createElement("button");
 
     button.type = "button";
-    button.className = "message-action-button message-compose-button";
+    button.className =
+      "message-action-button message-compose-button";
+
     button.dataset.composeAction = action;
     button.textContent = label;
 
@@ -69,16 +79,15 @@ import { supabase } from "./supabase.js";
   function installButtons(article) {
     const messageId = article?.dataset.messageId;
 
-    if (!messageId || article.classList.contains("message-unsent-placeholder")) {
+    if (
+      !messageId ||
+      article.classList.contains("message-unsent-placeholder")
+    ) {
       return;
     }
 
     const row = actionRow(article);
     const ownMessage = article.classList.contains("own-message");
-
-    if (ownMessage && !('[data-compose-action="edit"]' in row)) {
-      // Buttons are added below using querySelector to avoid duplicates.
-    }
 
     if (
       ownMessage &&
@@ -138,49 +147,116 @@ import { supabase } from "./supabase.js";
 
     if (message.edited_at) {
       addEditedIndicator(article, message.edited_at);
+      editedMessages.add(message.id);
+      checkedMessages.add(message.id);
     }
   }
 
+  function scheduleIndicatorLoad() {
+    if (indicatorRequestScheduled || indicatorRequestRunning) return;
+
+    indicatorRequestScheduled = true;
+
+    queueMicrotask(() => {
+      indicatorRequestScheduled = false;
+
+      loadEditedIndicators().catch(error => {
+        console.warn(
+          "Edited message indicators could not load.",
+          error
+        );
+      });
+    });
+  }
+
   async function loadEditedIndicators() {
-    const articles = $$(
-      ".message-bubble[data-message-id]",
-      messageList
-    );
+    if (indicatorRequestRunning || !pendingIndicatorIds.size) return;
 
-    const ids = articles
-      .map((article) => article.dataset.messageId)
-      .filter((id) => id && !checkedMessages.has(id));
-
-    if (!ids.length) return;
-
-    ids.forEach((id) => checkedMessages.add(id));
+    indicatorRequestRunning = true;
 
     try {
-      const { data, error } = await supabase
-        .from("conversation_messages")
-        .select("id,edited_at")
-        .in("id", ids);
+      while (pendingIndicatorIds.size) {
+        const ids = [...pendingIndicatorIds]
+          .slice(0, INDICATOR_BATCH_SIZE);
 
-      if (error) throw error;
+        ids.forEach(id => pendingIndicatorIds.delete(id));
 
-      for (const message of data || []) {
-        if (!message.edited_at) continue;
+        if (!ids.length) break;
 
-        const article = $(
-          `[data-message-id="${CSS.escape(message.id)}"]`,
-          messageList
-        );
+        ids.forEach(id => checkedMessages.add(id));
 
-        if (article) {
-          addEditedIndicator(article, message.edited_at);
+        const { data, error } = await supabase
+          .from("conversation_messages")
+          .select("id,edited_at")
+          .in("id", ids);
+
+        if (error) {
+          ids.forEach(id => checkedMessages.delete(id));
+          throw error;
         }
 
-        editedMessages.add(message.id);
-      }
+        for (const message of data || []) {
+          if (!message.edited_at) continue;
 
-    } catch (error) {
-      console.warn("Edited message indicators could not load.", error);
-      ids.forEach((id) => checkedMessages.delete(id));
+          const article = $(
+            `[data-message-id="${CSS.escape(message.id)}"]`,
+            messageList
+          );
+
+          if (article) {
+            addEditedIndicator(article, message.edited_at);
+          }
+
+          editedMessages.add(message.id);
+        }
+      }
+    } finally {
+      indicatorRequestRunning = false;
+
+      if (pendingIndicatorIds.size) {
+        scheduleIndicatorLoad();
+      }
+    }
+  }
+
+  function queueMessage(article) {
+    if (!article?.dataset.messageId) return;
+
+    installButtons(article);
+
+    const messageId = article.dataset.messageId;
+
+    if (
+      !checkedMessages.has(messageId) &&
+      !pendingIndicatorIds.has(messageId)
+    ) {
+      pendingIndicatorIds.add(messageId);
+    }
+  }
+
+  function processAddedNodes(records) {
+    let foundMessages = false;
+
+    for (const record of records) {
+      for (const node of record.addedNodes) {
+        if (node.nodeType !== Node.ELEMENT_NODE) continue;
+
+        if (node.matches?.(".message-bubble[data-message-id]")) {
+          queueMessage(node);
+          foundMessages = true;
+        }
+
+        node.querySelectorAll?.(
+          ".message-bubble[data-message-id]"
+        ).forEach(article => {
+          queueMessage(article);
+          foundMessages = true;
+        });
+      }
+    }
+
+    if (foundMessages) {
+      scheduleIndicatorLoad();
     }
   }
 
@@ -234,7 +310,6 @@ import { supabase } from "./supabase.js";
     }
 
     updateMessageInView(data);
-    editedMessages.add(messageId);
     status("Message updated.");
   }
 
@@ -255,7 +330,7 @@ import { supabase } from "./supabase.js";
 
     const quote = excerpt
       .split("\n")
-      .map((line) => `> ${line}`)
+      .map(line => `> ${line}`)
       .join("\n");
 
     const prefix = `[Replying to ${sender}]\n${quote}\n\n`;
@@ -281,7 +356,11 @@ import { supabase } from "./supabase.js";
 
     dialog = document.createElement("dialog");
     dialog.className = "message-forward-dialog";
-    dialog.setAttribute("aria-labelledby", "message-forward-title");
+
+    dialog.setAttribute(
+      "aria-labelledby",
+      "message-forward-title"
+    );
 
     const form = document.createElement("form");
     form.method = "dialog";
@@ -292,7 +371,8 @@ import { supabase } from "./supabase.js";
     heading.textContent = "Forward message";
 
     const description = document.createElement("p");
-    description.textContent = "Choose a conversation to receive a copy of this text message.";
+    description.textContent =
+      "Choose a conversation to receive a copy of this text message.";
 
     const label = document.createElement("label");
     label.htmlFor = "message-forward-target";
@@ -327,7 +407,7 @@ import { supabase } from "./supabase.js";
 
     cancel.addEventListener("click", () => dialog.close());
 
-    form.addEventListener("submit", async (event) => {
+    form.addEventListener("submit", async event => {
       event.preventDefault();
 
       const messageId = dialog.dataset.messageId;
@@ -372,8 +452,10 @@ import { supabase } from "./supabase.js";
 
       } catch (forwardError) {
         console.error("Message forwarding failed.", forwardError);
+
         error.textContent =
-          forwardError.message || "The message could not be forwarded.";
+          forwardError.message ||
+          "The message could not be forwarded.";
 
       } finally {
         submit.disabled = false;
@@ -391,17 +473,19 @@ import { supabase } from "./supabase.js";
     placeholder.textContent = "Choose a conversation...";
     placeholder.disabled = true;
     placeholder.selected = true;
+
     select.append(placeholder);
 
-    const { data: memberships, error: membershipError } = await supabase
-      .from("conversation_members")
-      .select("conversation_id")
-      .eq("user_id", user.id);
+    const { data: memberships, error: membershipError } =
+      await supabase
+        .from("conversation_members")
+        .select("conversation_id")
+        .eq("user_id", user.id);
 
     if (membershipError) throw membershipError;
 
     const ids = [...new Set(
-      (memberships || []).map((item) => item.conversation_id)
+      (memberships || []).map(item => item.conversation_id)
     )];
 
     if (!ids.length) return;
@@ -422,8 +506,8 @@ import { supabase } from "./supabase.js";
 
     const otherIds = [...new Set(
       (members || [])
-        .filter((member) => member.user_id !== user.id)
-        .map((member) => member.user_id)
+        .filter(member => member.user_id !== user.id)
+        .map(member => member.user_id)
     )];
 
     let profilesById = new Map();
@@ -435,17 +519,20 @@ import { supabase } from "./supabase.js";
         .in("id", otherIds);
 
       if (profileError) {
-        console.warn("Some forwarding names could not be loaded.", profileError);
+        console.warn(
+          "Some forwarding names could not be loaded.",
+          profileError
+        );
       } else {
         profilesById = new Map(
-          (profiles || []).map((profile) => [profile.id, profile])
+          (profiles || []).map(profile => [profile.id, profile])
         );
       }
     }
 
     for (const conversation of rows || []) {
       const otherMember = (members || []).find(
-        (member) =>
+        member =>
           member.conversation_id === conversation.id &&
           member.user_id !== user.id
       );
@@ -458,9 +545,11 @@ import { supabase } from "./supabase.js";
         conversation.title?.trim() ||
         profile?.display_name?.trim() ||
         (profile?.username ? `@${profile.username}` : "") ||
-        (conversation.conversation_type === "group"
-          ? "Grove group"
-          : "Grove conversation");
+        (
+          conversation.conversation_type === "group"
+            ? "Grove group"
+            : "Grove conversation"
+        );
 
       const option = document.createElement("option");
       option.value = conversation.id;
@@ -491,13 +580,16 @@ import { supabase } from "./supabase.js";
     modal.showModal();
   }
 
-  chatPanel.addEventListener("click", async (event) => {
+  chatPanel.addEventListener("click", async event => {
     const button = event.target.closest("[data-compose-action]");
 
     if (!button || !chatPanel.contains(button)) return;
 
-    const article = button.closest(".message-bubble[data-message-id]");
-    if (!article) return;
+    const article = button.closest(
+      ".message-bubble[data-message-id]"
+    );
+
+    if (!article || button.disabled) return;
 
     const action = button.dataset.composeAction;
 
@@ -506,39 +598,28 @@ import { supabase } from "./supabase.js";
     try {
       if (action === "edit") {
         await editMessage(article);
+
       } else if (action === "reply") {
         quoteReply(article);
+
       } else if (action === "forward") {
         await forwardMessage(article);
       }
 
     } catch (error) {
       console.error("Message action failed.", error);
-      status(error.message || "That action could not be completed.", true);
+
+      status(
+        error.message || "That action could not be completed.",
+        true
+      );
 
     } finally {
       button.disabled = false;
     }
   });
 
-  function scanMessages(root = messageList) {
-    if (root.matches?.(".message-bubble[data-message-id]")) {
-      installButtons(root);
-    }
-
-    $$(".message-bubble[data-message-id]", root).forEach(installButtons);
-    loadEditedIndicators();
-  }
-
-  const observer = new MutationObserver((records) => {
-    for (const record of records) {
-      for (const node of record.addedNodes) {
-        if (node instanceof Element) {
-          scanMessages(node);
-        }
-      }
-    }
-  });
+  const observer = new MutationObserver(processAddedNodes);
 
   async function initialize() {
     const { data, error } = await supabase.auth.getUser();
@@ -549,7 +630,11 @@ import { supabase } from "./supabase.js";
 
     if (!user) return;
 
-    scanMessages();
+    messageList.querySelectorAll(
+      ".message-bubble[data-message-id]"
+    ).forEach(queueMessage);
+
+    scheduleIndicatorLoad();
 
     observer.observe(messageList, {
       childList: true,
@@ -558,24 +643,21 @@ import { supabase } from "./supabase.js";
 
     realtimeChannel = supabase
       .channel(`grove-message-edits-${user.id}`)
-      .on("postgres_changes", {
-        event: "UPDATE",
-        schema: "public",
-        table: "conversation_messages"
-      }, (payload) => {
-        const message = payload.new;
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "conversation_messages"
+        },
+        payload => {
+          const message = payload.new;
 
-        if (!message || message.sender_id === user.id) {
           if (message?.edited_at) {
             updateMessageInView(message);
           }
-          return;
         }
-
-        if (message.edited_at) {
-          updateMessageInView(message);
-        }
-      })
+      )
       .subscribe();
   }
 
@@ -587,8 +669,12 @@ import { supabase } from "./supabase.js";
     }
   });
 
-  initialize().catch((error) => {
-    console.error("Message compose actions failed to initialize.", error);
+  initialize().catch(error => {
+    console.error(
+      "Message compose actions failed to initialize.",
+      error
+    );
+
     status("Some message actions could not initialize.", true);
   });
 })();
