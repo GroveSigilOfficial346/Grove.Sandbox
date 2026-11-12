@@ -1,0 +1,96 @@
+/* Grove conversation message search */
+
+.grove-message-search {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 10px 14px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(10, 5, 28, 0.88);
+}
+
+.grove-message-search input {
+  flex: 1 1 190px;
+  width: 100%;
+  min-width: 0;
+  min-height: 39px;
+  padding: 9px 12px;
+  border: 1px solid rgba(133, 30, 255, 0.35);
+  border-radius: 9px;
+  outline: none;
+  background: rgba(255, 255, 255, 0.055);
+  color: #f7f5ff;
+  font: inherit;
+  font-size: 0.82rem;
+}
+
+.grove-message-search input:focus {
+  border-color: #05c9f4;
+  box-shadow: 0 0 0 2px rgba(5, 201, 244, 0.12);
+}
+
+.grove-message-search input::placeholder {
+  color: rgba(247, 245, 255, 0.48);
+}
+
+.grove-message-search-count {
+  flex: 0 0 auto;
+  min-width: 100px;
+  color: rgba(247, 245, 255, 0.62);
+  font-size: 0.72rem;
+  text-align: center;
+}
+
+.grove-message-search-step,
+.grove-message-search-clear {
+  min-width: 35px;
+  min-height: 35px;
+  padding: 6px 9px;
+  border: 1px solid rgba(5, 201, 244, 0.2);
+  border-radius: 8px;
+  background: rgba(133, 30, 255, 0.13);
+  color: #f7f5ff;
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.grove-message-search-step:hover,
+.grove-message-search-clear:hover {
+  border-color: rgba(5, 201, 244, 0.65);
+  background: rgba(133, 30, 255, 0.3);
+}
+
+.message-bubble.grove-message-search-match {
+  outline: 2px solid rgba(235, 54, 237, 0.55);
+  outline-offset: 3px;
+}
+
+.message-bubble.grove-message-search-active {
+  outline: 2px solid #05c9f4;
+  outline-offset: 3px;
+  box-shadow: 0 0 18px rgba(5, 201, 244, 0.18);
+}
+
+@media (max-width: 640px) {
+  .grove-message-search {
+    gap: 6px;
+    padding: 8px 9px;
+  }
+
+  .grove-message-search input {
+    flex-basis: 100%;
+    min-height: 42px;
+  }
+
+  .grove-message-search-count {
+    flex: 1 1 auto;
+    text-align: left;
+  }
+
+  .grove-message-search-step,
+  .grove-message-search-clear {
+    min-height: 38px;
+  }
+}
