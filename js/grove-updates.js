@@ -11,16 +11,23 @@ export function installGroveUpdates(supabase) {
 
   const stylesheet = document.createElement("link");
   stylesheet.rel = "stylesheet";
-  stylesheet.href = "/css/grove-updates.css?v=20261112-1";
-  document.head.append(stylesheet);
+  stylesheet.href = "/css/grove-updates.css?v=20261112-2";
+
+  if (!document.querySelector(
+    'link[href*="grove-updates.css"]'
+  )) {
+    document.head.append(stylesheet);
+  }
 
   let updates = [];
   let selectedIndex = 0;
-  let isAdmin = false;
+  let loading = false;
+  let loadToken = 0;
 
   const ticker = document.createElement("section");
   ticker.id = "grove-updates-ticker";
   ticker.className = "grove-updates-ticker";
+  ticker.setAttribute("aria-label", "Grove announcements");
 
   const trigger = document.createElement("button");
   trigger.type = "button";
@@ -50,6 +57,7 @@ export function installGroveUpdates(supabase) {
   const openIcon = document.createElement("span");
   openIcon.className = "grove-updates-open-icon";
   openIcon.textContent = "↗";
+  openIcon.setAttribute("aria-hidden", "true");
 
   trigger.append(label, viewport, openIcon);
   ticker.append(trigger);
@@ -57,6 +65,7 @@ export function installGroveUpdates(supabase) {
   const dialog = document.createElement("dialog");
   dialog.id = "grove-updates-dialog";
   dialog.className = "grove-updates-dialog";
+  dialog.setAttribute("aria-labelledby", "grove-updates-heading");
 
   const panel = document.createElement("div");
   panel.className = "grove-updates-panel";
@@ -71,11 +80,12 @@ export function installGroveUpdates(supabase) {
   eyebrow.textContent = "GROVE NETWORK";
 
   const heading = document.createElement("h2");
+  heading.id = "grove-updates-heading";
   heading.textContent = "What's new in Grove";
 
   const description = document.createElement("p");
   description.textContent =
-    "New features, improvements, announcements, and fixes.";
+    "Announcements, new features, improvements, and service notices.";
 
   headingGroup.append(eyebrow, heading, description);
 
@@ -85,7 +95,9 @@ export function installGroveUpdates(supabase) {
   closeButton.textContent = "×";
   closeButton.setAttribute("aria-label", "Close updates");
 
-  closeButton.addEventListener("click", () => dialog.close());
+  closeButton.addEventListener("click", () => {
+    dialog.close();
+  });
 
   header.append(headingGroup, closeButton);
 
@@ -94,7 +106,7 @@ export function installGroveUpdates(supabase) {
 
   const list = document.createElement("nav");
   list.className = "grove-updates-list";
-  list.setAttribute("aria-label", "All Grove updates");
+  list.setAttribute("aria-label", "Published Grove updates");
 
   const detail = document.createElement("article");
   detail.className = "grove-updates-detail";
@@ -121,16 +133,16 @@ export function installGroveUpdates(supabase) {
 
   const previous = document.createElement("button");
   previous.type = "button";
-  previous.textContent = "← Previous";
   previous.className = "grove-updates-page-button";
+  previous.textContent = "← Previous";
 
   const position = document.createElement("span");
   position.className = "grove-updates-position";
 
   const next = document.createElement("button");
   next.type = "button";
-  next.textContent = "Next →";
   next.className = "grove-updates-page-button";
+  next.textContent = "Next →";
 
   previous.addEventListener("click", () => {
     selectUpdate(selectedIndex - 1);
@@ -151,7 +163,11 @@ export function installGroveUpdates(supabase) {
   panel.append(header, content, footer, manage);
   dialog.append(panel);
 
-  trigger.addEventListener("click", () => {
+  trigger.addEventListener("click", async () => {
+    if (!updates.length && !loading) {
+      await loadUpdates();
+    }
+
     renderList();
 
     if (updates.length) {
@@ -160,11 +176,15 @@ export function installGroveUpdates(supabase) {
       );
     }
 
-    if (!dialog.open) dialog.showModal();
+    if (!dialog.open) {
+      dialog.showModal();
+    }
   });
 
   dialog.addEventListener("click", event => {
-    if (event.target === dialog) dialog.close();
+    if (event.target === dialog) {
+      dialog.close();
+    }
   });
 
   document.body.prepend(ticker);
@@ -188,15 +208,28 @@ export function installGroveUpdates(supabase) {
 
   function renderTicker() {
     const message = updates.length
-      ? updates.map(update =>
-          `${update.category.toUpperCase()}  ·  ${update.title}`
-        ).join("     ✦     ")
+      ? updates.map(update => {
+          return (
+            `${String(update.category).toUpperCase()} · ` +
+            update.title
+          );
+        }).join("     ✦     ")
       : "Grove updates are being prepared. Stay tuned.";
 
     firstCopy.textContent = message;
     secondCopy.textContent = message;
 
-    track.classList.toggle("is-static", updates.length === 0);
+    track.classList.toggle(
+      "is-static",
+      updates.length === 0
+    );
+
+    trigger.setAttribute(
+      "aria-label",
+      updates.length
+        ? `Open ${updates.length} published Grove updates`
+        : "Open Grove updates"
+    );
   }
 
   function renderList() {
@@ -205,8 +238,9 @@ export function installGroveUpdates(supabase) {
     if (!updates.length) {
       const empty = document.createElement("p");
       empty.className = "grove-updates-empty";
-      empty.textContent =
-        "No published updates yet. Check back soon.";
+      empty.textContent = loading
+        ? "Loading published updates..."
+        : "No published updates yet. Check back soon.";
 
       list.append(empty);
       detail.hidden = true;
@@ -225,10 +259,12 @@ export function installGroveUpdates(supabase) {
 
       if (index === selectedIndex) {
         button.classList.add("active");
+        button.setAttribute("aria-current", "true");
       }
 
       const itemCategory = document.createElement("span");
-      itemCategory.textContent = update.category.toUpperCase();
+      itemCategory.textContent =
+        String(update.category).toUpperCase();
 
       const itemTitle = document.createElement("strong");
       itemTitle.textContent = update.title;
@@ -256,7 +292,9 @@ export function installGroveUpdates(supabase) {
 
     const update = updates[selectedIndex];
 
-    category.textContent = update.category.toUpperCase();
+    category.textContent =
+      String(update.category).toUpperCase();
+
     date.textContent = formatDate(update.published_at);
     date.dateTime = update.published_at || "";
 
@@ -273,45 +311,72 @@ export function installGroveUpdates(supabase) {
     renderList();
   }
 
-  async function loadUpdates() {
-    const { data, error } = await supabase
-      .from("grove_updates")
-      .select(
-        "id,title,summary,body,category,published_at"
-      )
-      .eq("status", "published")
-      .not("published_at", "is", null)
-      .lte("published_at", new Date().toISOString())
-      .order("published_at", { ascending: false })
-      .limit(50);
-
-    if (error) throw error;
-
-    updates = data || [];
-
-    renderTicker();
-    renderList();
-  }
-
-  async function initialize() {
+  async function checkAdministrator() {
     try {
       const { data, error } = await supabase.auth.getUser();
 
-      if (error) throw error;
+      if (error || !data.user) {
+        manage.hidden = true;
+        return;
+      }
 
-      if (!data.user) return;
-
-      const { data: admin } = await supabase
+      const { data: admin, error: adminError } = await supabase
         .from("grove_admins")
         .select("role")
         .eq("user_id", data.user.id)
         .maybeSingle();
 
-      isAdmin = ["owner", "admin"].includes(admin?.role);
+      if (adminError) throw adminError;
 
-      manage.hidden = !isAdmin;
+      manage.hidden = !["owner", "admin"].includes(admin?.role);
 
-      await loadUpdates();
+    } catch (error) {
+      console.warn(
+        "Grove update administrator check failed:",
+        error
+      );
+
+      manage.hidden = true;
+    }
+  }
+
+  async function loadUpdates() {
+    if (loading) return;
+
+    loading = true;
+    const currentToken = ++loadToken;
+
+    renderList();
+
+    try {
+      const { data, error } = await supabase
+        .from("grove_updates")
+        .select(
+          "id,title,summary,body,category,published_at"
+        )
+        .eq("status", "published")
+        .not("published_at", "is", null)
+        .lte("published_at", new Date().toISOString())
+        .order("published_at", { ascending: false })
+        .limit(50);
+
+      if (error) throw error;
+
+      if (currentToken !== loadToken) return;
+
+      updates = data || [];
+
+      selectedIndex = Math.min(
+        selectedIndex,
+        Math.max(0, updates.length - 1)
+      );
+
+      renderTicker();
+      renderList();
+
+      if (updates.length) {
+        selectUpdate(selectedIndex);
+      }
 
     } catch (error) {
       console.warn("Grove updates could not load:", error);
@@ -321,8 +386,33 @@ export function installGroveUpdates(supabase) {
 
       secondCopy.textContent =
         "Grove updates are temporarily unavailable.";
+
+      track.classList.add("is-static");
+
+    } finally {
+      if (currentToken === loadToken) {
+        loading = false;
+      }
     }
   }
 
+  async function initialize() {
+    renderTicker();
+
+    // Public published updates load whether or not the visitor
+    // has signed in. RLS remains responsible for hiding drafts.
+    await Promise.all([
+      loadUpdates(),
+      checkAdministrator()
+    ]);
+  }
+
   initialize();
+
+  // Refresh the public ticker when a tab becomes active again.
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden && !loading) {
+      loadUpdates();
+    }
+  });
 }
