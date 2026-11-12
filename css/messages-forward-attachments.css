@@ -1,0 +1,154 @@
+/* ==========================================
+   GROVE — PRIVATE MESSAGE ATTACHMENT FORWARDING
+   ========================================== */
+
+.message-forward-attachment {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 32px;
+  margin-top: 4px;
+  padding: 6px 10px;
+  border: 1px solid rgba(5, 201, 244, 0.28);
+  border-radius: 8px;
+  background: rgba(5, 201, 244, 0.08);
+  color: #8deaff;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.message-forward-attachment:hover:not(:disabled) {
+  border-color: rgba(5, 201, 244, 0.75);
+  background: rgba(5, 201, 244, 0.16);
+  color: #ffffff;
+}
+
+.message-forward-attachment:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+.grove-forward-dialog {
+  width: min(440px, calc(100vw - 28px));
+  max-width: 440px;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid rgba(133, 30, 255, 0.5);
+  border-radius: 17px;
+  background: #100b25;
+  color: #f7f5ff;
+  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.55);
+}
+
+.grove-forward-dialog::backdrop {
+  background: rgba(5, 0, 25, 0.78);
+  backdrop-filter: blur(5px);
+}
+
+.grove-forward-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 22px;
+}
+
+.grove-forward-form h2 {
+  margin: 0;
+  color: #f7f5ff;
+  font-size: 1.15rem;
+}
+
+.grove-forward-description {
+  margin: 0;
+  color: #aaa2bd;
+  font-size: 0.84rem;
+  line-height: 1.55;
+}
+
+.grove-forward-form label {
+  margin-top: 5px;
+  color: #05c9f4;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.grove-forward-form select {
+  width: 100%;
+  min-height: 45px;
+  padding: 9px 11px;
+  border: 1px solid rgba(190, 155, 255, 0.25);
+  border-radius: 9px;
+  outline: none;
+  background: #050019;
+  color: #f7f5ff;
+  font: inherit;
+}
+
+.grove-forward-form select:focus {
+  border-color: #05c9f4;
+}
+
+.grove-forward-error {
+  min-height: 0;
+  margin: 0;
+  color: #ff8585;
+  font-size: 0.78rem;
+  overflow-wrap: anywhere;
+}
+
+.grove-forward-error:empty {
+  display: none;
+}
+
+.grove-forward-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 5px;
+}
+
+.grove-forward-actions button {
+  min-height: 40px;
+  padding: 8px 13px;
+  border-radius: 9px;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.grove-forward-cancel {
+  border: 1px solid rgba(190, 155, 255, 0.25);
+  background: rgba(255, 255, 255, 0.04);
+  color: #d7d0e7;
+}
+
+.grove-forward-submit {
+  border: 0;
+  background: linear-gradient(110deg, #851eff, #eb36ed);
+  color: #ffffff;
+}
+
+.grove-forward-actions button:disabled {
+  cursor: wait;
+  opacity: 0.55;
+}
+
+@media (max-width: 640px) {
+  .message-forward-attachment {
+    min-height: 34px;
+    padding: 7px 9px;
+    font-size: 0.69rem;
+  }
+
+  .grove-forward-form {
+    padding: 17px;
+  }
+
+  .grove-forward-actions button {
+    min-height: 42px;
+  }
+}
