@@ -10,50 +10,15 @@ export function installGroveShell(supabase) {
     body {
       background-color: #050019 !important;
       background-image:
-        radial-gradient(
-          circle at 12% 18%,
-          rgba(255,255,255,.75) 0 1px,
-          transparent 1.7px
-        ),
-        radial-gradient(
-          circle at 78% 24%,
-          rgba(5,201,244,.75) 0 1px,
-          transparent 1.8px
-        ),
-        radial-gradient(
-          circle at 42% 73%,
-          rgba(255,255,255,.65) 0 1px,
-          transparent 1.8px
-        ),
-        radial-gradient(
-          circle at 88% 82%,
-          rgba(235,54,237,.7) 0 1px,
-          transparent 1.8px
-        ),
-        radial-gradient(
-          ellipse at 15% 15%,
-          rgba(133,30,255,.28),
-          transparent 43%
-        ),
-        radial-gradient(
-          ellipse at 85% 25%,
-          rgba(235,54,237,.16),
-          transparent 40%
-        ),
-        radial-gradient(
-          ellipse at 50% 100%,
-          rgba(5,201,244,.10),
-          transparent 48%
-        ) !important;
+        radial-gradient(circle at 12% 18%, rgba(255,255,255,.75) 0 1px, transparent 1.7px),
+        radial-gradient(circle at 78% 24%, rgba(5,201,244,.75) 0 1px, transparent 1.8px),
+        radial-gradient(circle at 42% 73%, rgba(255,255,255,.65) 0 1px, transparent 1.8px),
+        radial-gradient(circle at 88% 82%, rgba(235,54,237,.7) 0 1px, transparent 1.8px),
+        radial-gradient(ellipse at 15% 15%, rgba(133,30,255,.28), transparent 43%),
+        radial-gradient(ellipse at 85% 25%, rgba(235,54,237,.16), transparent 40%),
+        radial-gradient(ellipse at 50% 100%, rgba(5,201,244,.10), transparent 48%) !important;
       background-attachment: fixed !important;
-      background-size:
-        180px 180px,
-        230px 230px,
-        260px 260px,
-        310px 310px,
-        auto,
-        auto,
-        auto !important;
+      background-size: 180px 180px, 230px 230px, 260px 260px, 310px 310px, auto, auto, auto !important;
     }
 
     .grove-account-controls {
@@ -223,10 +188,7 @@ export function installGroveShell(supabase) {
       style.textContent += `
         body {
           background-image:
-            linear-gradient(
-              rgba(5,0,25,.48),
-              rgba(5,0,25,.68)
-            ),
+            linear-gradient(rgba(5,0,25,.48), rgba(5,0,25,.68)),
             url(${safeUrl}) !important;
           background-size: cover !important;
           background-position: center !important;
@@ -335,8 +297,18 @@ export function installGroveShell(supabase) {
       profile.href = "/profile.html";
       profile.textContent = "My Profile";
 
+      const settings = document.createElement("a");
+      settings.href = "/settings.html";
+      settings.textContent = "Settings";
+      settings.setAttribute("aria-label", "Settings");
+
+      if (window.location.pathname === "/settings.html") {
+        settings.setAttribute("aria-current", "page");
+      }
+
       menu.append(
         profile,
+        settings,
         createMenuItem("Add / Switch Account", switchAccount),
         createMenuItem("Share Grove", shareGrove)
       );
