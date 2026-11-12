@@ -1,0 +1,120 @@
+.grove-chat-style-button {
+  flex: 0 0 auto;
+  min-height: 38px;
+  margin-left: auto;
+  padding: 8px 12px;
+  border: 1px solid rgba(133,30,255,.45);
+  border-radius: 10px;
+  background: rgba(133,30,255,.15);
+  color: #f7f5ff;
+  font-size: .76rem;
+  font-weight: 750;
+}
+
+.grove-chat-style-button:disabled {
+  opacity: .4;
+  cursor: not-allowed;
+}
+
+.grove-chat-style-dialog {
+  width: min(460px, calc(100% - 24px));
+  max-width: 460px;
+  padding: 0;
+  border: 1px solid rgba(133,30,255,.48);
+  border-radius: 17px;
+  background: #100b25;
+  color: #f7f5ff;
+  box-shadow: 0 25px 90px rgba(0,0,0,.6);
+}
+
+.grove-chat-style-dialog::backdrop {
+  background: rgba(3,0,12,.78);
+  backdrop-filter: blur(5px);
+}
+
+.grove-chat-style-panel {
+  display: grid;
+  gap: 13px;
+  padding: 22px;
+}
+
+.grove-chat-style-panel h2 {
+  margin: 0;
+  font-size: 1.18rem;
+}
+
+.grove-chat-style-description {
+  margin: 0;
+  color: #aaa2bd;
+  font-size: .84rem;
+  line-height: 1.55;
+}
+
+.grove-chat-style-panel label {
+  color: #d9cbed;
+  font-size: .8rem;
+  font-weight: 750;
+}
+
+.grove-chat-style-panel input,
+.grove-chat-style-panel select {
+  width: 100%;
+  min-height: 44px;
+  padding: 10px 12px;
+  border: 1px solid rgba(133,30,255,.42);
+  border-radius: 9px;
+  background: #08051a;
+  color: #f7f5ff;
+}
+
+.grove-chat-style-panel input:focus,
+.grove-chat-style-panel select:focus {
+  border-color: #05c9f4;
+  outline: 2px solid rgba(5,201,244,.15);
+}
+
+.grove-chat-style-save,
+.grove-chat-style-close {
+  min-height: 42px;
+  padding: 10px 14px;
+  border: 1px solid rgba(133,30,255,.42);
+  border-radius: 10px;
+  background: linear-gradient(110deg, #7020e8, #a42be9);
+  color: white;
+  font-weight: 750;
+}
+
+.grove-chat-style-close {
+  background: rgba(255,255,255,.05);
+}
+
+.grove-chat-style-status {
+  min-height: 20px;
+  margin: 0;
+  color: #7bd7a2;
+  font-size: .8rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.grove-chat-style-status.is-error {
+  color: #ff8585;
+}
+
+body[data-grove-adult-theme="gothic-violet"] .chat-heading h2,
+body[data-grove-adult-theme="dark-romance"] .chat-heading h2,
+body[data-grove-adult-theme="velvet-noir"] .chat-heading h2 {
+  font-family: "Cinzel", Georgia, serif;
+}
+
+@media (max-width: 640px) {
+  .grove-chat-style-button {
+    min-height: 34px;
+    padding: 7px 9px;
+    font-size: .68rem;
+  }
+
+  .grove-chat-style-panel {
+    padding: 16px;
+  }
+}
