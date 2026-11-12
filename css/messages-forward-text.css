@@ -1,0 +1,40 @@
+/* GROVE — TEXT MESSAGE FORWARDING */
+
+.message-forward-text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  margin: 5px 5px 0 0;
+  padding: 6px 11px;
+  border: 1px solid rgba(133, 30, 255, 0.35);
+  border-radius: 8px;
+  background: rgba(133, 30, 255, 0.10);
+  color: #d9baff;
+  font: inherit;
+  font-size: 0.72rem;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.message-forward-text:hover:not(:disabled) {
+  border-color: rgba(235, 54, 237, 0.75);
+  background: rgba(133, 30, 255, 0.2);
+  color: #fff;
+}
+
+.message-forward-text:disabled {
+  opacity: 0.55;
+  cursor: wait;
+}
+
+.grove-forward-text-dialog .grove-forward-description {
+  line-height: 1.55;
+}
+
+@media (max-width: 640px) {
+  .message-forward-text {
+    min-height: 36px;
+    padding: 7px 10px;
+  }
+}
