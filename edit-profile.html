@@ -7,12 +7,13 @@
   <meta name="description" content="Customize your Grove profile.">
   <title>Edit Profile | Grove</title>
 
-  <link rel="stylesheet" href="css/profile.css?v=20261111-2">
-  <link rel="stylesheet" href="css/grove-warm-controls.css?v=20261111-2">
+  <link rel="stylesheet" href="css/profile.css?v=20261112-1">
+  <link rel="stylesheet" href="css/grove-warm-controls.css?v=20261112-1">
 
-  <script type="module" src="js/edit-profile.js"></script>
-  <script type="module" src="js/relationship-status.js"></script>
-  <script type="module" src="js/relationship-date-controls.js"></script>
+  <script type="module" src="js/edit-profile.js?v=20261112-1"></script>
+  <script type="module" src="js/relationship-status.js?v=20261112-1"></script>
+  <script type="module" src="js/relationship-date-controls.js?v=20261112-1"></script>
+  <script type="module" src="js/profile-relationship-tags.js?v=20261112-1"></script>
 </head>
 <body>
 
@@ -99,6 +100,39 @@
 
         <p data-grove-relationship-date-message
           class="field-hint" role="status" aria-live="polite"></p>
+
+        <hr>
+
+        <section id="partner-tag-settings" aria-labelledby="partner-tag-heading">
+          <h2 id="partner-tag-heading">Partner tag</h2>
+          <p class="field-hint">
+            Request to display another Grove member as your partner.
+            They must accept before the tag appears publicly.
+          </p>
+
+          <label for="partner-tag-username">Grove username</label>
+          <input
+            id="partner-tag-username"
+            type="text"
+            maxlength="30"
+            autocomplete="off"
+            placeholder="Enter their username"
+          >
+
+          <button id="partner-tag-send" class="button primary" type="button">
+            Send partner request
+          </button>
+
+          <p id="partner-tag-status" class="field-hint"
+            role="status" aria-live="polite"></p>
+
+          <div id="partner-tag-current" aria-live="polite"></div>
+
+          <h3>Requests sent to you</h3>
+          <div id="partner-tag-incoming">
+            <p class="field-hint">Loading requests...</p>
+          </div>
+        </section>
 
         <hr>
 
