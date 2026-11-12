@@ -1,0 +1,160 @@
+/* Default message theme for verified Adult accounts.
+   These styles do not change message content or permissions. */
+
+body[data-grove-adult-theme] {
+  --adult-accent: #a78bfa;
+  --adult-accent-soft: rgba(167,139,250,.18);
+  --adult-panel: #120b24;
+  --adult-bubble: rgba(255,255,255,.075);
+  --adult-own: rgba(133,30,255,.25);
+  --adult-border: rgba(167,139,250,.28);
+}
+
+body[data-grove-adult-theme="midnight-galaxy"] {
+  --adult-accent: #a78bfa;
+  --adult-accent-soft: rgba(167,139,250,.18);
+  --adult-panel: #100b25;
+  --adult-bubble: rgba(255,255,255,.075);
+  --adult-own: rgba(133,30,255,.25);
+  --adult-border: rgba(167,139,250,.28);
+}
+
+body[data-grove-adult-theme="velvet-noir"] {
+  --adult-accent: #e8a8d4;
+  --adult-accent-soft: rgba(232,168,212,.15);
+  --adult-panel: #1d101d;
+  --adult-bubble: rgba(255,230,245,.07);
+  --adult-own: rgba(119,43,93,.35);
+  --adult-border: rgba(232,168,212,.28);
+}
+
+body[data-grove-adult-theme="obsidian"] {
+  --adult-accent: #c2c8d2;
+  --adult-accent-soft: rgba(194,200,210,.13);
+  --adult-panel: #101318;
+  --adult-bubble: rgba(220,230,245,.07);
+  --adult-own: rgba(77,88,108,.36);
+  --adult-border: rgba(194,200,210,.25);
+}
+
+body[data-grove-adult-theme="rose-chrome"] {
+  --adult-accent: #ff9ecb;
+  --adult-accent-soft: rgba(255,158,203,.16);
+  --adult-panel: #1c0e20;
+  --adult-bubble: rgba(255,220,240,.08);
+  --adult-own: rgba(180,50,125,.3);
+  --adult-border: rgba(255,158,203,.28);
+}
+
+body[data-grove-adult-theme="gothic-violet"] {
+  --adult-accent: #c4a4ff;
+  --adult-accent-soft: rgba(196,164,255,.17);
+  --adult-panel: #10051f;
+  --adult-bubble: rgba(205,175,255,.08);
+  --adult-own: rgba(92,35,150,.38);
+  --adult-border: rgba(196,164,255,.3);
+}
+
+body[data-grove-adult-theme="dark-romance"] {
+  --adult-accent: #e9a1b7;
+  --adult-accent-soft: rgba(233,161,183,.15);
+  --adult-panel: #210d1b;
+  --adult-bubble: rgba(255,220,230,.07);
+  --adult-own: rgba(126,33,74,.36);
+  --adult-border: rgba(233,161,183,.27);
+}
+
+body[data-grove-adult-theme="blood-moon"] {
+  --adult-accent: #ff8585;
+  --adult-accent-soft: rgba(255,133,133,.14);
+  --adult-panel: #1b080e;
+  --adult-bubble: rgba(255,210,210,.07);
+  --adult-own: rgba(125,24,42,.4);
+  --adult-border: rgba(255,133,133,.28);
+}
+
+body[data-grove-adult-theme="silver-key"] {
+  --adult-accent: #b8d6e8;
+  --adult-accent-soft: rgba(184,214,232,.15);
+  --adult-panel: #0b1722;
+  --adult-bubble: rgba(220,240,255,.07);
+  --adult-own: rgba(44,100,135,.34);
+  --adult-border: rgba(184,214,232,.27);
+}
+
+body[data-grove-adult-theme="enchanted-lock"] {
+  --adult-accent: #a9d6b1;
+  --adult-accent-soft: rgba(169,214,177,.14);
+  --adult-panel: #0b1a17;
+  --adult-bubble: rgba(220,255,230,.07);
+  --adult-own: rgba(36,105,75,.34);
+  --adult-border: rgba(169,214,177,.27);
+}
+
+body[data-grove-adult-theme="celestial-velvet"] {
+  --adult-accent: #d0b4ff;
+  --adult-accent-soft: rgba(208,180,255,.16);
+  --adult-panel: #120b2a;
+  --adult-bubble: rgba(235,225,255,.08);
+  --adult-own: rgba(104,61,165,.34);
+  --adult-border: rgba(208,180,255,.28);
+}
+
+body[data-grove-adult-theme="neon-noir"] {
+  --adult-accent: #62e9f5;
+  --adult-accent-soft: rgba(98,233,245,.14);
+  --adult-panel: #080e20;
+  --adult-bubble: rgba(220,245,255,.07);
+  --adult-own: rgba(23,90,125,.35);
+  --adult-border: rgba(98,233,245,.28);
+}
+
+body[data-grove-adult-theme] .messages-layout {
+  border-color: var(--adult-border);
+  background: var(--adult-panel);
+}
+
+body[data-grove-adult-theme] .chat-heading,
+body[data-grove-adult-theme] .message-form,
+body[data-grove-adult-theme] .composer-note {
+  background-color: var(--adult-panel);
+}
+
+body[data-grove-adult-theme] .message-bubble {
+  border-color: var(--adult-border);
+  background: var(--adult-bubble);
+}
+
+body[data-grove-adult-theme] .message-bubble.own-message,
+body[data-grove-adult-theme] .own-message {
+  border-color: var(--adult-border);
+  background: var(--adult-own);
+}
+
+body[data-grove-adult-theme] .conversation-item.active,
+body[data-grove-adult-theme] .conversation-item[aria-current="true"] {
+  border-color: var(--adult-accent);
+  box-shadow: inset 3px 0 0 var(--adult-accent);
+  background: var(--adult-accent-soft);
+}
+
+body[data-grove-adult-theme] .chat-status-indicator,
+body[data-grove-adult-theme] .header-eyebrow,
+body[data-grove-adult-theme] .section-eyebrow {
+  color: var(--adult-accent);
+}
+
+body[data-grove-adult-theme] .chat-status-indicator {
+  background: var(--adult-accent);
+  box-shadow: 0 0 12px var(--adult-accent-soft);
+}
+
+body[data-grove-adult-theme] .send-button {
+  border-color: var(--adult-border);
+  background: linear-gradient(
+    120deg,
+    var(--adult-accent),
+    color-mix(in srgb, var(--adult-accent) 48%, #45146c)
+  );
+  color: #080510;
+}
