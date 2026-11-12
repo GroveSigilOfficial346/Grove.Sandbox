@@ -3,118 +3,352 @@ import { supabase } from "./supabase.js";
 (() => {
   "use strict";
 
-  const $ = (selector, root = document) => root.querySelector(selector);
-  const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
+  const list = document.getElementById("conversation-list");
+  const heading = document.querySelector(".chat-heading");
+  const messageList = document.getElementById("message-list");
 
-  const messageList = $("#message-list");
-  const conversationList = $("#conversation-list");
-  const chatPanel = $(".chat-panel");
+  if (!list || !heading || !messageList) return;
 
-  if (!messageList || !conversationList || !chatPanel) return;
+  let currentUser = null;
+  let shareButton = null;
+  let requestedConversationHandled = false;
 
-  let user = null;
-  let activePinsConversationId = null;
-  let pinLoadToken = 0;
-  let pins = [];
-  let canPinMessages = false;
-  let canUnpinAnyPin = false;
-  let actionChannel = null;
-  let pinChannel = null;
+  const requestedConversation =
+    new URLSearchParams(location.search).get("conversation");
 
-  function setStatus(message, isError = false) {
-    const node = $("#messages-status");
+  function status(message, error = false) {
+    const node = document.getElementById("messages-status");
+
     if (!node) return;
 
     node.textContent = message || "";
-    node.style.color = isError ? "#ff8585" : "";
+    node.style.color = error ? "#ff8585" : "";
   }
 
-  function activeConversationId() {
-    return $(".conversation-item.active[data-conversation-id]", conversationList)
-      ?.dataset.conversationId || null;
+  async function getUser() {
+    const { data, error } = await supabase.auth.getUser();
+
+    if (error) throw error;
+
+    currentUser = data.user || null;
   }
 
-  function pinForMessage(messageId) {
-    return pins.find(pin => pin.message_id === messageId) || null;
+  async function deleteConversation(conversationId, button) {
+    if (!currentUser || !conversationId || button.disabled) return;
+
+    const confirmed = window.confirm(
+      "Remove this conversation from your inbox? This does not delete the other member's copy."
+    );
+
+    if (!confirmed) return;
+
+    button.disabled = true;
+    button.textContent = "Removing...";
+
+    try {
+      const { data, error } = await supabase
+        .from("conversation_members")
+        .delete()
+        .eq("conversation_id", conversationId)
+        .eq("user_id", currentUser.id)
+        .select("conversation_id")
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!data) {
+        throw new Error("This conversation could not be removed.");
+      }
+
+      const wrapper = button.closest(".conversation-item-row");
+      const conversationButton = wrapper?.querySelector(
+        ".conversation-item[data-conversation-id]"
+      );
+
+      const wasActive = conversationButton?.classList.contains("active");
+
+      wrapper?.remove();
+
+      if (wasActive) {
+        const nextConversation = list.querySelector(
+          ".conversation-item[data-conversation-id]"
+        );
+
+        if (nextConversation) {
+          nextConversation.click();
+        } else {
+          const title = document.getElementById("chat-title");
+          const subtitle = document.getElementById("chat-subtitle");
+          const messages = document.getElementById("message-list");
+          const input = document.getElementById("message-input");
+          const send = document.getElementById("send-message");
+          const attach = document.getElementById("audio-attach-button");
+
+          if (title) title.textContent = "Choose a conversation";
+          if (subtitle) subtitle.textContent = "Your private Grove inbox";
+
+          if (messages) {
+            messages.replaceChildren();
+
+            const empty = document.createElement("div");
+            empty.className = "empty-chat";
+
+            const heading = document.createElement("h3");
+            heading.textContent = "Your conversations start here";
+
+            const paragraph = document.createElement("p");
+            paragraph.textContent =
+              "Choose a conversation to read messages or start a new one from a member's profile.";
+
+            empty.append(heading, paragraph);
+            messages.append(empty);
+          }
+
+          if (input) input.disabled = true;
+          if (send) send.disabled = true;
+          if (attach) attach.disabled = true;
+        }
+      }
+
+      status("Conversation removed from your inbox.");
+
+    } catch (error) {
+      console.error("Could not remove conversation:", error);
+
+      status(
+        error.message || "Could not remove this conversation.",
+        true
+      );
+
+      button.disabled = false;
+      button.textContent = "×";
+    }
   }
 
-  function makeButton(label, action, title = label) {
-    const button = document.createElement("button");
+  function addDeleteAction(conversationButton) {
+    if (conversationButton.dataset.groveActions === "ready") return;
 
-    button.type = "button";
-    button.className = "message-action-button";
-    button.dataset.messageAction = action;
-    button.textContent = label;
-    button.title = title;
+    const conversationId = conversationButton.dataset.conversationId;
 
-    return button;
+    if (!conversationId) return;
+
+    const wrapper = document.createElement("div");
+    wrapper.className = "conversation-item-row";
+
+    const deleteButton = document.createElement("button");
+
+    deleteButton.type = "button";
+    deleteButton.className = "conversation-delete-button";
+    deleteButton.textContent = "×";
+    deleteButton.title = "Remove conversation from your inbox";
+    deleteButton.setAttribute("aria-label", "Delete conversation");
+
+    deleteButton.addEventListener("click", event => {
+      event.preventDefault();
+      event.stopPropagation();
+
+      deleteConversation(conversationId, deleteButton);
+    });
+
+    conversationButton.dataset.groveActions = "ready";
+
+    conversationButton.parentNode.insertBefore(
+      wrapper,
+      conversationButton
+    );
+
+    wrapper.append(conversationButton, deleteButton);
   }
 
-  function ensureMessageActions(article) {
-    if (
-      !article?.dataset.messageId ||
-      article.classList.contains("message-unsent-placeholder")
-    ) {
+  function addShareButton() {
+    if (shareButton) return;
+
+    const content = heading.querySelector(".chat-heading-content");
+
+    if (!content) return;
+
+    shareButton = document.createElement("button");
+    shareButton.type = "button";
+    shareButton.className = "chat-share-button";
+    shareButton.textContent = "Share link";
+    shareButton.disabled = true;
+
+    shareButton.addEventListener("click", shareConversation);
+
+    heading.append(shareButton);
+  }
+
+  async function shareConversation() {
+    const activeButton = list.querySelector(
+      ".conversation-item.active[data-conversation-id]"
+    );
+
+    const conversationId = activeButton?.dataset.conversationId;
+
+    if (!conversationId) {
+      status("Choose a conversation before sharing its link.", true);
       return;
     }
 
-    let row = $(".message-action-row", article);
+    const url = new URL("/messages.html", window.location.origin);
 
-    if (!row) {
-      row = document.createElement("div");
-      row.className = "message-action-row";
-      article.append(row);
-    }
+    url.searchParams.set("conversation", conversationId);
 
-    const ownMessage = article.classList.contains("own-message");
+    const shareData = {
+      title: "Grove conversation",
+      text: "Open this conversation on Grove.",
+      url: url.href
+    };
 
-    if (!$('[data-message-action="delete-for-me"]', row)) {
-      row.append(makeButton("Delete for me", "delete-for-me"));
-    }
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
 
-    if (
-      ownMessage &&
-      !$('[data-message-action="unsend"]', row)
-    ) {
-      row.append(
-        makeButton(
-          "Unsend",
-          "unsend",
-          "Unsend this message for everyone"
-        )
-      );
-    }
+      } else if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(url.href);
+        status("Conversation link copied.");
 
-    if (
-      canPinMessages &&
-      !$('[data-message-action="toggle-pin"]', row)
-    ) {
-      row.append(
-        makeButton(
-          "Pin",
-          "toggle-pin",
-          "Pin this message to the conversation"
-        )
-      );
-    }
+      } else {
+        window.prompt("Copy this conversation link:", url.href);
+      }
 
-    const pinButton = $('[data-message-action="toggle-pin"]', row);
-
-    if (pinButton) {
-      const pinned = Boolean(pinForMessage(article.dataset.messageId));
-
-      pinButton.textContent = pinned ? "Unpin" : "Pin";
-      pinButton.title = pinned
-        ? "Remove this conversation pin"
-        : "Pin this message to the conversation";
-
-      pinButton.dataset.pinned = String(pinned);
+    } catch (error) {
+      if (error?.name !== "AbortError") {
+        console.error("Conversation sharing failed:", error);
+        status("Could not share this conversation link.", true);
+      }
     }
   }
 
-  function refreshMessageActions() {
-    $$(".message-bubble[data-message-id]", messageList)
-      .forEach(ensureMessageActions);
+  function updateShareButton() {
+    if (!shareButton) return;
+
+    shareButton.disabled = !list.querySelector(
+      ".conversation-item.active[data-conversation-id]"
+    );
+  }
+
+  function openRequestedConversation() {
+    if (!requestedConversation || requestedConversationHandled) return;
+
+    const button = list.querySelector(
+      `.conversation-item[data-conversation-id="${CSS.escape(requestedConversation)}"]`
+    );
+
+    if (!button) return;
+
+    requestedConversationHandled = true;
+    button.click();
+  }
+
+  function linkifyMessageParagraph(paragraph) {
+    if (paragraph.dataset.groveLinks === "ready") return;
+
+    paragraph.dataset.groveLinks = "ready";
+
+    const walker = document.createTreeWalker(
+      paragraph,
+      NodeFilter.SHOW_TEXT
+    );
+
+    const textNodes = [];
+    let node;
+
+    while ((node = walker.nextNode())) {
+      if (/https?:\/\/\S+/i.test(node.textContent)) {
+        textNodes.push(node);
+      }
+    }
+
+    for (const textNode of textNodes) {
+      const text = textNode.textContent;
+      const fragment = document.createDocumentFragment();
+      const expression = /https?:\/\/[^\s<>"']+/gi;
+
+      let lastIndex = 0;
+      let match;
+
+      while ((match = expression.exec(text))) {
+        const raw = match[0];
+
+        const trailing = raw.match(/[),.!?;:]+$/)?.[0] || "";
+
+        const cleanUrl = trailing
+          ? raw.slice(0, -trailing.length)
+          : raw;
+
+        fragment.append(
+          document.createTextNode(
+            text.slice(lastIndex, match.index)
+          )
+        );
+
+        try {
+          const parsed = new URL(cleanUrl);
+
+          if (!["http:", "https:"].includes(parsed.protocol)) {
+            fragment.append(document.createTextNode(raw));
+
+          } else {
+            const anchor = document.createElement("a");
+
+            anchor.href = parsed.href;
+            anchor.textContent = cleanUrl;
+            anchor.target = "_blank";
+            anchor.rel = "noopener noreferrer";
+            anchor.className = "grove-message-link";
+
+            fragment.append(anchor);
+
+            if (trailing) {
+              fragment.append(document.createTextNode(trailing));
+            }
+          }
+
+        } catch {
+          fragment.append(document.createTextNode(raw));
+        }
+
+        lastIndex = match.index + raw.length;
+      }
+
+      fragment.append(
+        document.createTextNode(text.slice(lastIndex))
+      );
+
+      textNode.parentNode.replaceChild(fragment, textNode);
+    }
+  }
+
+  function processMessageLinks(root = messageList) {
+    if (root.matches?.(".message-bubble")) {
+      root.querySelectorAll("p").forEach(linkifyMessageParagraph);
+    }
+
+    root.querySelectorAll?.(".message-bubble p").forEach(
+      linkifyMessageParagraph
+    );
+  }
+
+  function processAddedConversationNodes(records) {
+    for (const record of records) {
+      for (const node of record.addedNodes) {
+        if (node.nodeType !== Node.ELEMENT_NODE) continue;
+
+        if (node.matches?.(
+          ".conversation-item[data-conversation-id]"
+        )) {
+          addDeleteAction(node);
+        }
+
+        node.querySelectorAll?.(
+          ".conversation-item[data-conversation-id]"
+        ).forEach(addDeleteAction);
+      }
+    }
+
+    openRequestedConversation();
+    updateShareButton();
   }
 
   function processAddedMessageNodes(records) {
@@ -122,493 +356,75 @@ import { supabase } from "./supabase.js";
       for (const node of record.addedNodes) {
         if (node.nodeType !== Node.ELEMENT_NODE) continue;
 
-        if (
-          node.matches?.(".message-bubble[data-message-id]")
-        ) {
-          ensureMessageActions(node);
-        }
-
-        node.querySelectorAll?.(
-          ".message-bubble[data-message-id]"
-        ).forEach(ensureMessageActions);
+        processMessageLinks(node);
       }
     }
   }
-
-  function showUnsentNotice(messageId, ownMessage) {
-    const existing = $(
-      `[data-message-id="${CSS.escape(messageId)}"]`,
-      messageList
-    );
-
-    if (!existing) return;
-
-    const notice = document.createElement("article");
-
-    notice.className = "message-bubble message-unsent-placeholder";
-
-    if (ownMessage) {
-      notice.classList.add("own-message");
-    }
-
-    notice.dataset.messageId = messageId;
-
-    const body = document.createElement("p");
-
-    body.textContent = ownMessage
-      ? "You unsent a message."
-      : "This message was unsent.";
-
-    notice.append(body);
-    existing.replaceWith(notice);
-  }
-
-  function renderPinnedBar() {
-    let bar = $("#message-pins-bar");
-
-    if (!bar) {
-      bar = document.createElement("aside");
-      bar.id = "message-pins-bar";
-      bar.className = "message-pins-bar";
-
-      bar.setAttribute(
-        "aria-label",
-        "Pinned messages in this conversation"
-      );
-
-      chatPanel.insertBefore(bar, messageList);
-    }
-
-    bar.replaceChildren();
-    bar.hidden = pins.length === 0;
-
-    if (!pins.length) return;
-
-    const heading = document.createElement("strong");
-
-    heading.className = "message-pins-heading";
-    heading.textContent = pins.length === 1
-      ? "Pinned message"
-      : `Pinned messages (${pins.length})`;
-
-    bar.append(heading);
-
-    const list = document.createElement("div");
-    list.className = "message-pins-items";
-
-    for (const pin of pins) {
-      const item = document.createElement("div");
-      item.className = "message-pin-item";
-
-      const preview = document.createElement("span");
-      preview.textContent = pin.preview || "Shared attachment";
-
-      item.append(preview);
-
-      const canUnpin =
-        pin.pinned_by === user?.id || canUnpinAnyPin;
-
-      if (canUnpin) {
-        const button = makeButton("Unpin", "unpin-from-bar");
-
-        button.dataset.messageId = pin.message_id;
-
-        item.append(button);
-      }
-
-      list.append(item);
-    }
-
-    bar.append(list);
-  }
-
-  async function loadPins(force = false) {
-    if (!user) return;
-
-    const conversationId = activeConversationId();
-
-    if (!conversationId) {
-      pinLoadToken++;
-      activePinsConversationId = null;
-      pins = [];
-      canPinMessages = false;
-      canUnpinAnyPin = false;
-
-      renderPinnedBar();
-      refreshMessageActions();
-
-      return;
-    }
-
-    if (!force && conversationId === activePinsConversationId) {
-      return;
-    }
-
-    const token = ++pinLoadToken;
-
-    activePinsConversationId = conversationId;
-
-    try {
-      const [
-        { data: conversation, error: conversationError },
-        { data: membership, error: membershipError }
-      ] = await Promise.all([
-        supabase
-          .from("conversations")
-          .select("id,conversation_type")
-          .eq("id", conversationId)
-          .maybeSingle(),
-
-        supabase
-          .from("conversation_members")
-          .select("role")
-          .eq("conversation_id", conversationId)
-          .eq("user_id", user.id)
-          .maybeSingle()
-      ]);
-
-      if (conversationError) throw conversationError;
-      if (membershipError) throw membershipError;
-
-      if (token !== pinLoadToken) return;
-
-      if (conversationId !== activeConversationId()) return;
-
-      const canManagePins = Boolean(
-        conversation &&
-        membership &&
-        (
-          conversation.conversation_type === "direct" ||
-          membership.role === "owner" ||
-          membership.role === "admin"
-        )
-      );
-
-      canPinMessages = canManagePins;
-      canUnpinAnyPin = canManagePins;
-
-      const { data: pinRows, error: pinError } = await supabase
-        .from("conversation_message_pins")
-        .select("conversation_id,message_id,pinned_by,pinned_at")
-        .eq("conversation_id", conversationId)
-        .order("pinned_at", { ascending: false });
-
-      if (pinError) throw pinError;
-
-      const ids = (pinRows || []).map(pin => pin.message_id);
-
-      let messagesById = new Map();
-
-      if (ids.length) {
-        const { data: messageRows, error: messageError } = await supabase
-          .from("conversation_messages")
-          .select("id,body,attachment_filename")
-          .in("id", ids);
-
-        if (messageError) throw messageError;
-
-        messagesById = new Map(
-          (messageRows || []).map(message => [
-            message.id,
-            message
-          ])
-        );
-      }
-
-      if (token !== pinLoadToken) return;
-
-      if (conversationId !== activeConversationId()) return;
-
-      pins = (pinRows || []).map(pin => {
-        const message = messagesById.get(pin.message_id);
-
-        return {
-          ...pin,
-          preview: String(
-            message?.body ||
-            message?.attachment_filename ||
-            "Shared attachment"
-          )
-            .replace(/\s+/g, " ")
-            .slice(0, 140)
-        };
-      });
-
-      renderPinnedBar();
-      refreshMessageActions();
-
-    } catch (error) {
-      if (token !== pinLoadToken) return;
-
-      console.warn("Could not load pinned messages.", error);
-
-      pins = [];
-      canPinMessages = false;
-      canUnpinAnyPin = false;
-
-      renderPinnedBar();
-      refreshMessageActions();
-    }
-  }
-
-  async function deleteForMe(messageId, article) {
-    const { error } = await supabase
-      .from("message_hidden_for")
-      .insert({
-        message_id: messageId,
-        user_id: user.id
-      });
-
-    if (error && error.code !== "23505") {
-      throw error;
-    }
-
-    article.remove();
-  }
-
-  async function unsendForEveryone(messageId, article) {
-    const ownMessage = article.classList.contains("own-message");
-
-    const { data, error } = await supabase
-      .from("conversation_messages")
-      .update({
-        deleted_for_everyone_at: new Date().toISOString()
-      })
-      .eq("id", messageId)
-      .eq("sender_id", user.id)
-      .is("deleted_for_everyone_at", null)
-      .select("id")
-      .maybeSingle();
-
-    if (error) throw error;
-
-    if (!data?.id) {
-      throw new Error(
-        "This message could not be unsent. It may already be removed."
-      );
-    }
-
-    showUnsentNotice(messageId, ownMessage);
-  }
-
-  async function togglePin(messageId) {
-    const conversationId = activeConversationId();
-
-    if (!conversationId || !canPinMessages) return;
-
-    const existing = pinForMessage(messageId);
-
-    if (existing) {
-      const { error } = await supabase
-        .from("conversation_message_pins")
-        .delete()
-        .eq("conversation_id", conversationId)
-        .eq("message_id", messageId);
-
-      if (error) throw error;
-
-    } else {
-      const { error } = await supabase
-        .from("conversation_message_pins")
-        .insert({
-          conversation_id: conversationId,
-          message_id: messageId,
-          pinned_by: user.id
-        });
-
-      if (error) throw error;
-    }
-
-    await loadPins(true);
-  }
-
-  async function unpinFromBar(messageId) {
-    const conversationId = activeConversationId();
-
-    if (!conversationId) return;
-
-    const { error } = await supabase
-      .from("conversation_message_pins")
-      .delete()
-      .eq("conversation_id", conversationId)
-      .eq("message_id", messageId);
-
-    if (error) throw error;
-
-    await loadPins(true);
-  }
-
-  chatPanel.addEventListener("click", async event => {
-    const button = event.target.closest("[data-message-action]");
-
-    if (!button || !chatPanel.contains(button)) return;
-
-    const action = button.dataset.messageAction;
-
-    const article = button.closest(
-      ".message-bubble[data-message-id]"
-    );
-
-    const messageId =
-      article?.dataset.messageId ||
-      button.dataset.messageId;
-
-    if (!messageId || button.disabled) return;
-
-    button.disabled = true;
-
-    try {
-      if (action === "delete-for-me" && article) {
-        await deleteForMe(messageId, article);
-
-      } else if (action === "unsend" && article) {
-        await unsendForEveryone(messageId, article);
-
-      } else if (action === "toggle-pin") {
-        await togglePin(messageId);
-
-      } else if (action === "unpin-from-bar") {
-        await unpinFromBar(messageId);
-      }
-
-      setStatus("");
-
-    } catch (error) {
-      console.error("Message action failed.", error);
-
-      setStatus(
-        error?.message ||
-        "That message action could not be completed.",
-        true
-      );
-
-      button.disabled = false;
-    }
-  });
-
-  function handleMessageMutations(records) {
-    processAddedMessageNodes(records);
-
-    const currentId = activeConversationId();
-
-    if (currentId !== activePinsConversationId) {
-      loadPins();
-    }
-  }
-
-  const messageObserver = new MutationObserver(
-    handleMessageMutations
-  );
-
-  messageObserver.observe(messageList, {
-    childList: true,
-    subtree: true
-  });
-
-  const conversationObserver = new MutationObserver(() => {
-    const currentId = activeConversationId();
-
-    if (currentId !== activePinsConversationId) {
-      loadPins();
-    }
-  });
-
-  conversationObserver.observe(conversationList, {
-    childList: true,
-    subtree: true,
-    attributes: true,
-    attributeFilter: ["class"]
-  });
 
   async function initialize() {
-    const { data, error } = await supabase.auth.getUser();
+    try {
+      await getUser();
 
-    if (error) {
-      console.warn(
-        "Message actions could not verify the current user.",
-        error
+      if (!currentUser) return;
+
+      addShareButton();
+
+      list.querySelectorAll(
+        ".conversation-item[data-conversation-id]"
+      ).forEach(addDeleteAction);
+
+      openRequestedConversation();
+      updateShareButton();
+      processMessageLinks();
+
+      const conversationObserver = new MutationObserver(
+        processAddedConversationNodes
       );
-      return;
-    }
 
-    user = data.user;
+      conversationObserver.observe(list, {
+        childList: true,
+        subtree: true
+      });
 
-    if (!user) return;
+      const messageObserver = new MutationObserver(
+        processAddedMessageNodes
+      );
 
-    refreshMessageActions();
-    await loadPins(true);
+      messageObserver.observe(messageList, {
+        childList: true,
+        subtree: true
+      });
 
-    actionChannel = supabase
-      .channel(`grove-message-actions-${user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "UPDATE",
-          schema: "public",
-          table: "conversation_messages"
-        },
-        payload => {
-          const message = payload.new;
+      const activeObserver = new MutationObserver(updateShareButton);
 
-          if (!message?.deleted_for_everyone_at) return;
+      activeObserver.observe(list, {
+        attributes: true,
+        subtree: true,
+        attributeFilter: ["class"]
+      });
 
-          const article = $(
-            `[data-message-id="${CSS.escape(message.id)}"]`,
-            messageList
-          );
-
-          if (article) {
-            showUnsentNotice(
-              message.id,
-              message.sender_id === user.id
+      if (requestedConversation) {
+        window.setTimeout(() => {
+          if (!requestedConversationHandled) {
+            status(
+              "That conversation is not available in this account.",
+              true
             );
           }
-        }
-      )
-      .subscribe();
+        }, 1800);
+      }
 
-    pinChannel = supabase
-      .channel(`grove-message-pins-${user.id}`)
-      .on(
-        "postgres_changes",
-        {
-          event: "*",
-          schema: "public",
-          table: "conversation_message_pins"
-        },
-        payload => {
-          const changedConversationId =
-            payload.new?.conversation_id ||
-            payload.old?.conversation_id;
+      window.addEventListener("beforeunload", () => {
+        conversationObserver.disconnect();
+        messageObserver.disconnect();
+        activeObserver.disconnect();
+      });
 
-          if (
-            changedConversationId &&
-            changedConversationId === activeConversationId()
-          ) {
-            loadPins(true);
-          }
-        }
-      )
-      .subscribe();
+    } catch (error) {
+      console.error("Grove message extras failed:", error);
+      status("Some messaging extras could not load.", true);
+    }
   }
 
-  window.addEventListener("beforeunload", () => {
-    if (actionChannel) {
-      supabase.removeChannel(actionChannel);
-    }
-
-    if (pinChannel) {
-      supabase.removeChannel(pinChannel);
-    }
-
-    messageObserver.disconnect();
-    conversationObserver.disconnect();
-  });
-
-  initialize().catch(error => {
-    console.error(
-      "Grove message actions failed to initialize.",
-      error
-    );
-  });
+  initialize();
 })();
