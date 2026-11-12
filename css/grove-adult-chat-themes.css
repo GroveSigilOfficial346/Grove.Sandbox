@@ -1,5 +1,4 @@
-/* Default message theme for verified Adult accounts.
-   These styles do not change message content or permissions. */
+/* Grove conversation theme palette */
 
 body[data-grove-adult-theme] {
   --adult-accent: #a78bfa;
@@ -10,7 +9,8 @@ body[data-grove-adult-theme] {
   --adult-border: rgba(167,139,250,.28);
 }
 
-body[data-grove-adult-theme="midnight-galaxy"] {
+body[data-grove-adult-theme="midnight-galaxy"],
+body[data-grove-adult-theme="galaxy"] {
   --adult-accent: #a78bfa;
   --adult-accent-soft: rgba(167,139,250,.18);
   --adult-panel: #100b25;
@@ -19,7 +19,8 @@ body[data-grove-adult-theme="midnight-galaxy"] {
   --adult-border: rgba(167,139,250,.28);
 }
 
-body[data-grove-adult-theme="velvet-noir"] {
+body[data-grove-adult-theme="velvet-noir"],
+body[data-grove-adult-theme="velvet"] {
   --adult-accent: #e8a8d4;
   --adult-accent-soft: rgba(232,168,212,.15);
   --adult-panel: #1d101d;
@@ -37,7 +38,8 @@ body[data-grove-adult-theme="obsidian"] {
   --adult-border: rgba(194,200,210,.25);
 }
 
-body[data-grove-adult-theme="rose-chrome"] {
+body[data-grove-adult-theme="rose-chrome"],
+body[data-grove-adult-theme="rose"] {
   --adult-accent: #ff9ecb;
   --adult-accent-soft: rgba(255,158,203,.16);
   --adult-panel: #1c0e20;
@@ -46,7 +48,8 @@ body[data-grove-adult-theme="rose-chrome"] {
   --adult-border: rgba(255,158,203,.28);
 }
 
-body[data-grove-adult-theme="gothic-violet"] {
+body[data-grove-adult-theme="gothic-violet"],
+body[data-grove-adult-theme="gothic"] {
   --adult-accent: #c4a4ff;
   --adult-accent-soft: rgba(196,164,255,.17);
   --adult-panel: #10051f;
@@ -64,7 +67,8 @@ body[data-grove-adult-theme="dark-romance"] {
   --adult-border: rgba(233,161,183,.27);
 }
 
-body[data-grove-adult-theme="blood-moon"] {
+body[data-grove-adult-theme="blood-moon"],
+body[data-grove-adult-theme="ember"] {
   --adult-accent: #ff8585;
   --adult-accent-soft: rgba(255,133,133,.14);
   --adult-panel: #1b080e;
@@ -108,6 +112,8 @@ body[data-grove-adult-theme="neon-noir"] {
   --adult-own: rgba(23,90,125,.35);
   --adult-border: rgba(98,233,245,.28);
 }
+
+/* Shared conversation surfaces */
 
 body[data-grove-adult-theme] .messages-layout {
   border-color: var(--adult-border);
@@ -157,4 +163,13 @@ body[data-grove-adult-theme] .send-button {
     color-mix(in srgb, var(--adult-accent) 48%, #45146c)
   );
   color: #080510;
+}
+
+/* Decorative display typography */
+
+body[data-grove-adult-theme="gothic-violet"] .chat-heading h2,
+body[data-grove-adult-theme="gothic"] .chat-heading h2,
+body[data-grove-adult-theme="dark-romance"] .chat-heading h2,
+body[data-grove-adult-theme="velvet-noir"] .chat-heading h2 {
+  font-family: "Cinzel", Georgia, serif;
 }
