@@ -16,6 +16,10 @@ let conversationLoadToken = 0;
 let messageLoadToken = 0;
 let isSending = false;
 
+let replyTarget = null;
+
+const messageById = new Map();
+
 function setStatus(message, error = false) {
   const node = $("#messages-status");
   if (!node) return;
@@ -58,6 +62,64 @@ function formatPreview(body) {
   return normalized.length > 65
     ? `${normalized.slice(0, 65)}…`
     : normalized;
+}
+
+function safeMessageText(message) {
+  if (!message) return "Message unavailable";
+
+  if (message.deleted_for_everyone_at) {
+    return "Original message was unsent";
+  }
+
+  return formatPreview(message.body);
+}
+
+function clearReplyTarget() {
+  replyTarget = null;
+
+  const context = $("#message-reply-context");
+  const contextText = $("#message-reply-context-text");
+  const input = $("#message-input");
+
+  if (context) context.hidden = true;
+  if (contextText) contextText.textContent = "";
+  if (input) input.placeholder = "Write a message...";
+}
+
+function setReplyTarget(message) {
+  if (!message || !message.id || !activeConversationId) return;
+
+  if (message.conversation_id !== activeConversationId) {
+    setStatus("That message belongs to another conversation.", true);
+    return;
+  }
+
+  if (message.deleted_for_everyone_at) {
+    setStatus("You cannot reply to an unsent message.", true);
+    return;
+  }
+
+  replyTarget = message;
+
+  const context = $("#message-reply-context");
+  const contextText = $("#message-reply-context-text");
+  const input = $("#message-input");
+
+  if (contextText) {
+    const author = message.sender_id === user.id
+      ? "your message"
+      : "this message";
+
+    contextText.textContent =
+      `${author}: ${formatPreview(message.body)}`;
+  }
+
+  if (context) context.hidden = false;
+
+  if (input) {
+    input.placeholder = "Write your reply...";
+    input.focus();
+  }
 }
 
 async function removeActiveChannel() {
@@ -319,17 +381,12 @@ async function loadConversationList({
 
   if (token !== conversationLoadToken) return;
 
-  /*
-   * Fetch the latest message in each conversation.
-   * Individual conversation queries ensure one busy conversation
-   * cannot hide the preview for another conversation.
-   */
   const latestMessageResults = await Promise.all(
     ids.map(async (conversationId) => {
       const { data, error } = await supabase
         .from("conversation_messages")
         .select(
-          "id,conversation_id,sender_id,body,created_at,deleted_for_everyone_at"
+          "id,conversation_id,sender_id,body,created_at,deleted_for_everyone_at,reply_to_message_id"
         )
         .eq("conversation_id", conversationId)
         .is("deleted_for_everyone_at", null)
@@ -416,17 +473,10 @@ async function loadConversationList({
 
   renderConversationList();
 
-  /*
-   * A shared/group conversation URL takes priority over the
-   * automatic first-conversation behavior. messages-extras.js
-   * handles opening that requested conversation from the inbox.
-   */
   const requestedConversation =
     new URLSearchParams(location.search).get("conversation");
 
-  if (requestedConversation) {
-    return;
-  }
+  if (requestedConversation) return;
 
   if (processRequestedUser) {
     const requestedUser =
@@ -496,10 +546,90 @@ async function startOrOpenDirectConversation(targetUserId) {
 }
 
 /* ==========================================
+   REPLY PREVIEWS
+   ========================================== */
+
+function createReplyPreview(message) {
+  if (!message.reply_to_message_id) return null;
+
+  const preview = document.createElement("button");
+
+  preview.type = "button";
+  preview.className = "message-reply-preview";
+  preview.dataset.replyTarget = message.reply_to_message_id;
+  preview.textContent = "View replied-to message";
+
+  return preview;
+}
+
+function updateReplyPreview(messageId, originalMessage) {
+  const previews = document.querySelectorAll(
+    `.message-reply-preview[data-reply-target="${CSS.escape(messageId)}"]`
+  );
+
+  const label = originalMessage
+    ? safeMessageText(originalMessage)
+    : "Original message unavailable";
+
+  previews.forEach((preview) => {
+    preview.textContent = label;
+    preview.title = "Jump to original message";
+  });
+}
+
+async function hydrateReplyPreviews(messages) {
+  const referencedIds = [
+    ...new Set(
+      (messages || [])
+        .map((message) => message.reply_to_message_id)
+        .filter(Boolean)
+    )
+  ];
+
+  if (!referencedIds.length || !activeConversationId) return;
+
+  const conversationId = activeConversationId;
+
+  const cachedIds = referencedIds.filter(
+    (id) => !messageById.has(id)
+  );
+
+  let fetched = [];
+
+  if (cachedIds.length) {
+    const { data, error } = await supabase
+      .from("conversation_messages")
+      .select(
+        "id,conversation_id,sender_id,body,created_at,deleted_for_everyone_at,reply_to_message_id"
+      )
+      .eq("conversation_id", conversationId)
+      .in("id", cachedIds);
+
+    if (error) {
+      console.warn("Could not load original replied-to messages.", error);
+    } else {
+      fetched = data || [];
+
+      for (const message of fetched) {
+        messageById.set(message.id, message);
+      }
+    }
+  }
+
+  if (conversationId !== activeConversationId) return;
+
+  for (const id of referencedIds) {
+    updateReplyPreview(id, messageById.get(id) || null);
+  }
+}
+
+/* ==========================================
    MESSAGE RENDERING
    ========================================== */
 
 function renderMessage(message) {
+  messageById.set(message.id, message);
+
   const article = document.createElement("article");
 
   article.className =
@@ -509,6 +639,8 @@ function renderMessage(message) {
 
   article.dataset.messageId = message.id;
 
+  const replyPreview = createReplyPreview(message);
+
   const body = document.createElement("p");
   body.textContent = message.body ?? "";
 
@@ -516,7 +648,21 @@ function renderMessage(message) {
   time.dateTime = message.created_at;
   time.textContent = formatTime(message.created_at);
 
-  article.append(body, time);
+  const replyButton = document.createElement("button");
+  replyButton.type = "button";
+  replyButton.className = "message-reply-trigger";
+  replyButton.dataset.replyMessageId = message.id;
+  replyButton.textContent = "Reply";
+  replyButton.setAttribute(
+    "aria-label",
+    "Reply to this message"
+  );
+
+  if (replyPreview) {
+    article.append(replyPreview);
+  }
+
+  article.append(body, time, replyButton);
 
   return article;
 }
@@ -534,7 +680,7 @@ function appendMessageToView(message) {
 
   if (
     list.querySelector(
-      `[data-message-id="${message.id}"]`
+      `[data-message-id="${CSS.escape(message.id)}"]`
     )
   ) {
     return;
@@ -545,6 +691,69 @@ function appendMessageToView(message) {
 
   list.append(renderMessage(message));
   scrollMessagesToBottom();
+
+  if (message.reply_to_message_id) {
+    hydrateReplyPreviews([message]).catch((error) => {
+      console.warn("Reply preview could not load.", error);
+    });
+  }
+}
+
+/* ==========================================
+   REPLY BUTTON INTERACTIONS
+   ========================================== */
+
+function handleMessageListClick(event) {
+  const replyButton = event.target.closest(
+    ".message-reply-trigger"
+  );
+
+  if (replyButton) {
+    const message = messageById.get(
+      replyButton.dataset.replyMessageId
+    );
+
+    if (message) {
+      setReplyTarget(message);
+    }
+
+    return;
+  }
+
+  const preview = event.target.closest(
+    ".message-reply-preview"
+  );
+
+  if (preview) {
+    const targetId = preview.dataset.replyTarget;
+
+    const target = document.querySelector(
+      `[data-message-id="${CSS.escape(targetId)}"]`
+    );
+
+    if (!target) {
+      setStatus(
+        "The original message is not in the loaded message history.",
+        true
+      );
+      return;
+    }
+
+    target.scrollIntoView({
+      behavior: "smooth",
+      block: "center"
+    });
+
+    target.classList.remove("message-reply-highlight");
+
+    requestAnimationFrame(() => {
+      target.classList.add("message-reply-highlight");
+    });
+
+    window.setTimeout(() => {
+      target.classList.remove("message-reply-highlight");
+    }, 1600);
+  }
 }
 
 /* ==========================================
@@ -587,7 +796,7 @@ async function loadMessages() {
   const { data, error } = await supabase
     .from("conversation_messages")
     .select(
-      "id,conversation_id,sender_id,body,created_at,deleted_for_everyone_at"
+      "id,conversation_id,sender_id,body,created_at,deleted_for_everyone_at,reply_to_message_id"
     )
     .eq("conversation_id", conversationId)
     .is("deleted_for_everyone_at", null)
@@ -607,6 +816,7 @@ async function loadMessages() {
   if (!list) return;
 
   list.replaceChildren();
+  messageById.clear();
 
   if (!data?.length) {
     const empty = document.createElement("div");
@@ -614,7 +824,8 @@ async function loadMessages() {
     empty.className = "empty-chat";
 
     const heading = document.createElement("h3");
-    heading.textContent = "This is the beginning of the conversation.";
+    heading.textContent =
+      "This is the beginning of the conversation.";
 
     empty.append(heading);
     list.append(empty);
@@ -622,6 +833,8 @@ async function loadMessages() {
     for (const message of data) {
       list.append(renderMessage(message));
     }
+
+    await hydrateReplyPreviews(data);
   }
 
   scrollMessagesToBottom();
@@ -636,10 +849,6 @@ async function loadMessages() {
 async function openConversation(id, label) {
   if (!id) return;
 
-  /*
-   * Prevent duplicate opens of the same conversation while its
-   * history or Realtime subscription is already being initialized.
-   */
   if (
     activeConversationId === id &&
     (
@@ -648,6 +857,11 @@ async function openConversation(id, label) {
     )
   ) {
     return;
+  }
+
+  if (activeConversationId !== id) {
+    clearReplyTarget();
+    messageById.clear();
   }
 
   openingConversationId = id;
@@ -693,7 +907,6 @@ async function openConversation(id, label) {
           }
 
           updateConversationPreview(id, message);
-
           appendMessageToView(message);
 
           if (message.sender_id !== user.id) {
@@ -748,6 +961,19 @@ async function sendMessage(event) {
   }
 
   const conversationId = activeConversationId;
+  const selectedReply = replyTarget;
+
+  if (
+    selectedReply &&
+    selectedReply.conversation_id !== conversationId
+  ) {
+    clearReplyTarget();
+    setStatus(
+      "Your reply target changed. Select the message again.",
+      true
+    );
+    return;
+  }
 
   isSending = true;
   setComposerEnabled(false);
@@ -759,16 +985,21 @@ async function sendMessage(event) {
       .insert({
         conversation_id: conversationId,
         sender_id: user.id,
-        body
+        body,
+        reply_to_message_id: selectedReply?.id || null
       })
       .select(
-        "id,conversation_id,sender_id,body,created_at,deleted_for_everyone_at"
+        "id,conversation_id,sender_id,body,created_at,deleted_for_everyone_at,reply_to_message_id"
       )
       .single();
 
     if (error) throw error;
 
     input.value = "";
+
+    if (replyTarget?.id === selectedReply?.id) {
+      clearReplyTarget();
+    }
 
     if (activeConversationId === conversationId && data) {
       appendMessageToView(data);
@@ -817,6 +1048,21 @@ async function initialize() {
 
     if (form) {
       form.addEventListener("submit", sendMessage);
+    }
+
+    const messageList = $("#message-list");
+
+    if (messageList) {
+      messageList.addEventListener(
+        "click",
+        handleMessageListClick
+      );
+    }
+
+    const cancelReply = $("#cancel-message-reply");
+
+    if (cancelReply) {
+      cancelReply.addEventListener("click", clearReplyTarget);
     }
 
     await loadConversationList();
