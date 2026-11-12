@@ -1,0 +1,163 @@
+.grove-experience-card {
+  display: grid;
+  gap: 14px;
+  margin: 0 0 26px;
+  padding: clamp(16px, 3vw, 24px);
+  border: 1px solid rgba(133, 30, 255, .4);
+  border-radius: 17px;
+  background:
+    radial-gradient(circle at 100% 0%, rgba(235,54,237,.12), transparent 45%),
+    linear-gradient(145deg, rgba(20,12,43,.98), rgba(8,5,25,.96));
+  box-shadow: 0 15px 40px rgba(0,0,0,.22);
+}
+
+.grove-experience-card h2,
+.grove-experience-card h3 {
+  margin: 0;
+  color: #f7f5ff;
+}
+
+.grove-experience-card h2 {
+  font-size: 1.3rem;
+}
+
+.grove-experience-card h3 {
+  font-size: 1.08rem;
+}
+
+.grove-experience-description {
+  margin: 0;
+  color: #bdb1d4;
+  font-size: .88rem;
+  line-height: 1.65;
+}
+
+.grove-experience-field {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.grove-experience-field label {
+  color: #e3d9f5;
+  font-size: .82rem;
+  font-weight: 750;
+}
+
+.grove-experience-field input,
+.grove-experience-field select {
+  width: 100%;
+  min-height: 46px;
+  padding: 11px 13px;
+  border: 1px solid rgba(133,30,255,.42);
+  border-radius: 10px;
+  background: #0b0620;
+  color: #f7f5ff;
+}
+
+.grove-experience-field input:focus,
+.grove-experience-field select:focus {
+  border-color: #05c9f4;
+  outline: 2px solid rgba(5,201,244,.15);
+}
+
+.grove-font-preview {
+  margin: 0;
+  padding: 16px;
+  border: 1px solid rgba(5,201,244,.22);
+  border-radius: 12px;
+  background: rgba(5,0,25,.62);
+  color: #f7f5ff;
+  font-size: 1.2rem;
+}
+
+.grove-adult-options {
+  display: grid;
+  gap: 14px;
+  margin-top: 8px;
+  padding: 17px;
+  border: 1px solid rgba(235,54,237,.35);
+  border-radius: 14px;
+  background: rgba(34,10,40,.34);
+}
+
+.grove-verification-status,
+.grove-experience-status {
+  min-height: 20px;
+  margin: 0;
+  color: #7bd7a2;
+  font-size: .84rem;
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.grove-experience-status.is-error {
+  color: #ff8585;
+}
+
+.grove-experience-status:empty {
+  display: none;
+}
+
+.grove-experience-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px;
+  border: 1px solid rgba(133,30,255,.25);
+  border-radius: 11px;
+  background: rgba(5,0,25,.4);
+  cursor: pointer;
+}
+
+.grove-experience-toggle-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.grove-experience-toggle-copy strong {
+  color: #f7f5ff;
+  font-size: .85rem;
+}
+
+.grove-experience-toggle-copy small {
+  color: #aaa1c8;
+  font-size: .76rem;
+  line-height: 1.5;
+}
+
+.grove-experience-toggle input {
+  width: 21px;
+  height: 21px;
+  flex: 0 0 auto;
+  accent-color: #a42be9;
+}
+
+.grove-experience-card button {
+  width: fit-content;
+  max-width: 100%;
+}
+
+.grove-experience-card button:disabled,
+.grove-experience-card input:disabled,
+.grove-experience-card select:disabled {
+  cursor: not-allowed;
+  opacity: .55;
+}
+
+@media (max-width: 600px) {
+  .grove-experience-card {
+    padding: 15px;
+    border-radius: 13px;
+  }
+
+  .grove-adult-options {
+    padding: 13px;
+  }
+
+  .grove-experience-card button {
+    width: 100%;
+  }
+}
