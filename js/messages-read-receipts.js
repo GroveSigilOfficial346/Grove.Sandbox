@@ -3,7 +3,9 @@ import { supabase } from "./supabase.js";
 (() => {
   "use strict";
 
-  const $ = (selector, root = document) => root.querySelector(selector);
+  const $ = (selector, root = document) =>
+    root.querySelector(selector);
+
   const messageList = $("#message-list");
   const conversationList = $("#conversation-list");
 
@@ -16,12 +18,15 @@ import { supabase } from "./supabase.js";
   let requestToken = 0;
 
   function selectedConversationId() {
-    return $(".conversation-item.active[data-conversation-id]", conversationList)
-      ?.dataset.conversationId || null;
+    return $(
+      ".conversation-item.active[data-conversation-id]",
+      conversationList
+    )?.dataset.conversationId || null;
   }
 
   function clearReceipt() {
-    messageList.querySelectorAll(".grove-read-receipt")
+    messageList
+      .querySelectorAll(".grove-read-receipt")
       .forEach((node) => node.remove());
   }
 
@@ -32,11 +37,15 @@ import { supabase } from "./supabase.js";
       `.message-bubble.own-message[data-message-id="${CSS.escape(message.id)}"]`
     );
 
-    if (!article || article.classList.contains("message-unsent-placeholder")) {
+    if (
+      !article ||
+      article.classList.contains("message-unsent-placeholder")
+    ) {
       return;
     }
 
     const receipt = document.createElement("span");
+
     receipt.className = "grove-read-receipt";
     receipt.textContent = label;
     receipt.setAttribute("aria-label", label);
@@ -58,16 +67,19 @@ import { supabase } from "./supabase.js";
       { data: members, error: membersError },
       { data: latestMessage, error: messageError }
     ] = await Promise.all([
-      supabase.from("conversations")
+      supabase
+        .from("conversations")
         .select("id,conversation_type")
         .eq("id", conversationId)
         .maybeSingle(),
 
-      supabase.from("conversation_members")
+      supabase
+        .from("conversation_members")
         .select("user_id,last_read_at")
         .eq("conversation_id", conversationId),
 
-      supabase.from("conversation_messages")
+      supabase
+        .from("conversation_messages")
         .select("id,created_at")
         .eq("conversation_id", conversationId)
         .eq("sender_id", user.id)
@@ -102,29 +114,39 @@ import { supabase } from "./supabase.js";
 
     if (!recipients.length) return;
 
-    const messageTime = new Date(latestMessage.created_at).getTime();
+    const messageTime = new Date(
+      latestMessage.created_at
+    ).getTime();
 
     const seenCount = recipients.filter((member) => {
       if (!member.last_read_at) return false;
 
-      return new Date(member.last_read_at).getTime() >= messageTime;
+      return (
+        new Date(member.last_read_at).getTime() >= messageTime
+      );
     }).length;
 
     if (seenCount === 0) return;
 
-    const label = conversation.conversation_type === "direct"
-      ? "Seen"
-      : `Seen by ${seenCount} of ${recipients.length}`;
+    const label =
+      conversation.conversation_type === "direct"
+        ? "Seen"
+        : `Seen by ${seenCount} of ${recipients.length}`;
 
     renderReceipt(latestMessage, label);
   }
 
   function scheduleRefresh() {
-    if (refreshTimer) clearTimeout(refreshTimer);
+    if (refreshTimer) {
+      clearTimeout(refreshTimer);
+    }
 
     refreshTimer = setTimeout(() => {
       refreshReceipt().catch((error) => {
-        console.warn("Grove read receipt refresh failed.", error);
+        console.warn(
+          "Grove read receipt refresh failed.",
+          error
+        );
       });
     }, 150);
   }
@@ -133,6 +155,7 @@ import { supabase } from "./supabase.js";
     if (channel) {
       const previous = channel;
       channel = null;
+
       await supabase.removeChannel(previous);
     }
 
@@ -141,13 +164,19 @@ import { supabase } from "./supabase.js";
     if (!conversationId || !user) return;
 
     channel = supabase
-      .channel(`grove-read-receipts-${conversationId}-${user.id}`)
-      .on("postgres_changes", {
-        event: "UPDATE",
-        schema: "public",
-        table: "conversation_members",
-        filter: `conversation_id=eq.${conversationId}`
-      }, scheduleRefresh)
+      .channel(
+        `grove-read-receipts-${conversationId}-${user.id}`
+      )
+      .on(
+        "postgres_changes",
+        {
+          event: "UPDATE",
+          schema: "public",
+          table: "conversation_members",
+          filter: `conversation_id=eq.${conversationId}`
+        },
+        scheduleRefresh
+      )
       .subscribe();
 
     scheduleRefresh();
@@ -158,7 +187,10 @@ import { supabase } from "./supabase.js";
 
     if (nextId !== activeId) {
       subscribeToConversation(nextId).catch((error) => {
-        console.warn("Grove read receipt subscription failed.", error);
+        console.warn(
+          "Grove read receipt subscription failed.",
+          error
+        );
       });
     } else {
       scheduleRefresh();
@@ -174,7 +206,9 @@ import { supabase } from "./supabase.js";
 
     if (!user) return;
 
-    const conversationObserver = new MutationObserver(syncConversation);
+    const conversationObserver = new MutationObserver(
+      syncConversation
+    );
 
     conversationObserver.observe(conversationList, {
       childList: true,
@@ -191,10 +225,14 @@ import { supabase } from "./supabase.js";
         ];
 
         return changedNodes.some((node) => {
-          if (node.nodeType !== Node.ELEMENT_NODE) return true;
+          if (node.nodeType !== Node.ELEMENT_NODE) {
+            return true;
+          }
 
-          return !node.matches(".grove-read-receipt") &&
-            !node.closest(".grove-read-receipt");
+          return (
+            !node.matches(".grove-read-receipt") &&
+            !node.closest(".grove-read-receipt")
+          );
         });
       });
 
@@ -212,12 +250,20 @@ import { supabase } from "./supabase.js";
       conversationObserver.disconnect();
       messageObserver.disconnect();
 
-      if (channel) supabase.removeChannel(channel);
-      if (refreshTimer) clearTimeout(refreshTimer);
+      if (channel) {
+        supabase.removeChannel(channel);
+      }
+
+      if (refreshTimer) {
+        clearTimeout(refreshTimer);
+      }
     });
   }
 
   initialize().catch((error) => {
-    console.warn("Grove read receipts did not initialize.", error);
+    console.warn(
+      "Grove read receipts did not initialize.",
+      error
+    );
   });
 })();
