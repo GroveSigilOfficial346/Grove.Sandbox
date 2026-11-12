@@ -1,0 +1,64 @@
+/* Grove profile typography collection */
+
+body[data-grove-font="modern"] {
+  font-family: "DM Sans", system-ui, sans-serif;
+}
+
+body[data-grove-font="cinzel"] h1,
+body[data-grove-font="cinzel"] h2,
+body[data-grove-font="cinzel"] h3,
+body[data-grove-font="cinzel"] .brand {
+  font-family: "Cinzel", Georgia, serif;
+}
+
+body[data-grove-font="gothic"] h1,
+body[data-grove-font="gothic"] h2,
+body[data-grove-font="gothic"] h3,
+body[data-grove-font="gothic"] .brand {
+  font-family: "UnifrakturMaguntia", Georgia, serif;
+  font-weight: 400;
+}
+
+body[data-grove-font="blackletter"] h1,
+body[data-grove-font="blackletter"] h2,
+body[data-grove-font="blackletter"] h3,
+body[data-grove-font="blackletter"] .brand {
+  font-family: "UnifrakturCook", Georgia, serif;
+  font-weight: 700;
+}
+
+body[data-grove-font="serif"] {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.08rem;
+}
+
+body[data-grove-font="serif"] h1,
+body[data-grove-font="serif"] h2,
+body[data-grove-font="serif"] h3,
+body[data-grove-font="serif"] .brand {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-weight: 700;
+}
+
+body[data-grove-font="mono"] {
+  font-family: "IBM Plex Mono", monospace;
+}
+
+body[data-grove-font="mono"] h1,
+body[data-grove-font="mono"] h2,
+body[data-grove-font="mono"] h3,
+body[data-grove-font="mono"] .brand {
+  font-family: "IBM Plex Mono", monospace;
+}
+
+/* Keep body copy legible when decorative display fonts are selected. */
+body[data-grove-font="gothic"] p,
+body[data-grove-font="gothic"] input,
+body[data-grove-font="gothic"] textarea,
+body[data-grove-font="gothic"] select,
+body[data-grove-font="blackletter"] p,
+body[data-grove-font="blackletter"] input,
+body[data-grove-font="blackletter"] textarea,
+body[data-grove-font="blackletter"] select {
+  font-family: "DM Sans", system-ui, sans-serif;
+}
