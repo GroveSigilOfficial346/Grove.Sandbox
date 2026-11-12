@@ -1,0 +1,143 @@
+/* ==========================================
+   GROVE — THREADED MESSAGE REPLIES
+   ========================================== */
+
+.message-reply-context {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 13px;
+  border: 1px solid rgba(5, 201, 244, 0.25);
+  border-left: 3px solid #05c9f4;
+  border-radius: 10px;
+  background: rgba(133, 30, 255, 0.12);
+}
+
+.message-reply-context[hidden] {
+  display: none;
+}
+
+.message-reply-context-copy {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 4px;
+}
+
+.message-reply-context-label {
+  color: #05c9f4;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+}
+
+#message-reply-context-text {
+  overflow: hidden;
+  color: #f7f5ff;
+  font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.message-reply-cancel {
+  display: grid;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 8px;
+  background: rgba(5, 0, 25, 0.4);
+  color: #f7f5ff;
+  font-size: 1.2rem;
+  cursor: pointer;
+}
+
+.message-reply-cancel:hover {
+  border-color: #05c9f4;
+  background: rgba(5, 201, 244, 0.12);
+}
+
+.message-reply-preview {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 0 9px;
+  padding: 8px 10px;
+  overflow: hidden;
+  border: 0;
+  border-left: 3px solid #05c9f4;
+  border-radius: 5px;
+  background: rgba(5, 0, 25, 0.38);
+  color: rgba(225, 214, 255, 0.86);
+  font: inherit;
+  font-size: 0.76rem;
+  line-height: 1.4;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.message-reply-preview:hover {
+  background: rgba(5, 201, 244, 0.12);
+  color: #ffffff;
+}
+
+.message-reply-trigger {
+  align-self: flex-end;
+  width: fit-content;
+  margin-top: 7px;
+  padding: 3px 7px;
+  border: 1px solid rgba(5, 201, 244, 0.2);
+  border-radius: 6px;
+  background: rgba(5, 0, 25, 0.25);
+  color: rgba(5, 201, 244, 0.9);
+  font: inherit;
+  font-size: 0.66rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.message-reply-trigger:hover {
+  border-color: rgba(5, 201, 244, 0.65);
+  background: rgba(5, 201, 244, 0.1);
+  color: #ffffff;
+}
+
+.message-reply-highlight {
+  outline: 2px solid rgba(5, 201, 244, 0.85);
+  outline-offset: 3px;
+  box-shadow: 0 0 22px rgba(5, 201, 244, 0.2);
+}
+
+.message-form {
+  flex-wrap: wrap;
+}
+
+.message-reply-context {
+  flex: 0 0 100%;
+}
+
+@media (max-width: 640px) {
+  .message-reply-context {
+    padding: 8px 10px;
+  }
+
+  #message-reply-context-text {
+    font-size: 0.73rem;
+  }
+
+  .message-reply-preview {
+    margin-bottom: 7px;
+    padding: 7px 8px;
+    font-size: 0.7rem;
+  }
+
+  .message-reply-trigger {
+    min-height: 28px;
+    padding: 5px 8px;
+  }
+}
