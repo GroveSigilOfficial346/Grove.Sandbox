@@ -100,6 +100,54 @@ import { supabase } from "./supabase.js";
     }
   }
 
+  function getOrCreatePartnerContainer() {
+    let container = document.getElementById("grove-accepted-partner");
+
+    if (!container) {
+      container = document.createElement("div");
+      container.id = "grove-accepted-partner";
+      container.className = "profile-details grove-accepted-partner";
+      container.setAttribute("aria-live", "polite");
+      details.insertAdjacentElement("afterend", container);
+    }
+
+    return container;
+  }
+
+  async function renderAcceptedPartner(profileId) {
+    const container = getOrCreatePartnerContainer();
+    container.replaceChildren();
+
+    const { data: tag, error } = await supabase
+      .from("profile_relationship_tags")
+      .select("partner_id,status")
+      .eq("profile_id", profileId)
+      .eq("status", "accepted")
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!tag) return;
+
+    const { data: partner, error: partnerError } = await supabase
+      .from("profile_directory")
+      .select("id,username,display_name")
+      .eq("id", tag.partner_id)
+      .maybeSingle();
+
+    if (partnerError) throw partnerError;
+    if (!partner) return;
+
+    const link = document.createElement("a");
+    link.className = "profile-detail grove-partner-link";
+    link.href = `/profile.html?id=${encodeURIComponent(partner.id)}`;
+
+    const name = partner.display_name || partner.username || "Grove member";
+    const username = partner.username ? ` (@${partner.username})` : "";
+
+    link.textContent = `Partner: ${name}${username}`;
+    container.append(link);
+  }
+
   async function initialize() {
     const { data: auth, error: authError } =
       await supabase.auth.getUser();
@@ -175,6 +223,8 @@ import { supabase } from "./supabase.js";
       childList: true,
       subtree: false
     });
+
+    await renderAcceptedPartner(viewedProfile.id);
   }
 
   initialize().catch(error => {
