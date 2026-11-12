@@ -9,14 +9,14 @@
   <title>Settings | Grove</title>
 
   <link rel="icon" type="image/svg+xml" href="/assets/neural-tree.svg">
-  <link rel="stylesheet" href="css/settings.css?v=20261111-2">
-  <link rel="stylesheet" href="css/blocked-members.css?v=20261105-1">
-  <link rel="stylesheet" href="css/grove-warm-controls.css?v=20261111-2">
+  <link rel="stylesheet" href="/css/settings.css?v=20261112-3">
+  <link rel="stylesheet" href="/css/blocked-members.css?v=20261105-1">
+  <link rel="stylesheet" href="/css/grove-warm-controls.css?v=20261111-2">
 
-  <script type="module" src="js/settings.js?v=20261105-2"></script>
-  <script type="module" src="js/blocked-members.js?v=20261105-1"></script>
-  <script type="module" src="js/relationship-date-controls.js?v=20261111-2"></script>
-  <script type="module" src="js/button-studio.js?v=20261111-1"></script>
+  <script type="module" src="/js/settings.js?v=20261112-3"></script>
+  <script type="module" src="/js/blocked-members.js?v=20261105-1"></script>
+  <script type="module" src="/js/relationship-date-controls.js?v=20261111-2"></script>
+  <script type="module" src="/js/button-studio.js?v=20261111-1"></script>
 </head>
 
 <body>
@@ -121,17 +121,29 @@
     </section>
 
     <section class="settings-panel">
-      <h2>Notification sound</h2>
+      <h2>Message and notification sound</h2>
       <p class="settings-description">
-        Control the sound Grove plays when a new notification arrives.
+        Choose how Grove sounds when a new notification arrives.
+        Sound preferences are saved on this device.
       </p>
 
       <label class="setting-row">
         <span>
           <strong>Play notification sound</strong>
-          <small>Sound plays after you interact with the page.</small>
+          <small>Incoming alerts play after you interact with Grove.</small>
         </span>
         <input id="sound-enabled" type="checkbox" checked>
+      </label>
+
+      <label class="sound-choice" for="sound-tone">
+        Sound style
+        <select id="sound-tone">
+          <option value="classic">Classic chime</option>
+          <option value="soft">Soft tones</option>
+          <option value="digital">Digital signal</option>
+          <option value="gothic">Gothic bells</option>
+          <option value="pulse">Double pulse</option>
+        </select>
       </label>
 
       <label class="volume-setting" for="sound-volume">
@@ -144,11 +156,17 @@
           step="0.05"
           value="0.35"
         >
+        <output id="sound-volume-value">35%</output>
       </label>
 
       <button id="test-sound" class="button secondary" type="button">
-        Preview sound
+        Preview selected sound
       </button>
+
+      <p class="settings-note">
+        Browser autoplay rules require at least one interaction with the page
+        before incoming sounds can play. Device alerts are configured below.
+      </p>
     </section>
 
     <section class="settings-panel">
