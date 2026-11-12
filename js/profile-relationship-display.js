@@ -20,6 +20,12 @@ import { supabase } from "./supabase.js";
     prefer_not_to_say: "Prefer not to say"
   };
 
+  const ROLE_LABELS = {
+    domme: "Domme",
+    dom: "Dom",
+    submissive: "Submissive"
+  };
+
   const HIDE_DATE = new Set([
     "not_set",
     "single",
@@ -52,18 +58,33 @@ import { supabase } from "./supabase.js";
     });
   }
 
-  function renderRelationship(statusValue, dateValue) {
-    const status = String(statusValue || "not_set").toLowerCase();
-    const label = LABELS[status] || "";
+  function renderRelationship(relationship) {
+    const status = String(
+      relationship.relationship_status || "not_set"
+    ).toLowerCase();
+
+    const role = String(
+      relationship.relationship_dynamic_tag || ""
+    ).toLowerCase();
+
     const desired = [];
 
-    if (label) {
-      desired.push("Relationship: " + label);
+    const statusLabel = LABELS[status] || "";
+
+    if (statusLabel) {
+      desired.push("Relationship: " + statusLabel);
 
       if (!HIDE_DATE.has(status)) {
-        const date = formatDate(dateValue);
-        if (date) desired.push("Since: " + date);
+        const date = formatDate(relationship.relationship_since);
+
+        if (date) {
+          desired.push("Since: " + date);
+        }
       }
+    }
+
+    if (ROLE_LABELS[role]) {
+      desired.push("Role: " + ROLE_LABELS[role]);
     }
 
     const rows = [...details.children].filter(node => {
@@ -72,7 +93,8 @@ import { supabase } from "./supabase.js";
       return (
         node.dataset.groveRelationshipRow === "true" ||
         /^relationship\s*:/i.test(value) ||
-        /^since\s*:/i.test(value)
+        /^since\s*:/i.test(value) ||
+        /^role\s*:/i.test(value)
       );
     });
 
@@ -142,7 +164,9 @@ import { supabase } from "./supabase.js";
     link.href = `/profile.html?id=${encodeURIComponent(partner.id)}`;
 
     const name = partner.display_name || partner.username || "Grove member";
-    const username = partner.username ? ` (@${partner.username})` : "";
+    const username = partner.username
+      ? ` (@${partner.username})`
+      : "";
 
     link.textContent = `Partner: ${name}${username}`;
     container.append(link);
@@ -205,21 +229,20 @@ import { supabase } from "./supabase.js";
 
     const { data: relationship, error } = await supabase
       .from("profiles")
-      .select("relationship_status,relationship_since")
+      .select(
+        "relationship_status,relationship_since,relationship_dynamic_tag"
+      )
       .eq("id", viewedProfile.id)
       .maybeSingle();
 
     if (error) throw error;
     if (!relationship) return;
 
-    const update = () => renderRelationship(
-      relationship.relationship_status,
-      relationship.relationship_since
-    );
+    renderRelationship(relationship);
 
-    update();
-
-    new MutationObserver(update).observe(details, {
+    new MutationObserver(() => {
+      renderRelationship(relationship);
+    }).observe(details, {
       childList: true,
       subtree: false
     });
