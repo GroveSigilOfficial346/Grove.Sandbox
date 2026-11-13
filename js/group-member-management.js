@@ -1,7 +1,12 @@
-import { supabase } from "./supabase.js";
-
-export function installGroupMemberManagement() {
+export function installGroupMemberManagement(client) {
   "use strict";
+
+  const supabase = client;
+
+  if (!supabase) {
+    console.error("Grove group management: Supabase client is missing.");
+    return;
+  }
 
   const sidebar = document.querySelector(".conversation-sidebar");
   const chatHeading = document.querySelector(".chat-heading");
@@ -138,9 +143,7 @@ export function installGroupMemberManagement() {
 
   function createMemberCard(member, profile, conversation, canManage) {
     const card = makeElement("article", "grove-member-card");
-
     const identity = makeElement("div", "grove-member-identity");
-
     const avatar = makeElement("div", "grove-member-avatar");
 
     if (profile?.avatar_url) {
@@ -207,7 +210,6 @@ export function installGroupMemberManagement() {
     if (!currentUser || !conversationId || loading) return;
 
     loading = true;
-
     const token = ++activeConversationToken;
 
     list.replaceChildren();
@@ -303,9 +305,11 @@ export function installGroupMemberManagement() {
     if (!confirmed) return;
 
     const button = [...list.querySelectorAll(".grove-member-remove")]
-      .find(item => item.closest(".grove-member-card")
-        ?.querySelector(".grove-member-name")
-        ?.textContent === name);
+      .find(item =>
+        item.closest(".grove-member-card")
+          ?.querySelector(".grove-member-name")
+          ?.textContent === name
+      );
 
     if (button) {
       button.disabled = true;
@@ -332,7 +336,6 @@ export function installGroupMemberManagement() {
       }
 
       setStatus(`${name} was removed from the group.`);
-
       await loadMembers(conversation.id);
 
     } catch (error) {
@@ -361,7 +364,6 @@ export function installGroupMemberManagement() {
     button.hidden = true;
 
     button.addEventListener("click", openDialog);
-
     chatHeading.append(button);
   }
 
