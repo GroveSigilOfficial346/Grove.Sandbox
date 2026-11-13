@@ -1,0 +1,26 @@
+drop policy if exists "Creator adds initial members"
+  on public.conversation_members;
+
+create policy "Creators add only their own initial membership"
+on public.conversation_members
+for insert
+to authenticated
+with check (
+  user_id = (select auth.uid())
+  and private.is_conversation_creator(conversation_id)
+);
+
+revoke all privileges on table public.conversation_members
+  from anon, authenticated;
+
+grant select, delete
+  on table public.conversation_members
+  to authenticated;
+
+grant insert (conversation_id, user_id, role)
+  on table public.conversation_members
+  to authenticated;
+
+grant update (last_read_at)
+  on table public.conversation_members
+  to authenticated;
