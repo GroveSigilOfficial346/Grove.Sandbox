@@ -1,0 +1,97 @@
+.message-moderation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+}
+
+.message-moderation-actions .message-action-button {
+  min-height: 30px;
+}
+
+.message-moderation-actions [data-moderation-action="unsend"] {
+  border-color: rgba(255, 133, 133, .28);
+  color: #ffaaaa;
+}
+
+.message-moderation-actions [data-moderation-action="unsend"]:hover {
+  border-color: rgba(255, 133, 133, .65);
+  background: rgba(255, 90, 90, .12);
+}
+
+.message-moderation-actions [data-moderation-action="hide"] {
+  color: rgba(247, 245, 255, .72);
+}
+
+.message-pins-bar {
+  margin: 0 18px 10px;
+  padding: 10px 12px;
+  border: 1px solid rgba(5, 201, 244, .24);
+  border-radius: 12px;
+  background: rgba(133, 30, 255, .1);
+}
+
+.message-pins-bar[hidden] {
+  display: none !important;
+}
+
+.message-pins-heading {
+  display: block;
+  margin-bottom: 8px;
+  color: #f7f5ff;
+  font-size: .78rem;
+  letter-spacing: .04em;
+}
+
+.message-pins-items {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+
+.message-pin-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  min-width: 0;
+}
+
+.message-pin-item > span {
+  min-width: 0;
+  overflow: hidden;
+  color: rgba(247, 245, 255, .82);
+  font-size: .78rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.message-pin-controls {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 5px;
+}
+
+@media (max-width: 640px) {
+  .message-moderation-actions {
+    gap: 5px;
+  }
+
+  .message-moderation-actions .message-action-button {
+    min-height: 34px;
+    padding: 7px 9px;
+  }
+
+  .message-pins-bar {
+    margin: 0 10px 8px;
+  }
+
+  .message-pin-item {
+    align-items: flex-start;
+  }
+
+  .message-pin-controls .message-action-button {
+    min-height: 34px;
+  }
+}
