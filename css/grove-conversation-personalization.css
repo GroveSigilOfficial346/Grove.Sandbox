@@ -1,4 +1,4 @@
-.grove-chat-style-button {
+grove-chat-style-button {
   flex: 0 0 auto;
   min-height: 38px;
   margin-left: auto;
@@ -99,12 +99,6 @@
 
 .grove-chat-style-status.is-error {
   color: #ff8585;
-}
-
-body[data-grove-adult-theme="gothic-violet"] .chat-heading h2,
-body[data-grove-adult-theme="dark-romance"] .chat-heading h2,
-body[data-grove-adult-theme="velvet-noir"] .chat-heading h2 {
-  font-family: "Cinzel", Georgia, serif;
 }
 
 @media (max-width: 640px) {
