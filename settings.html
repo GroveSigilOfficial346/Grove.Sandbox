@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#050019">
-  <meta name="description" content="Manage your Grove account, notifications and blocked members.">
+  <meta name="description" content="Manage your Grove account, layout, notifications and blocked members.">
 
   <title>Settings | Grove</title>
 
@@ -12,11 +12,13 @@
   <link rel="stylesheet" href="/css/settings.css?v=20261112-3">
   <link rel="stylesheet" href="/css/blocked-members.css?v=20261105-1">
   <link rel="stylesheet" href="/css/grove-warm-controls.css?v=20261111-2">
+  <link rel="stylesheet" href="/css/grove-layout-density.css?v=20261113-1">
 
   <script type="module" src="/js/settings.js?v=20261112-3"></script>
   <script type="module" src="/js/blocked-members.js?v=20261105-1"></script>
   <script type="module" src="/js/relationship-date-controls.js?v=20261111-2"></script>
   <script type="module" src="/js/button-studio.js?v=20261111-1"></script>
+  <script type="module" src="/js/supabase.js?v=20261113-1"></script>
 </head>
 
 <body>
@@ -38,10 +40,56 @@
     <header class="settings-heading">
       <p class="eyebrow">YOUR ACCOUNT</p>
       <h1>Settings</h1>
-      <p>Control your account, privacy and notifications.</p>
+      <p>Control your account, layout, privacy and notifications.</p>
     </header>
 
     <p id="settings-status" role="status" aria-live="polite"></p>
+
+    <section
+      class="settings-panel"
+      data-grove-layout-settings
+      aria-labelledby="grove-layout-heading"
+    >
+      <h2 id="grove-layout-heading">Page layout size</h2>
+
+      <p class="settings-description">
+        Choose how much content Grove displays at once.
+        This setting applies across supported Grove pages and is
+        saved on this device.
+      </p>
+
+      <div class="grove-layout-density-options">
+        <label for="grove-layout-density">
+          Layout density
+
+          <select id="grove-layout-density">
+            <option value="compact">
+              Compact — fit more content on screen
+            </option>
+            <option value="standard">
+              Standard — balanced layout
+            </option>
+            <option value="expanded">
+              Expanded — wider panels and more spacing
+            </option>
+          </select>
+        </label>
+
+        <p id="grove-layout-density-status"
+          role="status"
+          aria-live="polite">
+          Your current layout preference is saved on this device.
+        </p>
+
+        <button
+          id="grove-layout-density-reset"
+          class="button secondary"
+          type="button"
+        >
+          Reset to Standard
+        </button>
+      </div>
+    </section>
 
     <section class="settings-panel">
       <h2>Relationship details</h2>
