@@ -151,6 +151,7 @@ function renderMessage(message) {
   const node = document.createElement("div");
   node.className = "chat-message";
   node.dataset.message = message.id;
+  node.dataset.liveChatMessageId = message.id;
 
   const name = document.createElement("strong");
   name.textContent = message.sender_id.slice(0, 8);
