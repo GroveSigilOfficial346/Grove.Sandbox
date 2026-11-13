@@ -13,6 +13,8 @@ import { supabase } from "./supabase.js";
   const showRegister = $("show-register");
   const showLogin = $("show-login");
   const sessionNotice = $("session-notice");
+
+  // Optional elements: older login.html versions may not contain these.
   const accountType = $("register-account-type");
   const accountNote = $("register-account-note");
 
@@ -27,6 +29,7 @@ import { supabase } from "./supabase.js";
     "adult"
   ]);
 
+  // Only essential login elements are required.
   if (
     !loginForm ||
     !registerForm ||
@@ -34,10 +37,9 @@ import { supabase } from "./supabase.js";
     !registerPanel ||
     !message ||
     !showRegister ||
-    !showLogin ||
-    !accountType
+    !showLogin
   ) {
-    console.error("Grove: Account page elements are missing.");
+    console.error("Grove: Essential account page elements are missing.");
     return;
   }
 
@@ -60,7 +62,7 @@ import { supabase } from "./supabase.js";
         localStorage.removeItem(REMEMBER_KEY);
       }
     } catch (error) {
-      console.error("Grove could not save Remember me:", error);
+      console.error("Grove remember setting:", error);
     }
   }
 
@@ -101,43 +103,24 @@ import { supabase } from "./supabase.js";
   }
 
   function updateAccountTypeNote() {
-    if (!accountNote) return;
+    if (!accountType || !accountNote) return;
 
-    if (accountType.value === "adult") {
-      accountNote.textContent =
-        "Adult accounts require an authorized age-verification review. Restricted features remain locked until access is verified.";
-      return;
-    }
-
-    if (accountType.value === "creator") {
-      accountNote.textContent =
-        "For members publishing creative work and building an audience.";
-      return;
-    }
-
-    if (accountType.value === "professional") {
-      accountNote.textContent =
-        "For professional identity, networking, and career activity.";
-      return;
-    }
-
-    if (accountType.value === "business") {
-      accountNote.textContent =
-        "For businesses and commercial profiles.";
-      return;
-    }
-
-    if (accountType.value === "organization") {
-      accountNote.textContent =
-        "For organizations, associations, and community groups.";
-      return;
-    }
+    const notes = {
+      adult: "Adult accounts require authorized age verification. Restricted features remain locked until verification.",
+      creator: "For members publishing creative work and building an audience.",
+      professional: "For professional identity, networking, and career activity.",
+      business: "For businesses and commercial profiles.",
+      organization: "For organizations and community groups.",
+      personal: "For individual members using Grove."
+    };
 
     accountNote.textContent =
-      "For individual members using Grove for everyday community activity.";
+      notes[accountType.value] || notes.personal;
   }
 
-  accountType.addEventListener("change", updateAccountTypeNote);
+  if (accountType) {
+    accountType.addEventListener("change", updateAccountTypeNote);
+  }
 
   showRegister.addEventListener("click", () => {
     showPanel("register");
@@ -147,8 +130,16 @@ import { supabase } from "./supabase.js";
     showPanel("login");
   });
 
-  $("login-remember").checked = loadRememberChoice();
-  $("register-remember").checked = loadRememberChoice();
+  const loginRemember = $("login-remember");
+  const registerRemember = $("register-remember");
+
+  if (loginRemember) {
+    loginRemember.checked = loadRememberChoice();
+  }
+
+  if (registerRemember) {
+    registerRemember.checked = loadRememberChoice();
+  }
 
   updateAccountTypeNote();
 
@@ -165,15 +156,9 @@ import { supabase } from "./supabase.js";
       if (data.session && sessionNotice) {
         sessionNotice.hidden = false;
 
-        if (location.hash === "#register") {
-          showMessage(
-            "You are currently signed in. Submitting a new registration will switch away from that account."
-          );
-        } else {
-          showMessage(
-            "You are already signed in. You can open your profile or sign in to another account."
-          );
-        }
+        showMessage(
+          "You are already signed in. Open your profile or sign in to another account."
+        );
       }
     } catch (error) {
       console.error("Grove session check:", error);
@@ -186,16 +171,25 @@ import { supabase } from "./supabase.js";
 
     const email = $("login-email").value.trim();
     const password = $("login-password").value;
-    const remember = $("login-remember").checked;
+    const remember = loginRemember?.checked || false;
+
+    if (!email || !password) {
+      showMessage("Enter your email and password.", true);
+      return;
+    }
 
     saveRememberChoice(remember);
 
     setLoading(loginForm, true);
-    showMessage("Signing in...");
+    showMessage("Checking your Grove account...");
 
     try {
-      const { data: existing } = await supabase.auth.getSession();
+      const { data: existing, error: sessionError } =
+        await supabase.auth.getSession();
 
+      if (sessionError) throw sessionError;
+
+      // Allow account switching without affecting other devices.
       if (existing?.session) {
         const { error: signOutError } =
           await supabase.auth.signOut({ scope: "local" });
@@ -210,16 +204,47 @@ import { supabase } from "./supabase.js";
         });
 
       if (error) throw error;
+
       if (!data.user) {
-        throw new Error("Authentication failed.");
+        throw new Error("Authentication failed. Please try again.");
       }
 
       showMessage("Welcome back. Opening Grove...");
+
       window.location.replace("/profile.html");
 
     } catch (error) {
       console.error("Grove login:", error);
-      showMessage(error.message || "Unable to sign in.", true);
+
+      const errorMessage = error.message || "";
+
+      if (
+        errorMessage.toLowerCase().includes("invalid login credentials")
+      ) {
+        showMessage(
+          "Incorrect email or password. Check your details and try again.",
+          true
+        );
+      } else if (
+        errorMessage.toLowerCase().includes("email not confirmed")
+      ) {
+        showMessage(
+          "Please verify your email address before logging in.",
+          true
+        );
+      } else if (
+        errorMessage.toLowerCase().includes("fetch")
+      ) {
+        showMessage(
+          "Unable to reach Grove authentication. Check your connection and try again.",
+          true
+        );
+      } else {
+        showMessage(
+          errorMessage || "Unable to sign in. Please try again.",
+          true
+        );
+      }
 
     } finally {
       setLoading(loginForm, false);
@@ -235,8 +260,10 @@ import { supabase } from "./supabase.js";
 
     const email = $("register-email").value.trim();
     const password = $("register-password").value;
-    const remember = $("register-remember").checked;
-    const selectedAccountType = accountType.value;
+
+    const remember = registerRemember?.checked || false;
+
+    const selectedAccountType = accountType?.value || "personal";
 
     if (!validUsername(username)) {
       showMessage(
@@ -265,7 +292,10 @@ import { supabase } from "./supabase.js";
     showMessage("Creating your Grove account...");
 
     try {
-      const { data: existing } = await supabase.auth.getSession();
+      const { data: existing, error: sessionError } =
+        await supabase.auth.getSession();
+
+      if (sessionError) throw sessionError;
 
       if (existing?.session) {
         const { error: signOutError } =
@@ -297,13 +327,15 @@ import { supabase } from "./supabase.js";
       }
 
       showMessage(
-        selectedAccountType === "adult"
-          ? "Account created. Confirm your email. Adult access will remain restricted while verification is pending."
-          : "Account created. Check your email to verify your address. You can log in after confirmation."
+        "Account created. Check your email to verify your address before logging in."
       );
 
       registerForm.reset();
-      $("register-remember").checked = remember;
+
+      if (registerRemember) {
+        registerRemember.checked = remember;
+      }
+
       updateAccountTypeNote();
 
     } catch (error) {
@@ -321,5 +353,6 @@ import { supabase } from "./supabase.js";
 
   checkExistingSession();
 
-  console.info("Grove account access initialized.");
+  console.info("Grove account access initialized successfully.");
+
 })();
