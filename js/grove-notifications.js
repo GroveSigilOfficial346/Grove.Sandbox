@@ -348,11 +348,7 @@ export function installGroveNotifications(supabase) {
           if (!row || !categoryEnabled(row.kind)) return;
 
           // Play immediately; do not wait for sender-name lookup.
-          if (row.kind === "message") {
-            playNotificationSound();
-          } else {
-            playNotificationSound();
-          }
+          playNotificationSound();
 
           const enriched = await enrichNotification(row);
 
@@ -417,10 +413,15 @@ export function installGroveNotifications(supabase) {
   window.addEventListener(
     "grove:notification-preferences-updated",
     event => {
-      preferences = {
-        ...DEFAULTS,
-        ...(event.detail || {})
-      };
+      const changed = event.detail || {};
+
+      // Merge only explicitly changed boolean preferences.
+      // Do not reset the other five categories to defaults.
+      for (const key of Object.keys(DEFAULTS)) {
+        if (typeof changed[key] === "boolean") {
+          preferences[key] = changed[key];
+        }
+      }
     }
   );
 
