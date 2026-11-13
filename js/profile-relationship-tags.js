@@ -16,7 +16,8 @@ import { supabase } from "./supabase.js";
   let searchTimer = null;
   let searchToken = 0;
   let sending = false;
-  let refreshing = false;
+  let refreshPromise = null;
+  let refreshRequested = false;
 
   const picker = document.createElement("div");
   picker.id = "partner-tag-suggestions";
@@ -604,21 +605,31 @@ import { supabase } from "./supabase.js";
     incomingContainer.append(section);
   }
 
-  async function refreshRelationshipTags() {
-    if (refreshing || !currentUser) return;
+  function refreshRelationshipTags() {
+    if (!currentUser) return Promise.resolve();
 
-    refreshing = true;
+    refreshRequested = true;
 
-    try {
-      incomingContainer.replaceChildren();
-
-      await loadCurrentRequest();
-      await loadIncomingRequests();
-      await loadAcceptedIncomingTags();
-
-    } finally {
-      refreshing = false;
+    if (refreshPromise) {
+      return refreshPromise;
     }
+
+    refreshPromise = (async () => {
+      try {
+        while (refreshRequested) {
+          refreshRequested = false;
+          incomingContainer.replaceChildren();
+
+          await loadCurrentRequest();
+          await loadIncomingRequests();
+          await loadAcceptedIncomingTags();
+        }
+      } finally {
+        refreshPromise = null;
+      }
+    })();
+
+    return refreshPromise;
   }
 
   async function initialize() {
