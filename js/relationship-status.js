@@ -19,70 +19,17 @@ import { supabase } from "./supabase.js";
     "prefer_not_to_say"
   ]);
 
-  const roleOptions = [
-    ["", "No profile tag"],
-    ["owner", "Owner"]
-  ];
-
-  const allowedDynamicTags = new Set(
-    roleOptions.map(([value]) => value)
-  );
-
   let userId = null;
-  let statusSaving = false;
-  let tagSaving = false;
+  let saving = false;
 
-  function setMessage(element, message, error = false) {
-    element.textContent = message || "";
-    element.style.color = error ? "#ff8585" : "#05c9f4";
+  function showMessage(message, error = false) {
+    statusMessage.textContent = message || "";
+    statusMessage.style.color = error ? "#ff8585" : "#05c9f4";
   }
 
-  function createDynamicTagControl() {
-    const wrapper = document.createElement("section");
-    wrapper.id = "grove-dynamic-tag-settings";
-    wrapper.className = "grove-dynamic-tag-settings";
+  async function initialize() {
+    statusField.disabled = true;
 
-    const heading = document.createElement("h3");
-    heading.textContent = "Optional profile tag";
-
-    const description = document.createElement("p");
-    description.className = "field-hint";
-    description.textContent =
-      "Choose whether to display an Owner profile tag. " +
-      "Accepted Partner and Owner relationship tags are managed separately.";
-
-    const label = document.createElement("label");
-    label.htmlFor = "edit-relationship-dynamic-tag";
-    label.textContent = "Profile tag";
-
-    const select = document.createElement("select");
-    select.id = "edit-relationship-dynamic-tag";
-    select.disabled = true;
-
-    for (const [value, text] of roleOptions) {
-      const option = document.createElement("option");
-      option.value = value;
-      option.textContent = text;
-      select.append(option);
-    }
-
-    const message = document.createElement("p");
-    message.id = "relationship-dynamic-tag-message";
-    message.className = "field-hint";
-    message.setAttribute("role", "status");
-    message.setAttribute("aria-live", "polite");
-
-    wrapper.append(heading, description, label, select, message);
-    statusMessage.insertAdjacentElement("afterend", wrapper);
-
-    return { select, message };
-  }
-
-  const dynamicTagControl = createDynamicTagControl();
-  const dynamicTagField = dynamicTagControl.select;
-  const dynamicTagMessage = dynamicTagControl.message;
-
-  async function loadSettings() {
     const { data: auth, error: authError } =
       await supabase.auth.getUser();
 
@@ -97,49 +44,35 @@ import { supabase } from "./supabase.js";
 
     const { data, error } = await supabase
       .from("profiles")
-      .select("relationship_status,relationship_dynamic_tag")
+      .select("relationship_status")
       .eq("id", userId)
       .maybeSingle();
 
     if (error) throw error;
+    if (!data) throw new Error("Your profile could not be found.");
 
-    if (!data) {
-      throw new Error("Your profile could not be found.");
-    }
+    const value = data.relationship_status || "not_set";
 
-    const statusValue = data.relationship_status || "not_set";
-    const tagValue = data.relationship_dynamic_tag || "";
-
-    statusField.value = allowedStatuses.has(statusValue)
-      ? statusValue
+    statusField.value = allowedStatuses.has(value)
+      ? value
       : "not_set";
 
-    // Legacy Dom/Sub values are intentionally not displayed.
-    dynamicTagField.value = allowedDynamicTags.has(tagValue)
-      ? tagValue
-      : "";
-
     statusField.disabled = false;
-    dynamicTagField.disabled = false;
   }
 
   async function saveStatus() {
-    if (!userId || statusSaving) return;
+    if (!userId || saving) return;
 
     const value = statusField.value;
 
     if (!allowedStatuses.has(value)) {
-      setMessage(
-        statusMessage,
-        "Choose a valid relationship status.",
-        true
-      );
+      showMessage("Choose a valid relationship status.", true);
       return;
     }
 
-    statusSaving = true;
+    saving = true;
     statusField.disabled = true;
-    setMessage(statusMessage, "Saving relationship status...");
+    showMessage("Saving relationship status...");
 
     try {
       const { data, error } = await supabase
@@ -160,101 +93,32 @@ import { supabase } from "./supabase.js";
         );
       }
 
-      setMessage(statusMessage, "Relationship status saved.");
+      showMessage("Relationship status saved.");
 
     } catch (error) {
       console.error("Relationship status update failed:", error);
 
-      setMessage(
-        statusMessage,
+      showMessage(
         error.message || "Could not save relationship status.",
         true
       );
 
     } finally {
       statusField.disabled = false;
-      statusSaving = false;
+      saving = false;
     }
   }
-
-  async function saveDynamicTag() {
-    if (!userId || tagSaving) return;
-
-    const value = dynamicTagField.value;
-
-    if (!allowedDynamicTags.has(value)) {
-      setMessage(
-        dynamicTagMessage,
-        "Choose a valid profile tag.",
-        true
-      );
-      return;
-    }
-
-    tagSaving = true;
-    dynamicTagField.disabled = true;
-    setMessage(dynamicTagMessage, "Saving profile tag...");
-
-    try {
-      const { data, error } = await supabase
-        .from("profiles")
-        .update({
-          relationship_dynamic_tag: value || null,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", userId)
-        .select("id,relationship_dynamic_tag")
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (!data) {
-        throw new Error(
-          "The profile tag was not saved. Check your profile permissions."
-        );
-      }
-
-      setMessage(
-        dynamicTagMessage,
-        value
-          ? "Owner profile tag saved."
-          : "Your profile tag has been hidden."
-      );
-
-    } catch (error) {
-      console.error("Profile tag update failed:", error);
-
-      setMessage(
-        dynamicTagMessage,
-        error.message || "Could not save your profile tag.",
-        true
-      );
-
-    } finally {
-      dynamicTagField.disabled = false;
-      tagSaving = false;
-    }
-  }
-
-  statusField.disabled = true;
-  dynamicTagField.disabled = true;
 
   statusField.addEventListener("change", saveStatus);
-  dynamicTagField.addEventListener("change", saveDynamicTag);
 
-  loadSettings().catch(error => {
+  initialize().catch(error => {
     console.error("Relationship settings failed to load:", error);
 
-    setMessage(
-      statusMessage,
+    showMessage(
       error.message || "Could not load relationship status.",
       true
     );
 
-    setMessage(
-      dynamicTagMessage,
-      "Could not load your profile tag settings.",
-      true
-    );
+    statusField.disabled = true;
   });
 })();
