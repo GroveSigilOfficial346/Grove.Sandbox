@@ -292,13 +292,6 @@ function updateConversationPreview(conversationId, message) {
 
 /* ==========================================
    LOAD LATEST MESSAGES IN SMALL GROUPS
-
-   Previous behavior: one database request per
-   conversation.
-
-   New behavior: one request for a group of
-   conversations, then select the newest message
-   for each conversation in memory.
    ========================================== */
 
 async function loadLatestMessagesInBatches(ids, token) {
@@ -766,8 +759,13 @@ function appendMessageToView(message) {
   const empty = list.querySelector(".empty-chat");
   if (empty) empty.remove();
 
+  /*
+   * Do not force scrolling here.
+   * messages-bottom-anchor.js handles new messages:
+   * - follows them when the reader is at the bottom;
+   * - preserves the reader's position when they are browsing history.
+   */
   list.append(renderMessage(message));
-  scrollMessagesToBottom();
 
   if (message.reply_to_message_id) {
     hydrateReplyPreviews([message]).catch(error => {
@@ -927,6 +925,7 @@ async function loadMessages() {
     return;
   }
 
+  // Opening a conversation always starts at its newest message.
   scrollMessagesToBottom();
 
   await updateReadMarker(conversationId);
