@@ -90,7 +90,7 @@ window.groveClient = supabase;
 installGroveShell(supabase);
 installGroveCompactUI();
 installGroveLayoutDensity();
-installGroupMemberManagement();
+installGroupMemberManagement(supabase);
 installGroveSanctionStatus(supabase);
 installGroveButtonTheme(supabase);
 installGroveUpdates(supabase);
