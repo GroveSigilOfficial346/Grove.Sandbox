@@ -11,6 +11,8 @@ import { supabase } from "./supabase.js";
     "🎉", "💯", "🤔", "😍", "👀", "🙏", "⚡"
   ];
 
+  const DEFAULT_REACTIONS = 6;
+
   const TARGETS = [
     {
       type: "post",
@@ -117,7 +119,7 @@ import { supabase } from "./supabase.js";
     buttons.setAttribute("role", "group");
     buttons.setAttribute("aria-label", "React to this content");
 
-    for (const emoji of REACTIONS) {
+    REACTIONS.forEach((emoji, index) => {
       const button = document.createElement("button");
 
       button.type = "button";
@@ -125,6 +127,11 @@ import { supabase } from "./supabase.js";
       button.dataset.reaction = emoji;
       button.dataset.targetType = target.type;
       button.dataset.targetId = target.id;
+
+      if (index >= DEFAULT_REACTIONS) {
+        button.hidden = true;
+        button.dataset.extraReaction = "true";
+      }
 
       button.setAttribute("aria-label", `React ${emoji}`);
       button.setAttribute("aria-pressed", "false");
@@ -138,8 +145,17 @@ import { supabase } from "./supabase.js";
 
       button.append(icon, count);
       buttons.append(button);
-    }
+    });
 
+    const moreButton = document.createElement("button");
+
+    moreButton.type = "button";
+    moreButton.className = "grove-reaction-more";
+    moreButton.textContent = "More";
+    moreButton.setAttribute("aria-expanded", "false");
+    moreButton.setAttribute("aria-label", "Show more reaction choices");
+
+    buttons.append(moreButton);
     wrapper.append(buttons);
 
     const anchor =
@@ -196,7 +212,90 @@ import { supabase } from "./supabase.js";
     widgets.clear();
   }
 
-  function renderWidget(widget, rows) {
+  async function loadReactionRows(type, ids) {
+    const rows = [];
+    const batchSize = 50;
+
+    for (let start = 0; start < ids.length; start += batchSize) {
+      const batch = ids.slice(start, start + batchSize);
+
+      const { data, error } = await supabase
+        .from("content_reactions")
+        .select("id,target_type,target_id,user_id,reaction")
+        .eq("target_type", type)
+        .in("target_id", batch);
+
+      if (error) throw error;
+
+      rows.push(...(data || []));
+    }
+
+    return rows;
+  }
+
+  async function loadVisibleProfiles(userIds) {
+    const uniqueIds = [...new Set(userIds)];
+
+    if (!uniqueIds.length) return new Map();
+
+    const profiles = new Map();
+    const batchSize = 50;
+
+    for (let start = 0; start < uniqueIds.length; start += batchSize) {
+      const batch = uniqueIds.slice(start, start + batchSize);
+
+      const { data, error } = await supabase
+        .from("profiles")
+        .select("id,username,display_name")
+        .in("id", batch);
+
+      if (error) {
+        console.warn(
+          "Grove could not load visible reaction profiles:",
+          error
+        );
+        return profiles;
+      }
+
+      for (const profile of data || []) {
+        const displayName =
+          profile.display_name?.trim() ||
+          profile.username?.trim() ||
+          "Grove member";
+
+        profiles.set(profile.id, displayName);
+      }
+    }
+
+    return profiles;
+  }
+
+  function buildReactionTitle(emoji, matches, profiles) {
+    const names = matches
+      .map(row => profiles.get(row.user_id))
+      .filter(Boolean);
+
+    const hiddenCount = matches.length - names.length;
+
+    if (!names.length) {
+      return `${emoji} · ${matches.length} reaction${matches.length === 1 ? "" : "s"}`;
+    }
+
+    const visibleNames = names.slice(0, 8);
+    let title = `${emoji} · ${visibleNames.join(", ")}`;
+
+    if (names.length > visibleNames.length) {
+      title += ` and ${names.length - visibleNames.length} more`;
+    }
+
+    if (hiddenCount > 0) {
+      title += ` · ${hiddenCount} private or unavailable`;
+    }
+
+    return title;
+  }
+
+  function renderWidget(widget, rows, profiles) {
     const grouped = new Map();
 
     for (const row of rows) {
@@ -228,31 +327,23 @@ import { supabase } from "./supabase.js";
             : "";
         }
 
+        const title = buildReactionTitle(
+          emoji,
+          matches,
+          profiles
+        );
+
         button.title = matches.length
-          ? `${emoji} · ${matches.length}`
+          ? title
           : `React ${emoji}`;
+
+        button.setAttribute(
+          "aria-label",
+          matches.length
+            ? `${title}. ${mine ? "Remove your reaction" : "Add your reaction"}`
+            : `React ${emoji}`
+        );
       });
-  }
-
-  async function loadReactionRows(type, ids) {
-    const rows = [];
-    const batchSize = 50;
-
-    for (let start = 0; start < ids.length; start += batchSize) {
-      const batch = ids.slice(start, start + batchSize);
-
-      const { data, error } = await supabase
-        .from("content_reactions")
-        .select("id,target_type,target_id,user_id,reaction")
-        .eq("target_type", type)
-        .in("target_id", batch);
-
-      if (error) throw error;
-
-      rows.push(...(data || []));
-    }
-
-    return rows;
   }
 
   async function refreshWidgets() {
@@ -289,6 +380,11 @@ import { supabase } from "./supabase.js";
         if (!ids.length) continue;
 
         const rows = await loadReactionRows(type, ids);
+
+        const profiles = await loadVisibleProfiles(
+          rows.map(row => row.user_id)
+        );
+
         const byTarget = new Map();
 
         for (const row of rows) {
@@ -304,7 +400,8 @@ import { supabase } from "./supabase.js";
 
           renderWidget(
             widget,
-            byTarget.get(widget.id) || []
+            byTarget.get(widget.id) || [],
+            profiles
           );
         }
       }
@@ -331,6 +428,37 @@ import { supabase } from "./supabase.js";
     refreshTimer = window.setTimeout(
       refreshWidgets,
       180
+    );
+  }
+
+  function toggleMore(button) {
+    const wrapper = button.closest(".grove-reactions");
+
+    if (!wrapper) return;
+
+    const expanded =
+      button.getAttribute("aria-expanded") === "true";
+
+    const nextExpanded = !expanded;
+
+    wrapper
+      .querySelectorAll("[data-extra-reaction='true']")
+      .forEach(reactionButton => {
+        reactionButton.hidden = !nextExpanded;
+      });
+
+    button.setAttribute(
+      "aria-expanded",
+      String(nextExpanded)
+    );
+
+    button.textContent = nextExpanded ? "Less" : "More";
+
+    button.setAttribute(
+      "aria-label",
+      nextExpanded
+        ? "Show fewer reaction choices"
+        : "Show more reaction choices"
     );
   }
 
@@ -466,6 +594,17 @@ import { supabase } from "./supabase.js";
   }
 
   document.addEventListener("click", event => {
+    const moreButton = event.target.closest(
+      ".grove-reaction-more"
+    );
+
+    if (moreButton) {
+      event.preventDefault();
+      event.stopPropagation();
+      toggleMore(moreButton);
+      return;
+    }
+
     const button = event.target.closest(
       ".grove-reaction[data-reaction]"
     );
