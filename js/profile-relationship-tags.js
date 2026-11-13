@@ -58,8 +58,7 @@ import { supabase } from "./supabase.js";
 
   if (sendDescription) {
     sendDescription.textContent =
-      "Search for a Grove member and request a Partner or Owner tag. " +
-      "They must accept before the tag appears publicly.";
+      "Search for a Grove member, select their account, then choose Partner or Owner. They must accept before the tag appears publicly.";
   }
 
   sendButton.textContent = "Send tag request";
@@ -106,30 +105,30 @@ import { supabase } from "./supabase.js";
   }
 
   function selectMember(member) {
+    if (!member?.id || member.id === currentUser?.id) return;
+
     selectedMember = member;
     input.value = member.username || member.display_name || "";
+
     picker.hidden = true;
     picker.replaceChildren();
 
     selectedNotice.textContent =
       `Selected ${typeName(typeSelect.value)}: ${memberLabel(member)}`;
 
-    showStatus("Member selected. Send the request when ready.");
+    showStatus("Member selected. Choose Partner or Owner, then send the request.");
   }
 
   async function searchMembers(term) {
     const token = ++searchToken;
     const query = term.trim().replace(/^@/, "");
+    const safeQuery = query.replace(/[%_]/g, "");
 
-    if (query.length < 2) {
+    if (safeQuery.length < 2) {
       picker.hidden = true;
       picker.replaceChildren();
       return;
     }
-
-    const safeQuery = query.replace(/[%_]/g, "");
-
-    if (!safeQuery) return;
 
     picker.hidden = false;
     picker.replaceChildren(
@@ -143,13 +142,13 @@ import { supabase } from "./supabase.js";
         .from("profile_directory")
         .select("id,username,display_name")
         .ilike("username", pattern)
-        .limit(8),
+        .limit(10),
 
       supabase
         .from("profile_directory")
         .select("id,username,display_name")
         .ilike("display_name", pattern)
-        .limit(8)
+        .limit(10)
     ]);
 
     if (token !== searchToken) return;
@@ -185,6 +184,7 @@ import { supabase } from "./supabase.js";
       option.type = "button";
       option.className = "partner-tag-suggestion";
       option.setAttribute("role", "option");
+      option.setAttribute("aria-selected", "false");
       option.textContent = memberLabel(member);
 
       option.addEventListener("pointerdown", event => {
@@ -270,13 +270,8 @@ import { supabase } from "./supabase.js";
       );
     } else if (data.status === "pending") {
       currentContainer.append(
-        makeText(
-          `${tagName} request pending: ${label}`
-        ),
-        makeButton(
-          "Cancel request",
-          removeCurrentTag
-        )
+        makeText(`${tagName} request pending: ${label}`),
+        makeButton("Cancel request", removeCurrentTag)
       );
     } else {
       currentContainer.append(
@@ -324,7 +319,7 @@ import { supabase } from "./supabase.js";
 
     if (!selectedMember?.id) {
       showStatus(
-        "Search for and select a Grove member first.",
+        "Search for a Grove member and click their result first.",
         true
       );
       input.focus();
@@ -340,6 +335,7 @@ import { supabase } from "./supabase.js";
     sendButton.disabled = true;
 
     const tagType = typeSelect.value;
+    const targetMember = selectedMember;
 
     try {
       showStatus("Checking existing relationship tag...");
@@ -364,24 +360,38 @@ import { supabase } from "./supabase.js";
         );
       }
 
-      const { error } = await supabase
+      // A declined row occupies the profile_id primary key.
+      // Delete it first because the current RLS rules do not allow
+      // the requester to update their own declined row through upsert.
+      if (existing?.status === "declined") {
+        const { error: deleteError } = await supabase
+          .from("profile_relationship_tags")
+          .delete()
+          .eq("profile_id", currentUser.id)
+          .eq("status", "declined");
+
+        if (deleteError) throw deleteError;
+      }
+
+      showStatus("Sending request...");
+
+      const { error: insertError } = await supabase
         .from("profile_relationship_tags")
-        .upsert({
+        .insert({
           profile_id: currentUser.id,
-          partner_id: selectedMember.id,
+          partner_id: targetMember.id,
           tag_type: tagType,
           status: "pending",
           requested_at: new Date().toISOString(),
           responded_at: null
-        }, {
-          onConflict: "profile_id"
         });
 
-      if (error) throw error;
+      if (insertError) throw insertError;
 
       input.value = "";
       clearSelection();
       picker.hidden = true;
+      picker.replaceChildren();
 
       showStatus(
         `${typeName(tagType)} request sent. The other member must accept it.`
@@ -484,6 +494,7 @@ import { supabase } from "./supabase.js";
 
     for (const request of data) {
       const member = memberMap.get(request.profile_id);
+
       const card = makeRequestCard(
         member || {},
         request.requested_at,
@@ -512,6 +523,8 @@ import { supabase } from "./supabase.js";
 
   async function initialize() {
     sendButton.disabled = true;
+    input.disabled = true;
+    typeSelect.disabled = true;
 
     const { data, error } = await supabase.auth.getUser();
 
@@ -529,11 +542,14 @@ import { supabase } from "./supabase.js";
       loadIncomingRequests()
     ]);
 
+    input.disabled = false;
+    typeSelect.disabled = false;
     sendButton.disabled = false;
   }
 
   input.addEventListener("input", () => {
     clearSelection();
+    searchToken++;
     window.clearTimeout(searchTimer);
 
     const term = input.value.trim();
@@ -546,6 +562,8 @@ import { supabase } from "./supabase.js";
           error.message || "Member search failed.",
           true
         );
+
+        picker.hidden = true;
       });
     }, 220);
   });
@@ -585,5 +603,9 @@ import { supabase } from "./supabase.js";
     incomingContainer.replaceChildren(
       makeText("Relationship requests could not be loaded.")
     );
+
+    input.disabled = true;
+    typeSelect.disabled = true;
+    sendButton.disabled = true;
   });
 })();
