@@ -43,17 +43,27 @@ import { supabase } from "./supabase.js";
 
   let user = null;
   let realtimeChannel = null;
+  let authSubscription = null;
+  let observer = null;
+
   let refreshTimer = null;
   let refreshRunning = false;
   let refreshAgain = false;
+  let instanceCounter = 0;
 
   const widgets = new Map();
 
   const $ = (selector, root = document) =>
     root.querySelector(selector);
 
-  function keyFor(type, id) {
-    return `${type}:${id}`;
+  function makeInstanceKey(type, id, element) {
+    if (!element.dataset.groveReactionInstance) {
+      instanceCounter += 1;
+      element.dataset.groveReactionInstance =
+        String(instanceCounter);
+    }
+
+    return `${type}:${id}:${element.dataset.groveReactionInstance}`;
   }
 
   function scanTargets() {
@@ -65,22 +75,18 @@ import { supabase } from "./supabase.js";
 
         if (!id) return;
 
-        const key = keyFor(config.type, id);
+        const key = makeInstanceKey(
+          config.type,
+          id,
+          element
+        );
+
         const existing = widgets.get(key);
 
         if (
           existing &&
           existing.element === element &&
           existing.wrapper.isConnected
-        ) {
-          return;
-        }
-
-        if (
-          existing &&
-          existing.element !== element &&
-          existing.wrapper.isConnected &&
-          existing.element.isConnected
         ) {
           return;
         }
@@ -119,6 +125,7 @@ import { supabase } from "./supabase.js";
       button.dataset.reaction = emoji;
       button.dataset.targetType = target.type;
       button.dataset.targetId = target.id;
+
       button.setAttribute("aria-label", `React ${emoji}`);
       button.setAttribute("aria-pressed", "false");
 
@@ -154,6 +161,8 @@ import { supabase } from "./supabase.js";
   }
 
   function ensureWidgets() {
+    if (!user) return;
+
     for (const target of scanTargets()) {
       const existing = widgets.get(target.key);
 
@@ -177,6 +186,14 @@ import { supabase } from "./supabase.js";
         widgets.delete(key);
       }
     }
+  }
+
+  function removeAllWidgets() {
+    for (const widget of widgets.values()) {
+      widget.wrapper.remove();
+    }
+
+    widgets.clear();
   }
 
   function renderWidget(widget, rows) {
@@ -217,7 +234,30 @@ import { supabase } from "./supabase.js";
       });
   }
 
+  async function loadReactionRows(type, ids) {
+    const rows = [];
+    const batchSize = 50;
+
+    for (let start = 0; start < ids.length; start += batchSize) {
+      const batch = ids.slice(start, start + batchSize);
+
+      const { data, error } = await supabase
+        .from("content_reactions")
+        .select("id,target_type,target_id,user_id,reaction")
+        .eq("target_type", type)
+        .in("target_id", batch);
+
+      if (error) throw error;
+
+      rows.push(...(data || []));
+    }
+
+    return rows;
+  }
+
   async function refreshWidgets() {
+    if (!user) return;
+
     if (refreshRunning) {
       refreshAgain = true;
       return;
@@ -248,17 +288,10 @@ import { supabase } from "./supabase.js";
 
         if (!ids.length) continue;
 
-        const { data, error } = await supabase
-          .from("content_reactions")
-          .select("id,target_type,target_id,user_id,reaction")
-          .eq("target_type", type)
-          .in("target_id", ids);
-
-        if (error) throw error;
-
+        const rows = await loadReactionRows(type, ids);
         const byTarget = new Map();
 
-        for (const row of data || []) {
+        for (const row of rows) {
           if (!byTarget.has(row.target_id)) {
             byTarget.set(row.target_id, []);
           }
@@ -267,6 +300,8 @@ import { supabase } from "./supabase.js";
         }
 
         for (const widget of group) {
+          if (!widget.wrapper.isConnected) continue;
+
           renderWidget(
             widget,
             byTarget.get(widget.id) || []
@@ -289,6 +324,8 @@ import { supabase } from "./supabase.js";
   }
 
   function scheduleRefresh() {
+    if (!user) return;
+
     window.clearTimeout(refreshTimer);
 
     refreshTimer = window.setTimeout(
@@ -349,13 +386,16 @@ import { supabase } from "./supabase.js";
       }
 
       await refreshWidgets();
+
     } catch (error) {
       console.error("Grove reaction failed:", error);
 
       const status =
         $("#messages-status") ||
         $("#community-status") ||
-        $("#feed-status");
+        $("#feed-status") ||
+        $("#broadcast-status") ||
+        $("#live-status");
 
       if (status) {
         status.textContent =
@@ -368,40 +408,41 @@ import { supabase } from "./supabase.js";
     }
   }
 
-  document.addEventListener("click", event => {
-    const button = event.target.closest(
-      ".grove-reaction[data-reaction]"
-    );
+  async function removeRealtimeChannel() {
+    if (!realtimeChannel) return;
 
-    if (!button) return;
+    const channel = realtimeChannel;
+    realtimeChannel = null;
 
-    event.preventDefault();
-    toggleReaction(button);
-  });
+    try {
+      await supabase.removeChannel(channel);
+    } catch (error) {
+      console.warn(
+        "Could not remove Grove reaction realtime channel:",
+        error
+      );
+    }
+  }
 
-  const observer = new MutationObserver(records => {
-    const changed = records.some(record =>
-      record.type === "childList" &&
-      record.addedNodes.length > 0
-    );
+  async function applyUser(nextUser) {
+    const nextId = nextUser?.id || null;
+    const currentId = user?.id || null;
 
-    if (changed) ensureWidgets();
-  });
+    if (nextId === currentId) return;
 
-  async function initialize() {
-    const { data, error } = await supabase.auth.getUser();
+    user = nextUser || null;
 
-    if (error) throw error;
-    if (!data.user) return;
+    window.clearTimeout(refreshTimer);
+    refreshAgain = false;
 
-    user = data.user;
+    await removeRealtimeChannel();
+
+    if (!user) {
+      removeAllWidgets();
+      return;
+    }
 
     ensureWidgets();
-
-    observer.observe(document.body, {
-      childList: true,
-      subtree: true
-    });
 
     realtimeChannel = supabase
       .channel(`grove-content-reactions-${user.id}`)
@@ -414,12 +455,72 @@ import { supabase } from "./supabase.js";
         },
         scheduleRefresh
       )
-      .subscribe();
+      .subscribe((status, error) => {
+        if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          console.warn(
+            "Grove reaction realtime connection issue:",
+            error || status
+          );
+        }
+      });
+  }
+
+  document.addEventListener("click", event => {
+    const button = event.target.closest(
+      ".grove-reaction[data-reaction]"
+    );
+
+    if (!button) return;
+
+    event.preventDefault();
+    event.stopPropagation();
+
+    toggleReaction(button);
+  });
+
+  observer = new MutationObserver(records => {
+    const changed = records.some(record =>
+      record.type === "childList" &&
+      record.addedNodes.length > 0
+    );
+
+    if (changed) ensureWidgets();
+  });
+
+  async function initialize() {
+    observer.observe(document.body, {
+      childList: true,
+      subtree: true
+    });
+
+    const { data, error } = await supabase.auth.getUser();
+
+    if (error) throw error;
+
+    await applyUser(data.user || null);
+
+    const { data: authListener } =
+      supabase.auth.onAuthStateChange((_event, session) => {
+        window.setTimeout(() => {
+          applyUser(session?.user || null).catch(error => {
+            console.error(
+              "Grove reaction authentication update failed:",
+              error
+            );
+          });
+        }, 0);
+      });
+
+    authSubscription = authListener.subscription;
   }
 
   window.addEventListener("beforeunload", () => {
-    observer.disconnect();
+    observer?.disconnect();
     window.clearTimeout(refreshTimer);
+
+    if (authSubscription) {
+      authSubscription.unsubscribe();
+    }
 
     if (realtimeChannel) {
       supabase.removeChannel(realtimeChannel);
@@ -431,5 +532,7 @@ import { supabase } from "./supabase.js";
       "Grove reactions failed to initialize:",
       error
     );
+
+    window.__groveReactionsInstalled = false;
   });
 })();
