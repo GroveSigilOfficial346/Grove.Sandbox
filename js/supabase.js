@@ -2,6 +2,7 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 import { installGroveShell } from "./grove-shell.js";
 import { installGroveCompactUI } from "./grove-compact-ui.js";
+import { installGroveLayoutDensity } from "./grove-layout-density.js";
 import { installGroveNotifications } from "./grove-notifications.js";
 import { installGroveActivityTab } from "./grove-activity-tab.js";
 import { installGroveSanctionStatus } from "./grove-sanction-status.js";
@@ -12,7 +13,7 @@ const SUPABASE_URL =
   "https://fpkrvgcpbnrusbfmhinj.supabase.co";
 
 const SUPABASE_ANON_KEY =
-  "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
+  "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EkJkW6U0Z";
 
 const REMEMBER_KEY = "grove:remember-session";
 
@@ -87,6 +88,7 @@ window.groveClient = supabase;
 
 installGroveShell(supabase);
 installGroveCompactUI();
+installGroveLayoutDensity();
 installGroveSanctionStatus(supabase);
 installGroveButtonTheme(supabase);
 installGroveUpdates(supabase);
