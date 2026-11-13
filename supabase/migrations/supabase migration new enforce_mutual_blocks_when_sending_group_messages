@@ -1,0 +1,21 @@
+drop policy if exists "Members send messages"
+  on public.conversation_messages;
+
+create policy "Members send messages"
+on public.conversation_messages
+for insert
+to authenticated
+with check (
+  sender_id = (select auth.uid())
+  and private.is_conversation_member(conversation_id)
+  and not exists (
+    select 1
+    from public.conversation_members other_member
+    where other_member.conversation_id =
+      conversation_messages.conversation_id
+      and other_member.user_id <> (select auth.uid())
+      and private.grove_is_blocked_from_profile(
+        other_member.user_id
+      )
+  )
+);
