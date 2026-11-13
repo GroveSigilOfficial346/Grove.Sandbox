@@ -1,0 +1,155 @@
+.grove-chat-settings-button {
+  min-height: 36px;
+  margin-left: auto;
+  padding: 7px 12px;
+  border: 1px solid rgba(133, 30, 255, .45);
+  border-radius: 10px;
+  background: rgba(133, 30, 255, .13);
+  color: #f7f5ff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.grove-chat-settings-dialog {
+  width: min(460px, calc(100% - 24px));
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 0;
+  border: 1px solid rgba(133, 30, 255, .5);
+  border-radius: 17px;
+  background: #100b25;
+  color: #f7f5ff;
+}
+
+.grove-chat-settings-dialog::backdrop {
+  background: rgba(3, 0, 12, .8);
+  backdrop-filter: blur(5px);
+}
+
+.grove-chat-settings-panel {
+  display: grid;
+  gap: 12px;
+  padding: 20px;
+}
+
+.grove-chat-settings-panel h2,
+.grove-chat-settings-panel p {
+  margin: 0;
+}
+
+.grove-chat-settings-panel label {
+  color: #d9cbed;
+  font-size: .82rem;
+  font-weight: 700;
+}
+
+.grove-chat-settings-panel input,
+.grove-chat-settings-panel select {
+  width: 100%;
+  min-height: 42px;
+  padding: 9px 11px;
+  border: 1px solid rgba(133, 30, 255, .4);
+  border-radius: 9px;
+  background: #08051a;
+  color: #f7f5ff;
+}
+
+.grove-chat-settings-panel button {
+  min-height: 40px;
+  padding: 9px 12px;
+  border: 1px solid rgba(133, 30, 255, .4);
+  border-radius: 9px;
+  background: rgba(133, 30, 255, .2);
+  color: #f7f5ff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.grove-chat-settings-panel button:disabled {
+  opacity: .5;
+  cursor: not-allowed;
+}
+
+.grove-chat-settings-status {
+  min-height: 20px;
+  color: #7bd7a2;
+  font-size: .8rem;
+  overflow-wrap: anywhere;
+}
+
+.grove-chat-settings-status.error {
+  color: #ff8585;
+}
+
+.grove-jump-latest {
+  position: absolute;
+  z-index: 5;
+  right: 20px;
+  bottom: 92px;
+  padding: 10px 14px;
+  border: 1px solid rgba(5, 201, 244, .55);
+  border-radius: 999px;
+  background: #17102c;
+  color: #f7f5ff;
+  font-weight: 750;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .35);
+}
+
+.grove-jump-latest[hidden] {
+  display: none;
+}
+
+.chat-panel {
+  position: relative;
+}
+
+body[data-grove-chat-theme="dark-romance"] .chat-panel {
+  background: #210d1b;
+}
+
+body[data-grove-chat-theme="gothic-violet"] .chat-panel {
+  background: #10051f;
+}
+
+body[data-grove-chat-theme="blood-moon"] .chat-panel {
+  background: #1b080e;
+}
+
+body[data-grove-chat-theme="silver-key"] .chat-panel {
+  background: #0b1722;
+}
+
+body[data-grove-chat-theme="enchanted-lock"] .chat-panel {
+  background: #0b1a17;
+}
+
+body[data-grove-chat-theme="celestial-velvet"] .chat-panel {
+  background: #120b2a;
+}
+
+body[data-grove-chat-theme="neon-noir"] .chat-panel {
+  background: #080e20;
+}
+
+body[data-grove-chat-image="on"] .chat-panel {
+  background-position: center;
+  background-size: cover;
+  background-repeat: no-repeat;
+}
+
+@media (max-width: 640px) {
+  .grove-chat-settings-button {
+    min-height: 34px;
+    padding: 6px 9px;
+    font-size: .72rem;
+  }
+
+  .grove-chat-settings-panel {
+    padding: 15px;
+  }
+
+  .grove-jump-latest {
+    right: 12px;
+    bottom: 84px;
+  }
+}
