@@ -20,12 +20,7 @@ import { supabase } from "./supabase.js";
   ]);
 
   const roleOptions = [
-    ["", "No role tag"],
-    ["dom", "Dom"],
-    ["domme", "Domme"],
-    ["sub", "Sub"],
-    ["submissive", "Submissive"],
-    ["switch", "Switch"],
+    ["", "No profile tag"],
     ["owner", "Owner"]
   ];
 
@@ -48,17 +43,17 @@ import { supabase } from "./supabase.js";
     wrapper.className = "grove-dynamic-tag-settings";
 
     const heading = document.createElement("h3");
-    heading.textContent = "Dynamic role tag";
+    heading.textContent = "Optional profile tag";
 
     const description = document.createElement("p");
     description.className = "field-hint";
     description.textContent =
-      "Choose an optional role label for your public Grove profile. " +
-      "This is a self-selected profile label, separate from an accepted Owner tag.";
+      "Choose whether to display an Owner profile tag. " +
+      "Accepted Partner and Owner relationship tags are managed separately.";
 
     const label = document.createElement("label");
     label.htmlFor = "edit-relationship-dynamic-tag";
-    label.textContent = "Your role tag";
+    label.textContent = "Profile tag";
 
     const select = document.createElement("select");
     select.id = "edit-relationship-dynamic-tag";
@@ -119,6 +114,7 @@ import { supabase } from "./supabase.js";
       ? statusValue
       : "not_set";
 
+    // Legacy Dom/Sub values are intentionally not displayed.
     dynamicTagField.value = allowedDynamicTags.has(tagValue)
       ? tagValue
       : "";
@@ -189,7 +185,7 @@ import { supabase } from "./supabase.js";
     if (!allowedDynamicTags.has(value)) {
       setMessage(
         dynamicTagMessage,
-        "Choose a valid role tag.",
+        "Choose a valid profile tag.",
         true
       );
       return;
@@ -197,7 +193,7 @@ import { supabase } from "./supabase.js";
 
     tagSaving = true;
     dynamicTagField.disabled = true;
-    setMessage(dynamicTagMessage, "Saving role tag...");
+    setMessage(dynamicTagMessage, "Saving profile tag...");
 
     try {
       const { data, error } = await supabase
@@ -214,27 +210,23 @@ import { supabase } from "./supabase.js";
 
       if (!data) {
         throw new Error(
-          "The role tag was not saved. Check your profile permissions."
+          "The profile tag was not saved. Check your profile permissions."
         );
       }
-
-      const label = roleOptions.find(
-        ([optionValue]) => optionValue === value
-      )?.[1];
 
       setMessage(
         dynamicTagMessage,
         value
-          ? `${label} role tag saved.`
-          : "Your role tag has been hidden."
+          ? "Owner profile tag saved."
+          : "Your profile tag has been hidden."
       );
 
     } catch (error) {
-      console.error("Relationship role tag update failed:", error);
+      console.error("Profile tag update failed:", error);
 
       setMessage(
         dynamicTagMessage,
-        error.message || "Could not save your role tag.",
+        error.message || "Could not save your profile tag.",
         true
       );
 
@@ -261,7 +253,7 @@ import { supabase } from "./supabase.js";
 
     setMessage(
       dynamicTagMessage,
-      "Could not load your role tag settings.",
+      "Could not load your profile tag settings.",
       true
     );
   });
