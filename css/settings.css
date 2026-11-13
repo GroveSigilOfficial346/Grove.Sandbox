@@ -1,13 +1,15 @@
 /* =========================================================
    GROVE SETTINGS
-   Dark violet theme + relationship date controls
+   Complete responsive stylesheet
+   Preserves relationship, notification, sound, device,
+   blocked-member, and layout-density controls.
    ========================================================= */
 
 :root {
   color-scheme: dark;
   --grove-bg: #050019;
-  --grove-panel: rgba(20, 12, 43, 0.92);
-  --grove-panel-soft: rgba(35, 20, 65, 0.78);
+  --grove-panel: rgba(20, 12, 43, 0.94);
+  --grove-panel-soft: rgba(35, 20, 65, 0.82);
   --grove-purple: #851eff;
   --grove-pink: #eb36ed;
   --grove-cyan: #05c9f4;
@@ -16,6 +18,8 @@
   --grove-border: rgba(133, 30, 255, 0.35);
   --grove-danger: #ff8585;
   --grove-success: #7bd7a2;
+  --grove-radius: 16px;
+  --grove-content-width: 900px;
 }
 
 * {
@@ -25,9 +29,11 @@
 html {
   min-height: 100%;
   background: var(--grove-bg);
+  scroll-behavior: smooth;
 }
 
 body {
+  min-width: 320px;
   min-height: 100vh;
   margin: 0;
   padding: 24px;
@@ -44,8 +50,9 @@ body {
     ),
     var(--grove-bg);
   color: var(--grove-text);
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", sans-serif;
+  font-family: Inter, system-ui, -apple-system,
+    BlinkMacSystemFont, "Segoe UI", sans-serif;
+  line-height: 1.5;
 }
 
 button,
@@ -55,16 +62,94 @@ textarea {
   font: inherit;
 }
 
+button,
+a {
+  -webkit-tap-highlight-color: transparent;
+}
+
 button {
   cursor: pointer;
 }
+
+a {
+  color: var(--grove-cyan);
+  text-decoration: none;
+}
+
+a:hover {
+  color: var(--grove-pink);
+}
+
+/* =========================================================
+   MAIN NAVIGATION
+   ========================================================= */
+
+.site-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 22px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto 28px;
+  padding: 15px 19px;
+  border: 1px solid var(--grove-border);
+  border-radius: 14px;
+  background: rgba(15, 9, 34, 0.94);
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
+}
+
+.site-header .brand {
+  flex: 0 0 auto;
+  color: var(--grove-text);
+  font-size: 1.15rem;
+  font-weight: 900;
+  letter-spacing: 0.16em;
+}
+
+.site-header nav {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.site-header nav a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 38px;
+  padding: 8px 11px;
+  border: 1px solid transparent;
+  border-radius: 9px;
+  color: var(--grove-muted);
+  font-size: 0.88rem;
+  font-weight: 650;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    border-color 0.18s ease;
+}
+
+.site-header nav a:hover,
+.site-header nav a:focus-visible {
+  border-color: var(--grove-border);
+  background: var(--grove-accent-soft, rgba(133, 30, 255, 0.14));
+  color: var(--grove-text);
+  outline: none;
+}
+
+/* =========================================================
+   SETTINGS PAGE STRUCTURE
+   ========================================================= */
 
 .settings-container,
 .settings-content,
 .settings-page,
 .settings-wrapper {
   width: 100%;
-  max-width: 900px;
+  max-width: var(--grove-content-width);
   margin-right: auto;
   margin-left: auto;
 }
@@ -74,48 +159,117 @@ button {
 .settings-page,
 .settings-wrapper,
 .settings-section,
-.settings-card {
+.settings-card,
+.settings-panel {
   color: var(--grove-text);
+}
+
+.settings-heading {
+  margin: 0 0 22px;
+  padding: 8px 2px 15px;
+}
+
+.settings-heading .eyebrow {
+  margin: 0 0 7px;
+  color: var(--grove-cyan);
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.17em;
+}
+
+.settings-heading h1 {
+  margin: 0;
+  color: var(--grove-text);
+  font-size: clamp(2rem, 5vw, 2.8rem);
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+}
+
+.settings-heading > p:last-child {
+  max-width: 650px;
+  margin: 10px 0 0;
+  color: var(--grove-muted);
+  line-height: 1.65;
 }
 
 .settings-section,
 .settings-card,
 .settings-panel {
-  margin-bottom: 20px;
-  padding: 22px;
+  width: 100%;
+  margin: 0 0 18px;
+  padding: 23px;
   border: 1px solid var(--grove-border);
-  border-radius: 16px;
+  border-radius: var(--grove-radius);
   background: var(--grove-panel);
   box-shadow: 0 12px 35px rgba(0, 0, 0, 0.22);
 }
 
+.settings-panel h2,
 .settings-section h1,
 .settings-section h2,
 .settings-section h3,
 .settings-card h1,
 .settings-card h2,
 .settings-card h3 {
+  margin-top: 0;
   color: var(--grove-text);
+  line-height: 1.3;
+}
+
+.settings-panel h2 {
+  margin-bottom: 9px;
+  font-size: 1.12rem;
+  font-weight: 800;
 }
 
 .settings-section p,
 .settings-card p,
+.settings-panel p,
 .settings-description {
   color: var(--grove-muted);
-  line-height: 1.6;
+  line-height: 1.65;
+}
+
+.settings-description {
+  margin: 0 0 17px;
+  font-size: 0.91rem;
 }
 
 .settings-section label,
-.settings-card label {
+.settings-card label,
+.settings-panel label {
   color: var(--grove-muted);
 }
+
+/* =========================================================
+   GLOBAL SETTINGS STATUS
+   ========================================================= */
+
+#settings-status {
+  min-height: 20px;
+  margin: 0 0 14px;
+  color: var(--grove-success);
+  font-size: 0.88rem;
+  font-weight: 650;
+}
+
+#settings-status.error {
+  color: var(--grove-danger);
+}
+
+/* =========================================================
+   INPUTS AND SELECTS
+   ========================================================= */
 
 .settings-section input:not([type="checkbox"]):not([type="radio"]),
 .settings-section select,
 .settings-section textarea,
 .settings-card input:not([type="checkbox"]):not([type="radio"]),
 .settings-card select,
-.settings-card textarea {
+.settings-card textarea,
+.settings-panel input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+.settings-panel select,
+.settings-panel textarea {
   width: 100%;
   max-width: 100%;
   min-height: 44px;
@@ -126,30 +280,65 @@ button {
   color: var(--grove-text);
 }
 
+.settings-section select,
+.settings-card select,
+.settings-panel select {
+  cursor: pointer;
+}
+
 .settings-section input:focus,
 .settings-section select:focus,
 .settings-section textarea:focus,
 .settings-card input:focus,
 .settings-card select:focus,
-.settings-card textarea:focus {
+.settings-card textarea:focus,
+.settings-panel input:focus,
+.settings-panel select:focus,
+.settings-panel textarea:focus {
   outline: 2px solid var(--grove-cyan);
   outline-offset: 2px;
 }
 
+.settings-panel input::placeholder,
+.settings-section input::placeholder,
+.settings-card input::placeholder {
+  color: rgba(170, 161, 200, 0.65);
+}
+
+.settings-panel option,
+.settings-section option,
+.settings-card option {
+  background: #140c2b;
+  color: var(--grove-text);
+}
+
+/* =========================================================
+   BUTTONS AND ACTION LINKS
+   ========================================================= */
+
 .settings-section button,
 .settings-card button,
-.settings-container button {
+.settings-container button,
+.settings-panel button,
+.settings-container a.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   min-height: 42px;
   padding: 10px 17px;
   border: 1px solid rgba(235, 54, 237, 0.45);
   border-radius: 10px;
   background: linear-gradient(
     110deg,
-    rgba(133, 30, 255, 0.9),
-    rgba(235, 54, 237, 0.82)
+    rgba(133, 30, 255, 0.92),
+    rgba(235, 54, 237, 0.84)
   );
   color: #fff;
-  font-weight: 700;
+  font-size: 0.9rem;
+  font-weight: 750;
+  text-align: center;
+  text-decoration: none;
   transition:
     transform 0.18s ease,
     filter 0.18s ease,
@@ -158,21 +347,82 @@ button {
 
 .settings-section button:hover,
 .settings-card button:hover,
-.settings-container button:hover {
+.settings-container button:hover,
+.settings-panel button:hover,
+.settings-container a.button:hover {
   filter: brightness(1.12);
   transform: translateY(-1px);
 }
 
+.settings-section button:focus-visible,
+.settings-card button:focus-visible,
+.settings-container button:focus-visible,
+.settings-panel button:focus-visible,
+.settings-container a.button:focus-visible {
+  outline: 2px solid var(--grove-cyan);
+  outline-offset: 3px;
+}
+
 .settings-section button:disabled,
 .settings-card button:disabled,
-.settings-container button:disabled {
+.settings-container button:disabled,
+.settings-panel button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
   transform: none;
 }
 
+.settings-container a.button.secondary,
+.settings-panel .button.secondary,
+.settings-section .button.secondary,
+.settings-card .button.secondary {
+  border-color: var(--grove-border);
+  background: var(--grove-panel-soft);
+  color: var(--grove-text);
+}
+
+.settings-container a.button.secondary:hover,
+.settings-panel .button.secondary:hover,
+.settings-section .button.secondary:hover,
+.settings-card .button.secondary:hover {
+  border-color: var(--grove-cyan);
+  background: rgba(5, 201, 244, 0.1);
+}
+
 /* =========================================================
-   RELATIONSHIP DATE — MONTH / DAY / YEAR
+   LAYOUT DENSITY CONTROL
+   ========================================================= */
+
+.grove-layout-density-options {
+  display: grid;
+  gap: 13px;
+  max-width: 620px;
+}
+
+.grove-layout-density-options > label {
+  display: grid;
+  gap: 8px;
+  color: var(--grove-text);
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+#grove-layout-density {
+  min-height: 48px;
+}
+
+#grove-layout-density-status {
+  min-height: 20px;
+  margin: 0;
+  font-size: 0.84rem;
+}
+
+#grove-layout-density-reset {
+  justify-self: start;
+}
+
+/* =========================================================
+   RELATIONSHIP DATE CONTROLS
    ========================================================= */
 
 .grove-date-fields {
@@ -206,83 +456,387 @@ button {
   text-align: center;
 }
 
-.grove-date-field input:focus {
-  outline: 2px solid var(--grove-cyan);
-  outline-offset: 2px;
+#settings-relationship-since {
+  display: block;
+  max-width: 320px;
+  margin: 9px 0 12px;
+  color-scheme: dark;
 }
 
-.grove-date-field input:disabled {
+#settings-relationship-since:disabled {
   cursor: wait;
   opacity: 0.6;
 }
 
+[data-grove-relationship-current-status] {
+  margin: 10px 0 14px;
+  color: var(--grove-text);
+  font-weight: 700;
+}
+
+[data-grove-relationship-date-label] {
+  display: block;
+  margin-bottom: 7px;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
 [data-grove-relationship-date-message] {
   min-height: 20px;
-  margin-top: 8px;
+  margin: 8px 0 12px;
   color: var(--grove-muted);
   font-size: 0.85rem;
 }
 
 /* =========================================================
-   BLOCKED MEMBERS / NOTIFICATION PREFERENCES
+   NOTIFICATION PREFERENCE ROWS
+   IMPORTANT: HTML uses .setting-row (singular).
+   Keep .settings-row for older markup compatibility.
    ========================================================= */
 
-.blocked-member,
-.blocked-member-item,
+.setting-row,
+.settings-row,
 .notification-setting,
-.settings-row {
+.blocked-member,
+.blocked-member-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
-  padding: 13px 0;
-  border-bottom: 1px solid rgba(133, 30, 255, 0.18);
+  gap: 16px;
+  width: 100%;
+  min-height: 58px;
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(133, 30, 255, 0.2);
 }
 
-.blocked-member:last-child,
-.blocked-member-item:last-child,
+.setting-row:last-child,
+.settings-row:last-child,
 .notification-setting:last-child,
-.settings-row:last-child {
+.blocked-member:last-child,
+.blocked-member-item:last-child {
   border-bottom: 0;
 }
+
+.setting-row > span,
+.settings-row > span {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.setting-row strong,
+.settings-row strong {
+  color: var(--grove-text);
+  font-size: 0.93rem;
+  font-weight: 750;
+}
+
+.setting-row small,
+.settings-row small {
+  color: var(--grove-muted);
+  font-size: 0.81rem;
+  line-height: 1.45;
+}
+
+.setting-row input[type="checkbox"],
+.settings-row input[type="checkbox"],
+.notification-setting input[type="checkbox"] {
+  flex: 0 0 auto;
+  width: 21px;
+  height: 21px;
+  margin: 0 2px 0 12px;
+  accent-color: var(--grove-purple);
+  cursor: pointer;
+}
+
+/* =========================================================
+   SOUND SETTINGS
+   ========================================================= */
+
+.sound-choice {
+  display: grid;
+  gap: 8px;
+  max-width: 420px;
+  margin: 16px 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.volume-setting {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 9px 15px;
+  max-width: 480px;
+  margin: 17px 0;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+.volume-setting input[type="range"] {
+  grid-column: 1;
+  width: 100%;
+  min-height: 25px;
+  accent-color: var(--grove-purple);
+  cursor: pointer;
+}
+
+.volume-setting output {
+  grid-column: 2;
+  grid-row: 2;
+  min-width: 45px;
+  color: var(--grove-cyan);
+  font-size: 0.85rem;
+  text-align: right;
+}
+
+.settings-note {
+  margin: 14px 0 0;
+  padding: 11px 13px;
+  border-left: 3px solid rgba(5, 201, 244, 0.55);
+  border-radius: 0 8px 8px 0;
+  background: rgba(5, 201, 244, 0.06);
+  color: var(--grove-muted);
+  font-size: 0.82rem;
+  line-height: 1.6;
+}
+
+/* =========================================================
+   DEVICE NOTIFICATIONS
+   ========================================================= */
+
+.device-status,
+#device-status {
+  min-height: 22px;
+  margin: 10px 0 15px;
+  color: var(--grove-muted);
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.device-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.device-actions button {
+  flex: 0 1 auto;
+}
+
+/* =========================================================
+   BLOCKED MEMBERS
+   ========================================================= */
+
+#blocked-members-panel {
+  overflow: hidden;
+}
+
+.blocked-members-status {
+  min-height: 20px;
+  margin: 10px 0;
+  color: var(--grove-muted);
+  font-size: 0.86rem;
+}
+
+.blocked-members-list {
+  display: grid;
+  gap: 0;
+  width: 100%;
+}
+
+.blocked-member,
+.blocked-member-item {
+  min-width: 0;
+}
+
+.blocked-member button,
+.blocked-member-item button {
+  flex: 0 0 auto;
+}
+
+.blocked-member img,
+.blocked-member-item img {
+  flex: 0 0 auto;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.blocked-member .member-info,
+.blocked-member-item .member-info {
+  flex: 1;
+  min-width: 0;
+}
+
+/* =========================================================
+   ACCOUNT ACTIONS
+   ========================================================= */
+
+.settings-panel > a.button {
+  margin: 5px 8px 5px 0;
+}
+
+/* =========================================================
+   CHECKBOXES AND ACCESSIBILITY
+   ========================================================= */
 
 input[type="checkbox"],
 input[type="radio"] {
   accent-color: var(--grove-purple);
 }
 
+:focus-visible {
+  outline-color: var(--grove-cyan);
+}
+
+::selection {
+  background: rgba(133, 30, 255, 0.45);
+  color: #fff;
+}
+
 /* =========================================================
-   RESPONSIVE LAYOUT
+   RESPONSIVE TABLET
    ========================================================= */
 
-@media (max-width: 640px) {
+@media (max-width: 850px) {
   body {
-    padding: 14px;
+    padding: 17px;
+  }
+
+  .site-header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .site-header nav {
+    justify-content: flex-start;
+    width: 100%;
   }
 
   .settings-section,
   .settings-card,
   .settings-panel {
+    padding: 19px;
+  }
+}
+
+/* =========================================================
+   RESPONSIVE MOBILE
+   ========================================================= */
+
+@media (max-width: 640px) {
+  body {
+    padding: 12px;
+  }
+
+  .site-header {
+    margin-bottom: 20px;
+    padding: 13px;
+    border-radius: 12px;
+  }
+
+  .site-header nav {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .site-header nav a {
+    min-width: 0;
+    min-height: 40px;
+    padding: 7px 5px;
+    font-size: 0.78rem;
+    text-align: center;
+  }
+
+  .settings-heading {
+    margin-bottom: 16px;
+  }
+
+  .settings-heading h1 {
+    font-size: 2.1rem;
+  }
+
+  .settings-section,
+  .settings-card,
+  .settings-panel {
+    margin-bottom: 13px;
     padding: 16px;
     border-radius: 13px;
   }
 
+  .settings-panel h2 {
+    font-size: 1.04rem;
+  }
+
+  .setting-row,
+  .settings-row,
+  .notification-setting {
+    min-height: 62px;
+    gap: 10px;
+  }
+
+  .setting-row > span,
+  .settings-row > span {
+    flex: 1;
+  }
+
+  .setting-row input[type="checkbox"],
+  .settings-row input[type="checkbox"] {
+    width: 22px;
+    height: 22px;
+  }
+
+  .device-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .device-actions button {
+    width: 100%;
+  }
+
   .settings-section button,
   .settings-card button,
-  .settings-container button {
+  .settings-container button,
+  .settings-panel button,
+  .settings-container a.button {
     max-width: 100%;
   }
 
+  .settings-panel > a.button {
+    margin: 5px 5px 5px 0;
+  }
+
   .blocked-member,
-  .blocked-member-item,
-  .notification-setting,
-  .settings-row {
-    align-items: flex-start;
+  .blocked-member-item {
+    align-items: center;
     flex-wrap: wrap;
   }
 }
 
+/* =========================================================
+   SMALL MOBILE
+   ========================================================= */
+
 @media (max-width: 420px) {
+  body {
+    padding: 9px;
+  }
+
+  .site-header nav {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .settings-section,
+  .settings-card,
+  .settings-panel {
+    padding: 14px;
+  }
+
   .grove-date-fields {
     gap: 8px;
   }
@@ -290,5 +844,32 @@ input[type="radio"] {
   .grove-date-field input {
     height: 46px;
     padding: 8px 4px;
+  }
+
+  .volume-setting {
+    gap: 8px;
+  }
+
+  .settings-container a.button {
+    width: 100%;
+    margin-right: 0;
+  }
+}
+
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
   }
 }
