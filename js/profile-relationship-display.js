@@ -6,10 +6,7 @@ import { supabase } from "./supabase.js";
   const details = document.querySelector("#details");
   if (!details) return;
 
-  if (details.dataset.groveRelationshipDisplay === "installed") {
-    return;
-  }
-
+  if (details.dataset.groveRelationshipDisplay === "installed") return;
   details.dataset.groveRelationshipDisplay = "installed";
 
   const LABELS = {
@@ -38,7 +35,6 @@ import { supabase } from "./supabase.js";
   let renderTimer = null;
 
   const wrapper = document.createElement("div");
-
   wrapper.className = "profile-relationship-details";
   wrapper.style.display = "contents";
   wrapper.setAttribute("aria-label", "Relationship details");
@@ -52,16 +48,13 @@ import { supabase } from "./supabase.js";
     const year = Number(match[1]);
     const month = Number(match[2]);
     const day = Number(match[3]);
-
     const date = new Date(year, month - 1, day);
 
     if (
       date.getFullYear() !== year ||
       date.getMonth() !== month - 1 ||
       date.getDate() !== day
-    ) {
-      return "";
-    }
+    ) return "";
 
     return date.toLocaleDateString(undefined, {
       year: "numeric",
@@ -72,24 +65,17 @@ import { supabase } from "./supabase.js";
 
   function createDetail(text) {
     const item = document.createElement("span");
-
-    item.className =
-      "profile-detail profile-relationship-detail";
-
+    item.className = "profile-detail profile-relationship-detail";
     item.textContent = text;
-
     return item;
   }
 
   async function resolveProfileId() {
     const params = new URLSearchParams(window.location.search);
-
     const requestedId = params.get("id");
     const requestedUsername = params.get("username");
 
-    if (requestedId) {
-      return requestedId;
-    }
+    if (requestedId) return requestedId;
 
     if (requestedUsername) {
       const username = requestedUsername
@@ -106,14 +92,11 @@ import { supabase } from "./supabase.js";
         .maybeSingle();
 
       if (error) throw error;
-
       return data?.id || null;
     }
 
-    const { data: auth, error: authError } =
-      await supabase.auth.getUser();
-
-    if (authError) throw authError;
+    const { data: auth, error } = await supabase.auth.getUser();
+    if (error) throw error;
 
     return auth?.user?.id || null;
   }
@@ -125,58 +108,47 @@ import { supabase } from "./supabase.js";
     );
   }
 
-  function tagLabel(tagType) {
-    return tagType === "owner" ? "Owner" : "Partner";
-  }
-
   async function loadAcceptedTags(profileId) {
     const [outgoingResult, incomingResult] = await Promise.all([
       supabase
         .from("profile_relationship_tags")
-        .select("profile_id,partner_id,tag_type")
+        .select("partner_id")
         .eq("profile_id", profileId)
+        .eq("tag_type", "partner")
         .eq("status", "accepted"),
 
       supabase
         .from("profile_relationship_tags")
-        .select("profile_id,partner_id,tag_type")
+        .select("profile_id")
         .eq("partner_id", profileId)
+        .eq("tag_type", "partner")
         .eq("status", "accepted")
     ]);
 
     if (outgoingResult.error) throw outgoingResult.error;
     if (incomingResult.error) throw incomingResult.error;
 
-    const relationships = [];
-
-    for (const tag of outgoingResult.data || []) {
-      relationships.push({
+    const relationships = [
+      ...(outgoingResult.data || []).map(tag => ({
         counterpartId: tag.partner_id,
-        textPrefix: `Accepted ${tagLabel(tag.tag_type)}: `
-      });
-    }
-
-    for (const tag of incomingResult.data || []) {
-      relationships.push({
+        prefix: "Partner: "
+      })),
+      ...(incomingResult.data || []).map(tag => ({
         counterpartId: tag.profile_id,
-        textPrefix: `Tagged as ${tagLabel(tag.tag_type)} by: `
-      });
-    }
-
-    const counterpartIds = [
-      ...new Set(
-        relationships
-          .map(item => item.counterpartId)
-          .filter(Boolean)
-      )
+        prefix: "Tagged as Partner by: "
+      }))
     ];
 
-    if (!counterpartIds.length) return [];
+    const ids = [
+      ...new Set(relationships.map(item => item.counterpartId).filter(Boolean))
+    ];
+
+    if (!ids.length) return [];
 
     const { data: profiles, error } = await supabase
       .from("profiles")
       .select("id,username,display_name")
-      .in("id", counterpartIds);
+      .in("id", ids);
 
     if (error) throw error;
 
@@ -190,24 +162,17 @@ import { supabase } from "./supabase.js";
     return relationships
       .map(item => {
         const name = profileMap.get(item.counterpartId);
-
-        return name
-          ? item.textPrefix + name
-          : null;
+        return name ? item.prefix + name : null;
       })
       .filter(Boolean);
   }
 
   function removeLegacyRelationshipDetail() {
-    details
-      .querySelectorAll(":scope > .profile-detail")
-      .forEach(item => {
-        if (
-          item.textContent.trim().toLowerCase().startsWith("relationship:")
-        ) {
-          item.remove();
-        }
-      });
+    details.querySelectorAll(":scope > .profile-detail").forEach(item => {
+      if (item.textContent.trim().toLowerCase().startsWith("relationship:")) {
+        item.remove();
+      }
+    });
   }
 
   function render() {
@@ -219,20 +184,15 @@ import { supabase } from "./supabase.js";
       removeLegacyRelationshipDetail();
 
       const fragment = document.createDocumentFragment();
-
       const status = String(
         relationshipData.relationship_status || "not_set"
       ).toLowerCase();
 
       if (LABELS[status]) {
-        fragment.append(
-          createDetail(LABELS[status])
-        );
+        fragment.append(createDetail(LABELS[status]));
       }
 
-      const date = formatDate(
-        relationshipData.relationship_since
-      );
+      const date = formatDate(relationshipData.relationship_since);
 
       if (!HIDE_DATE.has(status) && date) {
         fragment.append(
@@ -244,25 +204,13 @@ import { supabase } from "./supabase.js";
         );
       }
 
-      const role = String(
-        relationshipData.relationship_dynamic_tag || ""
-      ).toLowerCase();
-
-      if (role === "owner") {
-        fragment.append(
-          createDetail("Profile tag: Owner")
-        );
-      }
-
       for (const label of acceptedTagLabels) {
         fragment.append(createDetail(label));
       }
 
       wrapper.replaceChildren(fragment);
 
-      if (!wrapper.isConnected) {
-        details.append(wrapper);
-      }
+      if (!wrapper.isConnected) details.append(wrapper);
 
     } finally {
       rendering = false;
@@ -288,27 +236,17 @@ import { supabase } from "./supabase.js";
     if (rendering) return;
 
     const externalChange = records.some(record => {
-      const changedNodes = [
-        ...record.addedNodes,
-        ...record.removedNodes
-      ];
+      const changedNodes = [...record.addedNodes, ...record.removedNodes];
 
       return changedNodes.some(node => {
         if (node === wrapper) return false;
+        if (node.nodeType !== Node.ELEMENT_NODE) return true;
 
-        if (node.nodeType !== Node.ELEMENT_NODE) {
-          return true;
-        }
-
-        return !node.classList.contains(
-          "profile-relationship-details"
-        );
+        return !node.classList.contains("profile-relationship-details");
       });
     });
 
-    if (externalChange || !wrapper.isConnected) {
-      scheduleRender();
-    }
+    if (externalChange || !wrapper.isConnected) scheduleRender();
   });
 
   observer.observe(details, {
@@ -318,14 +256,11 @@ import { supabase } from "./supabase.js";
 
   async function loadRelationshipDisplay() {
     const profileId = await resolveProfileId();
-
     if (!profileId) return;
 
     const { data, error } = await supabase
       .from("profiles")
-      .select(
-        "relationship_status,relationship_since,relationship_dynamic_tag"
-      )
+      .select("relationship_status,relationship_since")
       .eq("id", profileId)
       .maybeSingle();
 
@@ -336,13 +271,8 @@ import { supabase } from "./supabase.js";
 
     try {
       acceptedTagLabels = await loadAcceptedTags(profileId);
-
     } catch (tagError) {
-      console.error(
-        "Grove accepted relationship tags could not load:",
-        tagError
-      );
-
+      console.error("Grove Partner tags could not load:", tagError);
       acceptedTagLabels = [];
     }
 
@@ -355,9 +285,6 @@ import { supabase } from "./supabase.js";
   });
 
   loadRelationshipDisplay().catch(error => {
-    console.error(
-      "Grove relationship display failed:",
-      error
-    );
+    console.error("Grove relationship display failed:", error);
   });
 })();
