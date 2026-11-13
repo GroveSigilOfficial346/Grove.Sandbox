@@ -1,0 +1,231 @@
+/* =========================================================
+   GROVE GLOBAL LAYOUT DENSITY
+   Compact / Standard / Expanded
+   ========================================================= */
+
+:root {
+  --grove-density-gap: 20px;
+  --grove-density-card-padding: 22px;
+  --grove-density-radius: 16px;
+  --grove-density-content-width: 1100px;
+  --grove-density-section-gap: 20px;
+}
+
+/* COMPACT */
+
+:root[data-grove-density="compact"] {
+  --grove-density-gap: 11px;
+  --grove-density-card-padding: 13px;
+  --grove-density-radius: 11px;
+  --grove-density-content-width: 1280px;
+  --grove-density-section-gap: 10px;
+}
+
+:root[data-grove-density="compact"] .settings-panel,
+:root[data-grove-density="compact"] .settings-section,
+:root[data-grove-density="compact"] .settings-card,
+:root[data-grove-density="compact"] .content-section,
+:root[data-grove-density="compact"] .profile-card,
+:root[data-grove-density="compact"] .post-card,
+:root[data-grove-density="compact"] .feed-post,
+:root[data-grove-density="compact"] .composer,
+:root[data-grove-density="compact"] .profile-post-composer {
+  padding: var(--grove-density-card-padding);
+  border-radius: var(--grove-density-radius);
+}
+
+:root[data-grove-density="compact"] .settings-panel,
+:root[data-grove-density="compact"] .settings-section,
+:root[data-grove-density="compact"] .settings-card,
+:root[data-grove-density="compact"] .content-section,
+:root[data-grove-density="compact"] .profile-card,
+:root[data-grove-density="compact"] .post-card,
+:root[data-grove-density="compact"] .feed-post {
+  margin-bottom: var(--grove-density-section-gap);
+}
+
+:root[data-grove-density="compact"] .profile-stats,
+:root[data-grove-density="compact"] .profile-actions,
+:root[data-grove-density="compact"] .post-actions,
+:root[data-grove-density="compact"] .feed-actions {
+  gap: 6px;
+}
+
+:root[data-grove-density="compact"] .site-header nav,
+:root[data-grove-density="compact"] .messages-navigation,
+:root[data-grove-density="compact"] .feed-header nav {
+  gap: 4px 6px;
+}
+
+:root[data-grove-density="compact"] .site-header nav a,
+:root[data-grove-density="compact"] .messages-navigation a,
+:root[data-grove-density="compact"] .feed-header nav a {
+  min-height: 32px;
+  padding: 5px 8px;
+  font-size: .82rem;
+}
+
+:root[data-grove-density="compact"] .button,
+:root[data-grove-density="compact"] button,
+:root[data-grove-density="compact"] .file-button,
+:root[data-grove-density="compact"] .primary-link {
+  min-height: 34px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+:root[data-grove-density="compact"] .post-header,
+:root[data-grove-density="compact"] .feed-post-header {
+  padding-top: 10px;
+}
+
+:root[data-grove-density="compact"] .post-body,
+:root[data-grove-density="compact"] .feed-post-body {
+  line-height: 1.55;
+}
+
+:root[data-grove-density="compact"] .messages-header {
+  padding-bottom: 8px;
+}
+
+:root[data-grove-density="compact"] .sidebar-heading {
+  padding-bottom: 10px;
+}
+
+:root[data-grove-density="compact"] .conversation-item {
+  padding: 8px;
+}
+
+:root[data-grove-density="compact"] .message-bubble {
+  padding: 8px 11px;
+}
+
+/* STANDARD */
+
+:root[data-grove-density="standard"] {
+  --grove-density-gap: 20px;
+  --grove-density-card-padding: 22px;
+  --grove-density-radius: 16px;
+  --grove-density-content-width: 1100px;
+  --grove-density-section-gap: 20px;
+}
+
+/* EXPANDED */
+
+:root[data-grove-density="expanded"] {
+  --grove-density-gap: 26px;
+  --grove-density-card-padding: 28px;
+  --grove-density-radius: 19px;
+  --grove-density-content-width: 1440px;
+  --grove-density-section-gap: 26px;
+}
+
+:root[data-grove-density="expanded"] .settings-container,
+:root[data-grove-density="expanded"] .settings-content,
+:root[data-grove-density="expanded"] .settings-page,
+:root[data-grove-density="expanded"] .settings-wrapper,
+:root[data-grove-density="expanded"] .page-container,
+:root[data-grove-density="expanded"] .community-container,
+:root[data-grove-density="expanded"] .feed-main {
+  max-width: var(--grove-density-content-width);
+}
+
+:root[data-grove-density="expanded"] .settings-panel,
+:root[data-grove-density="expanded"] .settings-section,
+:root[data-grove-density="expanded"] .settings-card,
+:root[data-grove-density="expanded"] .content-section,
+:root[data-grove-density="expanded"] .profile-card,
+:root[data-grove-density="expanded"] .post-card,
+:root[data-grove-density="expanded"] .feed-post,
+:root[data-grove-density="expanded"] .composer,
+:root[data-grove-density="expanded"] .profile-post-composer {
+  padding: var(--grove-density-card-padding);
+  border-radius: var(--grove-density-radius);
+}
+
+:root[data-grove-density="expanded"] .settings-panel,
+:root[data-grove-density="expanded"] .settings-section,
+:root[data-grove-density="expanded"] .settings-card,
+:root[data-grove-density="expanded"] .content-section,
+:root[data-grove-density="expanded"] .profile-card,
+:root[data-grove-density="expanded"] .post-card,
+:root[data-grove-density="expanded"] .feed-post {
+  margin-bottom: var(--grove-density-section-gap);
+}
+
+:root[data-grove-density="expanded"] .profile-stats,
+:root[data-grove-density="expanded"] .profile-actions,
+:root[data-grove-density="expanded"] .post-actions,
+:root[data-grove-density="expanded"] .feed-actions {
+  gap: 12px;
+}
+
+:root[data-grove-density="expanded"] .post-body,
+:root[data-grove-density="expanded"] .feed-post-body {
+  line-height: 1.8;
+}
+
+:root[data-grove-density="expanded"] .community-heading,
+:root[data-grove-density="expanded"] .feed-intro {
+  padding: 34px;
+}
+
+:root[data-grove-density="expanded"] .messages-layout {
+  min-height: 76vh;
+}
+
+:root[data-grove-density="expanded"] .message-bubble {
+  padding: 13px 17px;
+}
+
+/* Keep narrow screens usable in every mode. */
+
+@media (max-width: 640px) {
+  :root[data-grove-density="expanded"] {
+    --grove-density-card-padding: 17px;
+    --grove-density-section-gap: 16px;
+  }
+
+  :root[data-grove-density="compact"] .settings-panel,
+  :root[data-grove-density="compact"] .settings-section,
+  :root[data-grove-density="compact"] .settings-card {
+    padding: 12px;
+  }
+}
+
+/* SETTINGS CONTROL */
+
+.grove-layout-density-options {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+.grove-layout-density-options label {
+  display: grid;
+  gap: 8px;
+  color: var(--grove-text, #f7f5ff);
+  font-weight: 700;
+}
+
+.grove-layout-density-options select {
+  width: 100%;
+  min-height: 46px;
+  padding: 10px 12px;
+  border: 1px solid rgba(133, 30, 255, .45);
+  border-radius: 10px;
+  background: rgba(5, 0, 25, .9);
+  color: #f7f5ff;
+}
+
+.grove-layout-density-options p {
+  min-height: 20px;
+  margin: 0;
+  color: var(--grove-muted, #aaa1c8);
+  font-size: .86rem;
+  line-height: 1.5;
+}
+
+.grove-layout-density-options button {
+  width: fit-content;
+}
