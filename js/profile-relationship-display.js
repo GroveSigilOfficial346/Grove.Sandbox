@@ -20,7 +20,6 @@ import { supabase } from "./supabase.js";
     prefer_not_to_say: "Prefer not to say"
   };
 
-  // Only neutral profile tags are displayed.
   const ROLE_LABELS = {
     owner: "Owner"
   };
@@ -40,6 +39,7 @@ import { supabase } from "./supabase.js";
     const year = Number(match[1]);
     const month = Number(match[2]);
     const day = Number(match[3]);
+
     const date = new Date(year, month - 1, day);
 
     if (
@@ -59,14 +59,102 @@ import { supabase } from "./supabase.js";
 
   function createDetail(text) {
     const item = document.createElement("span");
-    item.className = "profile-detail profile-relationship-detail";
+
+    item.className =
+      "profile-detail profile-relationship-detail";
+
     item.textContent = text;
+
     return item;
   }
 
   function getProfileId() {
     const params = new URLSearchParams(window.location.search);
     return params.get("id");
+  }
+
+  function memberName(profile) {
+    return (
+      profile?.display_name?.trim() ||
+      (profile?.username ? `@${profile.username}` : "")
+    );
+  }
+
+  function tagLabel(tagType) {
+    return tagType === "owner" ? "Owner" : "Partner";
+  }
+
+  async function loadAcceptedTags(profileId) {
+    const [outgoingResult, incomingResult] = await Promise.all([
+      supabase
+        .from("profile_relationship_tags")
+        .select("profile_id,partner_id,tag_type")
+        .eq("profile_id", profileId)
+        .eq("status", "accepted"),
+
+      supabase
+        .from("profile_relationship_tags")
+        .select("profile_id,partner_id,tag_type")
+        .eq("partner_id", profileId)
+        .eq("status", "accepted")
+    ]);
+
+    if (outgoingResult.error) throw outgoingResult.error;
+    if (incomingResult.error) throw incomingResult.error;
+
+    const relationships = [];
+
+    for (const tag of outgoingResult.data || []) {
+      relationships.push({
+        counterpartId: tag.partner_id,
+        textPrefix: `Accepted ${tagLabel(tag.tag_type)}: `
+      });
+    }
+
+    for (const tag of incomingResult.data || []) {
+      relationships.push({
+        counterpartId: tag.profile_id,
+        textPrefix: `Tagged as ${tagLabel(tag.tag_type)} by: `
+      });
+    }
+
+    if (!relationships.length) return [];
+
+    const counterpartIds = [
+      ...new Set(
+        relationships
+          .map(item => item.counterpartId)
+          .filter(Boolean)
+      )
+    ];
+
+    if (!counterpartIds.length) return [];
+
+    // The profiles table's RLS policy controls which names
+    // this visitor is allowed to retrieve.
+    const { data: profiles, error } = await supabase
+      .from("profiles")
+      .select("id,username,display_name")
+      .in("id", counterpartIds);
+
+    if (error) throw error;
+
+    const profileMap = new Map(
+      (profiles || []).map(profile => [
+        profile.id,
+        memberName(profile)
+      ])
+    );
+
+    return relationships
+      .map(item => {
+        const name = profileMap.get(item.counterpartId);
+
+        if (!name) return null;
+
+        return item.textPrefix + name;
+      })
+      .filter(Boolean);
   }
 
   async function loadRelationshipDisplay() {
@@ -96,7 +184,6 @@ import { supabase } from "./supabase.js";
     if (error) throw error;
     if (!data) return;
 
-    // Remove only this script's previous output.
     details
       .querySelectorAll(".profile-relationship-detail")
       .forEach(item => item.remove());
@@ -105,21 +192,46 @@ import { supabase } from "./supabase.js";
       data.relationship_status || "not_set"
     ).toLowerCase();
 
+    // Display the selected relationship status.
+    if (LABELS[status]) {
+      details.append(
+        createDetail(LABELS[status])
+      );
+    }
+
+    // Display the date only for statuses where a date is relevant.
     const date = formatDate(data.relationship_since);
 
     if (!HIDE_DATE.has(status) && date) {
       details.append(
-        createDetail("Together since: " + date)
+        createDetail(
+          `${status === "married" ? "Married since" : "Together since"}: ${date}`
+        )
       );
     }
 
+    // Preserve the optional Owner profile label.
     const role = String(
       data.relationship_dynamic_tag || ""
     ).toLowerCase();
 
     if (ROLE_LABELS[role]) {
       details.append(
-        createDetail("Profile tag: " + ROLE_LABELS[role])
+        createDetail(`Profile tag: ${ROLE_LABELS[role]}`)
+      );
+    }
+
+    // Show accepted Partner/Owner requests on both relevant profiles.
+    try {
+      const acceptedTags = await loadAcceptedTags(profileId);
+
+      for (const label of acceptedTags) {
+        details.append(createDetail(label));
+      }
+    } catch (tagError) {
+      console.error(
+        "Grove accepted relationship tags could not load:",
+        tagError
       );
     }
   }
