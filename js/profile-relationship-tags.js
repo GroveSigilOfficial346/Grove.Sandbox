@@ -3,18 +3,30 @@ import { supabase } from "./supabase.js";
 (() => {
   "use strict";
 
-  const usernameInput = document.getElementById("partner-tag-username");
+  const input = document.getElementById("partner-tag-username");
   const sendButton = document.getElementById("partner-tag-send");
   const status = document.getElementById("partner-tag-status");
   const currentContainer = document.getElementById("partner-tag-current");
   const incomingContainer = document.getElementById("partner-tag-incoming");
 
-  if (!usernameInput || !sendButton || !status || !currentContainer || !incomingContainer) {
-    return;
-  }
+  if (!input || !sendButton || !status || !currentContainer || !incomingContainer) return;
 
   let currentUser = null;
+  let selectedMember = null;
+  let searchTimer = null;
   let sending = false;
+
+  const picker = document.createElement("div");
+  picker.id = "partner-tag-suggestions";
+  picker.className = "partner-tag-suggestions";
+  picker.hidden = true;
+  picker.setAttribute("role", "listbox");
+  input.insertAdjacentElement("afterend", picker);
+
+  const selectedNotice = document.createElement("p");
+  selectedNotice.className = "partner-tag-selected";
+  selectedNotice.setAttribute("aria-live", "polite");
+  picker.insertAdjacentElement("afterend", selectedNotice);
 
   function showStatus(message, error = false) {
     status.textContent = message;
@@ -37,15 +49,104 @@ import { supabase } from "./supabase.js";
     return element;
   }
 
-  async function getMemberByUsername(username) {
-    const { data, error } = await supabase
-      .from("profile_directory")
-      .select("id,username,display_name")
-      .eq("username", username)
-      .maybeSingle();
+  function memberLabel(member) {
+    const name = member.display_name?.trim() || member.username || "Grove member";
+    return member.username ? `${name} (@${member.username})` : name;
+  }
 
-    if (error) throw error;
-    return data;
+  function clearSelection() {
+    selectedMember = null;
+    selectedNotice.textContent = "";
+  }
+
+  function selectMember(member) {
+    selectedMember = member;
+    input.value = member.username || member.display_name || "";
+    picker.hidden = true;
+    picker.replaceChildren();
+    selectedNotice.textContent = `Selected: ${memberLabel(member)}`;
+    showStatus("Member selected. Send the partner request when ready.");
+  }
+
+  async function searchMembers(term) {
+    const query = term.trim().replace(/^@/, "");
+
+    if (query.length < 2) {
+      picker.hidden = true;
+      picker.replaceChildren();
+      return;
+    }
+
+    const safeQuery = query.replace(/[%_]/g, "");
+    if (!safeQuery) return;
+
+    const pattern = `%${safeQuery}%`;
+
+    const [usernames, displayNames] = await Promise.all([
+      supabase
+        .from("profile_directory")
+        .select("id,username,display_name")
+        .ilike("username", pattern)
+        .limit(8),
+
+      supabase
+        .from("profile_directory")
+        .select("id,username,display_name")
+        .ilike("display_name", pattern)
+        .limit(8)
+    ]);
+
+    if (usernames.error) throw usernames.error;
+    if (displayNames.error) throw displayNames.error;
+
+    const unique = new Map();
+
+    for (const member of [
+      ...(usernames.data || []),
+      ...(displayNames.data || [])
+    ]) {
+      if (member.id && member.id !== currentUser.id) {
+        unique.set(member.id, member);
+      }
+    }
+
+    picker.replaceChildren();
+
+    const results = [...unique.values()].slice(0, 10);
+
+    if (!results.length) {
+      picker.append(makeText("No matching Grove members found."));
+      picker.hidden = false;
+      return;
+    }
+
+    for (const member of results) {
+      const option = document.createElement("button");
+      option.type = "button";
+      option.className = "partner-tag-suggestion";
+      option.setAttribute("role", "option");
+      option.textContent = memberLabel(member);
+      option.addEventListener("click", () => selectMember(member));
+      picker.append(option);
+    }
+
+    picker.hidden = false;
+  }
+
+  function makeRequestCard(member, requestedAt) {
+    const card = document.createElement("div");
+    card.className = "partner-tag-request";
+
+    card.append(makeText(memberLabel(member), "partner-tag-request-name"));
+
+    if (requestedAt) {
+      const date = new Date(requestedAt);
+      if (!Number.isNaN(date.getTime())) {
+        card.append(makeText(`Requested ${date.toLocaleDateString()}`));
+      }
+    }
+
+    return card;
   }
 
   async function loadCurrentRequest() {
@@ -66,50 +167,35 @@ import { supabase } from "./supabase.js";
 
     const { data: partner, error: partnerError } = await supabase
       .from("profile_directory")
-      .select("username,display_name")
+      .select("id,username,display_name")
       .eq("id", data.partner_id)
       .maybeSingle();
 
     if (partnerError) throw partnerError;
 
-    const name = partner?.display_name || partner?.username || "Grove member";
-    const username = partner?.username ? ` (@${partner.username})` : "";
+    const label = partner ? memberLabel(partner) : "Grove member";
 
     if (data.status === "accepted") {
       currentContainer.append(
-        makeText(`Accepted partner: ${name}${username}`, "partner-tag-current-label")
-      );
-
-      currentContainer.append(
+        makeText(`Accepted partner: ${label}`, "partner-tag-current-label"),
         makeButton("Remove partner tag", removeCurrentTag)
       );
-      return;
-    }
-
-    if (data.status === "pending") {
+    } else if (data.status === "pending") {
       currentContainer.append(
-        makeText(`Request pending: ${name}${username}`)
-      );
-
-      currentContainer.append(
+        makeText(`Request pending: ${label}`),
         makeButton("Cancel request", removeCurrentTag)
       );
-      return;
+    } else {
+      currentContainer.append(
+        makeText("Your previous partner request was declined. You can send a new request.")
+      );
     }
-
-    currentContainer.append(
-      makeText("Your previous partner request was declined. You can send a new request.")
-    );
   }
 
   async function removeCurrentTag() {
     if (!currentUser) return;
 
-    const confirmed = window.confirm(
-      "Remove this partner tag or cancel the pending request?"
-    );
-
-    if (!confirmed) return;
+    if (!window.confirm("Remove this partner tag or cancel the pending request?")) return;
 
     try {
       showStatus("Removing partner tag...");
@@ -121,10 +207,11 @@ import { supabase } from "./supabase.js";
 
       if (error) throw error;
 
+      clearSelection();
       showStatus("Partner tag removed.");
       await loadCurrentRequest();
     } catch (error) {
-      console.error("Partner tag removal failed:", error);
+      console.error(error);
       showStatus(error.message || "Could not remove the partner tag.", true);
     }
   }
@@ -132,13 +219,14 @@ import { supabase } from "./supabase.js";
   async function sendRequest() {
     if (!currentUser || sending) return;
 
-    const username = usernameInput.value
-      .trim()
-      .toLowerCase()
-      .replace(/^@/, "");
+    if (!selectedMember?.id) {
+      showStatus("Search for and select a Grove member first.", true);
+      input.focus();
+      return;
+    }
 
-    if (!/^[a-z0-9_]{3,30}$/.test(username)) {
-      showStatus("Enter a valid Grove username.", true);
+    if (selectedMember.id === currentUser.id) {
+      showStatus("You cannot tag your own account as your partner.", true);
       return;
     }
 
@@ -146,17 +234,7 @@ import { supabase } from "./supabase.js";
     sendButton.disabled = true;
 
     try {
-      showStatus("Finding Grove member...");
-
-      const partner = await getMemberByUsername(username);
-
-      if (!partner) {
-        throw new Error("No Grove member was found with that username.");
-      }
-
-      if (partner.id === currentUser.id) {
-        throw new Error("You cannot send a partner request to yourself.");
-      }
+      showStatus("Checking partner request...");
 
       const { data: existing, error: existingError } = await supabase
         .from("profile_relationship_tags")
@@ -174,13 +252,11 @@ import { supabase } from "./supabase.js";
         throw new Error("You already have a pending partner request. Cancel it first.");
       }
 
-      showStatus("Sending partner request...");
-
       const { error } = await supabase
         .from("profile_relationship_tags")
         .upsert({
           profile_id: currentUser.id,
-          partner_id: partner.id,
+          partner_id: selectedMember.id,
           status: "pending",
           requested_at: new Date().toISOString(),
           responded_at: null
@@ -190,7 +266,9 @@ import { supabase } from "./supabase.js";
 
       if (error) throw error;
 
-      usernameInput.value = "";
+      input.value = "";
+      clearSelection();
+      picker.hidden = true;
       showStatus("Partner request sent. The other member must accept it.");
       await loadCurrentRequest();
 
@@ -204,15 +282,13 @@ import { supabase } from "./supabase.js";
   }
 
   async function respondToRequest(profileId, accepted) {
-    const nextStatus = accepted ? "accepted" : "declined";
-
     try {
       showStatus(accepted ? "Accepting request..." : "Declining request...");
 
       const { data, error } = await supabase
         .from("profile_relationship_tags")
         .update({
-          status: nextStatus,
+          status: accepted ? "accepted" : "declined",
           responded_at: new Date().toISOString()
         })
         .eq("profile_id", profileId)
@@ -222,20 +298,13 @@ import { supabase } from "./supabase.js";
         .maybeSingle();
 
       if (error) throw error;
-
-      if (!data) {
-        throw new Error("This request is no longer pending or cannot be updated.");
-      }
+      if (!data) throw new Error("This request is no longer pending or cannot be updated.");
 
       showStatus(accepted ? "Partner request accepted." : "Partner request declined.");
 
-      await Promise.all([
-        loadIncomingRequests(),
-        loadCurrentRequest()
-      ]);
-
+      await Promise.all([loadIncomingRequests(), loadCurrentRequest()]);
     } catch (error) {
-      console.error("Partner request response failed:", error);
+      console.error(error);
       showStatus(error.message || "Could not update this request.", true);
     }
   }
@@ -266,37 +335,17 @@ import { supabase } from "./supabase.js";
 
     if (membersError) throw membersError;
 
-    const memberMap = new Map(
-      (members || []).map(member => [member.id, member])
-    );
+    const memberMap = new Map((members || []).map(member => [member.id, member]));
 
     for (const request of data) {
       const member = memberMap.get(request.profile_id);
-      const card = document.createElement("div");
-      card.className = "partner-tag-request";
-
-      const name = member?.display_name || member?.username || "Grove member";
-      const username = member?.username ? `@${member.username}` : "";
-
-      card.append(makeText(name, "partner-tag-request-name"));
-
-      if (username) {
-        card.append(makeText(username));
-      }
-
+      const card = makeRequestCard(member || {}, request.requested_at);
       const actions = document.createElement("div");
       actions.className = "profile-actions";
 
       actions.append(
-        makeButton(
-          "Accept",
-          () => respondToRequest(request.profile_id, true),
-          "button primary"
-        ),
-        makeButton(
-          "Decline",
-          () => respondToRequest(request.profile_id, false)
-        )
+        makeButton("Accept", () => respondToRequest(request.profile_id, true), "button primary"),
+        makeButton("Decline", () => respondToRequest(request.profile_id, false))
       );
 
       card.append(actions);
@@ -308,7 +357,6 @@ import { supabase } from "./supabase.js";
     sendButton.disabled = true;
 
     const { data, error } = await supabase.auth.getUser();
-
     if (error) throw error;
 
     if (!data?.user) {
@@ -318,21 +366,41 @@ import { supabase } from "./supabase.js";
 
     currentUser = data.user;
 
-    await Promise.all([
-      loadCurrentRequest(),
-      loadIncomingRequests()
-    ]);
-
+    await Promise.all([loadCurrentRequest(), loadIncomingRequests()]);
     sendButton.disabled = false;
   }
+
+  input.addEventListener("input", () => {
+    clearSelection();
+    window.clearTimeout(searchTimer);
+
+    const term = input.value.trim();
+
+    searchTimer = window.setTimeout(() => {
+      searchMembers(term).catch(error => {
+        console.error("Member search failed:", error);
+        showStatus(error.message || "Member search failed.", true);
+      });
+    }, 220);
+  });
+
+  input.addEventListener("keydown", event => {
+    if (event.key === "Escape") {
+      picker.hidden = true;
+    }
+  });
+
+  document.addEventListener("click", event => {
+    if (event.target !== input && !picker.contains(event.target)) {
+      picker.hidden = true;
+    }
+  });
 
   sendButton.addEventListener("click", sendRequest);
 
   initialize().catch(error => {
-    console.error("Partner tag settings failed to initialize:", error);
+    console.error("Partner tag settings failed:", error);
     showStatus(error.message || "Could not load partner tag settings.", true);
-    incomingContainer.replaceChildren(
-      makeText("Partner requests could not be loaded.")
-    );
+    incomingContainer.replaceChildren(makeText("Partner requests could not be loaded."));
   });
 })();
