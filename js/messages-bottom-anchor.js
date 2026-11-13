@@ -2,35 +2,72 @@
   "use strict";
 
   const list = document.getElementById("message-list");
-  if (!list || list.dataset.groveBottomAnchor === "installed") return;
+
+  if (!list || list.dataset.groveBottomAnchor === "installed") {
+    return;
+  }
 
   list.dataset.groveBottomAnchor = "installed";
 
-  const THRESHOLD = 120;
+  const BOTTOM_THRESHOLD = 120;
 
   let pinnedToBottom = true;
-  let previousHeight = list.scrollHeight;
-  let previousTop = list.scrollTop;
+  let previousScrollTop = 0;
   let scheduled = false;
+  let programmaticScroll = false;
+
+  const reduceMotion = window.matchMedia(
+    "(prefers-reduced-motion: reduce)"
+  );
+
+  const jumpButton = document.createElement("button");
+
+  jumpButton.type = "button";
+  jumpButton.id = "grove-jump-latest";
+  jumpButton.className = "grove-jump-latest";
+  jumpButton.textContent = "↓ Latest messages";
+  jumpButton.setAttribute(
+    "aria-label",
+    "Scroll to latest messages"
+  );
+  jumpButton.hidden = true;
+
+  list.insertAdjacentElement("afterend", jumpButton);
 
   function isNearBottom() {
-    return list.scrollHeight - list.scrollTop - list.clientHeight <= THRESHOLD;
+    return (
+      list.scrollHeight -
+      list.scrollTop -
+      list.clientHeight
+    ) <= BOTTOM_THRESHOLD;
+  }
+
+  function updateJumpButton() {
+    jumpButton.hidden = pinnedToBottom;
   }
 
   function scrollToBottom(behavior = "auto") {
+    programmaticScroll = true;
+
     list.scrollTo({
       top: list.scrollHeight,
-      behavior
+      behavior: reduceMotion.matches ? "auto" : behavior
     });
 
-    previousHeight = list.scrollHeight;
-    previousTop = list.scrollTop;
     pinnedToBottom = true;
-    jumpButton.hidden = true;
+    previousScrollTop = list.scrollTop;
+
+    updateJumpButton();
+
+    requestAnimationFrame(() => {
+      programmaticScroll = false;
+      previousScrollTop = list.scrollTop;
+    });
   }
 
   function scheduleBottom() {
     if (scheduled) return;
+
     scheduled = true;
 
     requestAnimationFrame(() => {
@@ -44,83 +81,81 @@
     });
   }
 
-  const jumpButton = document.createElement("button");
-  jumpButton.type = "button";
-  jumpButton.id = "grove-jump-latest";
-  jumpButton.className = "grove-jump-latest";
-  jumpButton.textContent = "↓ Latest messages";
-  jumpButton.setAttribute("aria-label", "Scroll to latest messages");
-  jumpButton.hidden = true;
-
   jumpButton.addEventListener("click", () => {
     scrollToBottom("smooth");
   });
 
-  list.insertAdjacentElement("afterend", jumpButton);
-
   list.addEventListener("scroll", () => {
-    if (pinnedToBottom && isNearBottom()) {
-      previousTop = list.scrollTop;
-      previousHeight = list.scrollHeight;
-      jumpButton.hidden = true;
-      return;
-    }
+    if (programmaticScroll) return;
 
     pinnedToBottom = isNearBottom();
-    previousTop = list.scrollTop;
-    previousHeight = list.scrollHeight;
-    jumpButton.hidden = pinnedToBottom;
+    previousScrollTop = list.scrollTop;
+
+    updateJumpButton();
   }, { passive: true });
 
+  /*
+   * Observe new messages.
+   *
+   * If the reader was already at the bottom, follow new messages.
+   * If the reader was browsing older messages, preserve their exact
+   * scroll position and show the latest-message button.
+   */
   const observer = new MutationObserver(records => {
-    let added = false;
-    let removed = false;
+    let directMessageChange = false;
+    let historyReplaced = false;
 
     for (const record of records) {
-      if (record.addedNodes.length) added = true;
-      if (record.removedNodes.length) removed = true;
+      if (record.target !== list) continue;
+
+      if (record.removedNodes.length) {
+        historyReplaced = true;
+      }
+
+      if (record.addedNodes.length) {
+        directMessageChange = true;
+      }
     }
 
-    if (!added && !removed) return;
-
-    /*
-     * Replacing the conversation history means a different
-     * conversation was opened. Start that conversation at its end.
-     */
-    if (removed) {
+    if (historyReplaced) {
       pinnedToBottom = true;
-      jumpButton.hidden = true;
+      previousScrollTop = 0;
+
+      updateJumpButton();
       scheduleBottom();
-      previousHeight = list.scrollHeight;
-      previousTop = list.scrollTop;
       return;
     }
 
-    const newHeight = list.scrollHeight;
-    const heightDifference = newHeight - previousHeight;
+    if (!directMessageChange) return;
 
     if (pinnedToBottom) {
       scheduleBottom();
-    } else if (heightDifference > 0) {
-      /*
-       * messages.js currently forces scrollTop to the bottom after
-       * appending. Restore the reader's previous viewport instead.
-       */
-      list.scrollTop = previousTop + heightDifference;
+    } else {
+      programmaticScroll = true;
+
+      list.scrollTop = previousScrollTop;
+
+      requestAnimationFrame(() => {
+        programmaticScroll = false;
+        previousScrollTop = list.scrollTop;
+      });
+
       jumpButton.hidden = false;
     }
-
-    previousHeight = list.scrollHeight;
-    previousTop = list.scrollTop;
   });
 
   observer.observe(list, {
-    childList: true,
-    subtree: true
+    childList: true
   });
 
+  /*
+   * Keep the latest messages visible when the chat panel changes size,
+   * provided the reader has not intentionally scrolled upward.
+   */
+  let resizeObserver = null;
+
   if ("ResizeObserver" in window) {
-    const resizeObserver = new ResizeObserver(() => {
+    resizeObserver = new ResizeObserver(() => {
       if (pinnedToBottom) {
         scheduleBottom();
       }
@@ -130,12 +165,22 @@
   }
 
   window.addEventListener("load", scheduleBottom);
-  window.addEventListener("resize", scheduleBottom, { passive: true });
+
+  window.addEventListener(
+    "resize",
+    scheduleBottom,
+    { passive: true }
+  );
 
   document.addEventListener("visibilitychange", () => {
     if (!document.hidden && pinnedToBottom) {
       scheduleBottom();
     }
+  });
+
+  window.addEventListener("beforeunload", () => {
+    observer.disconnect();
+    resizeObserver?.disconnect();
   });
 
   scheduleBottom();
