@@ -1,0 +1,3 @@
+git add supabase/migrations
+git commit -m "Track messaging security migrations"
+git push origin main
