@@ -19,19 +19,26 @@ import { supabase } from "./supabase.js";
     "prefer_not_to_say"
   ]);
 
-  const allowedDynamicTags = new Set([
-    "",
-    "domme",
-    "dom",
-    "submissive"
-  ]);
+  const roleOptions = [
+    ["", "No role tag"],
+    ["dom", "Dom"],
+    ["domme", "Domme"],
+    ["sub", "Sub"],
+    ["submissive", "Submissive"],
+    ["switch", "Switch"],
+    ["owner", "Owner"]
+  ];
+
+  const allowedDynamicTags = new Set(
+    roleOptions.map(([value]) => value)
+  );
 
   let userId = null;
   let statusSaving = false;
   let tagSaving = false;
 
   function setMessage(element, message, error = false) {
-    element.textContent = message;
+    element.textContent = message || "";
     element.style.color = error ? "#ff8585" : "#05c9f4";
   }
 
@@ -41,12 +48,13 @@ import { supabase } from "./supabase.js";
     wrapper.className = "grove-dynamic-tag-settings";
 
     const heading = document.createElement("h3");
-    heading.textContent = "Relationship role tag";
+    heading.textContent = "Dynamic role tag";
 
     const description = document.createElement("p");
     description.className = "field-hint";
     description.textContent =
-      "Choose an optional role tag to display on your public Grove profile. You can change or hide it at any time.";
+      "Choose an optional role label for your public Grove profile. " +
+      "This is a self-selected profile label, separate from an accepted Owner tag.";
 
     const label = document.createElement("label");
     label.htmlFor = "edit-relationship-dynamic-tag";
@@ -56,14 +64,7 @@ import { supabase } from "./supabase.js";
     select.id = "edit-relationship-dynamic-tag";
     select.disabled = true;
 
-    const options = [
-      ["", "No role tag"],
-      ["domme", "Domme"],
-      ["dom", "Dom"],
-      ["submissive", "Submissive"]
-    ];
-
-    for (const [value, text] of options) {
+    for (const [value, text] of roleOptions) {
       const option = document.createElement("option");
       option.value = value;
       option.textContent = text;
@@ -132,7 +133,11 @@ import { supabase } from "./supabase.js";
     const value = statusField.value;
 
     if (!allowedStatuses.has(value)) {
-      setMessage(statusMessage, "Choose a valid relationship status.", true);
+      setMessage(
+        statusMessage,
+        "Choose a valid relationship status.",
+        true
+      );
       return;
     }
 
@@ -160,13 +165,16 @@ import { supabase } from "./supabase.js";
       }
 
       setMessage(statusMessage, "Relationship status saved.");
+
     } catch (error) {
       console.error("Relationship status update failed:", error);
+
       setMessage(
         statusMessage,
         error.message || "Could not save relationship status.",
         true
       );
+
     } finally {
       statusField.disabled = false;
       statusSaving = false;
@@ -179,7 +187,11 @@ import { supabase } from "./supabase.js";
     const value = dynamicTagField.value;
 
     if (!allowedDynamicTags.has(value)) {
-      setMessage(dynamicTagMessage, "Choose a valid role tag.", true);
+      setMessage(
+        dynamicTagMessage,
+        "Choose a valid role tag.",
+        true
+      );
       return;
     }
 
@@ -206,19 +218,26 @@ import { supabase } from "./supabase.js";
         );
       }
 
+      const label = roleOptions.find(
+        ([optionValue]) => optionValue === value
+      )?.[1];
+
       setMessage(
         dynamicTagMessage,
         value
-          ? "Your role tag has been saved."
+          ? `${label} role tag saved.`
           : "Your role tag has been hidden."
       );
+
     } catch (error) {
       console.error("Relationship role tag update failed:", error);
+
       setMessage(
         dynamicTagMessage,
         error.message || "Could not save your role tag.",
         true
       );
+
     } finally {
       dynamicTagField.disabled = false;
       tagSaving = false;
