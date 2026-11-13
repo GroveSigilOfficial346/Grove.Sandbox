@@ -62,8 +62,13 @@ import { supabase } from "./supabase.js";
   };
 
   let user = null;
-  let saving = false;
   let audioContext = null;
+
+  // All notification preference writes are serialized.
+  let preferenceSaveQueue = Promise.resolve();
+
+  // Only values confirmed by the database belong here.
+  let savedPreferences = { ...DEFAULTS };
 
   function setStatus(message, error = false) {
     if (!status) return;
@@ -93,7 +98,9 @@ import { supabase } from "./supabase.js";
     if (!user) return 0.35;
 
     try {
-      const value = Number(localStorage.getItem(VOLUME_KEY(user.id)));
+      const value = Number(
+        localStorage.getItem(VOLUME_KEY(user.id))
+      );
 
       return Number.isFinite(value)
         ? Math.min(1, Math.max(0, value))
@@ -108,6 +115,7 @@ import { supabase } from "./supabase.js";
 
     try {
       const value = localStorage.getItem(TONE_KEY(user.id));
+
       return Object.hasOwn(TONES, value) ? value : "classic";
     } catch {
       return "classic";
@@ -196,10 +204,22 @@ import { supabase } from "./supabase.js";
     }
   }
 
-  async function savePreference(column, value) {
-    if (!user || saving) return;
+  function restorePreferenceControl(column) {
+    for (const [id, fieldColumn] of Object.entries(preferenceFields)) {
+      if (fieldColumn !== column) continue;
 
-    saving = true;
+      const field = $(id);
+
+      if (field) {
+        field.checked = Boolean(savedPreferences[column]);
+      }
+
+      break;
+    }
+  }
+
+  async function persistPreference(column, value) {
+    if (!user) return;
 
     try {
       const update = {
@@ -233,7 +253,8 @@ import { supabase } from "./supabase.js";
         }
       }
 
-      setStatus("Notification preferences saved.");
+      // Update the confirmed value only after the database succeeds.
+      savedPreferences[column] = value;
 
       window.dispatchEvent(
         new CustomEvent("grove:notification-preferences-updated", {
@@ -241,18 +262,33 @@ import { supabase } from "./supabase.js";
         })
       );
 
+      setStatus("Notification preferences saved.");
+
     } catch (error) {
       console.error("Grove preference save failed:", error);
+
+      // Restore only the failed setting.
+      // Other queued settings remain untouched.
+      restorePreferenceControl(column);
+
       setStatus(
         error.message || "Could not save this preference.",
         true
       );
-
-      await loadPreferences();
-
-    } finally {
-      saving = false;
     }
+  }
+
+  function savePreference(column, value) {
+    if (!user || !Object.hasOwn(DEFAULTS, column)) {
+      return preferenceSaveQueue;
+    }
+
+    // Capture the value now, then execute it after earlier writes.
+    preferenceSaveQueue = preferenceSaveQueue.then(() =>
+      persistPreference(column, value)
+    );
+
+    return preferenceSaveQueue;
   }
 
   async function loadPreferences() {
@@ -267,14 +303,17 @@ import { supabase } from "./supabase.js";
 
     if (error) throw error;
 
-    const preferences = {
+    savedPreferences = {
       ...DEFAULTS,
       ...(data || {})
     };
 
     for (const [id, column] of Object.entries(preferenceFields)) {
       const field = $(id);
-      if (field) field.checked = Boolean(preferences[column]);
+
+      if (field) {
+        field.checked = Boolean(savedPreferences[column]);
+      }
     }
   }
 
@@ -314,7 +353,8 @@ import { supabase } from "./supabase.js";
       volume.value = String(soundVolume());
 
       if (volumeValue) {
-        volumeValue.value = `${Math.round(Number(volume.value) * 100)}%`;
+        volumeValue.value =
+          `${Math.round(Number(volume.value) * 100)}%`;
         volumeValue.textContent = volumeValue.value;
       }
 
@@ -322,7 +362,8 @@ import { supabase } from "./supabase.js";
         const currentVolume = Number(volume.value);
 
         if (volumeValue) {
-          volumeValue.value = `${Math.round(currentVolume * 100)}%`;
+          volumeValue.value =
+            `${Math.round(currentVolume * 100)}%`;
           volumeValue.textContent = volumeValue.value;
         }
 
