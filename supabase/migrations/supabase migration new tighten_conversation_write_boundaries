@@ -1,0 +1,94 @@
+-- Remove permissive policies that could OR-bypass ownership/member checks.
+drop policy if exists "Active accounts may add conversation members"
+  on public.conversation_members;
+drop policy if exists "Active accounts may update conversation membership"
+  on public.conversation_members;
+
+drop policy if exists "Active accounts may send messages"
+  on public.conversation_messages;
+
+drop policy if exists "Active accounts may create conversations"
+  on public.conversations;
+drop policy if exists "Active accounts may update conversations"
+  on public.conversations;
+
+-- A member may leave their own conversation. An owner/admin may remove
+-- ordinary members from groups, but cannot remove another admin/owner,
+-- the creator, or the other participant in a direct conversation.
+drop policy if exists "Members leave conversations"
+  on public.conversation_members;
+
+create policy "Members leave or admins remove group members"
+on public.conversation_members
+for delete
+to authenticated
+using (
+  (
+    user_id = (select auth.uid())
+    and (
+      exists (
+        select 1
+        from public.conversations c
+        where c.id = conversation_members.conversation_id
+          and c.conversation_type <> 'group'
+      )
+      or exists (
+        select 1
+        from public.conversations c
+        join public.conversation_members another_admin
+          on another_admin.conversation_id = c.id
+        where c.id = conversation_members.conversation_id
+          and c.conversation_type = 'group'
+          and another_admin.user_id <> (select auth.uid())
+          and another_admin.role in ('owner','admin')
+      )
+    )
+  )
+  or (
+    private.is_conversation_admin(conversation_members.conversation_id)
+    and exists (
+      select 1
+      from public.conversations c
+      where c.id = conversation_members.conversation_id
+        and c.conversation_type = 'group'
+        and c.created_by <> conversation_members.user_id
+    )
+    and conversation_members.role = 'member'
+    and conversation_members.user_id <> (select auth.uid())
+  )
+);
+
+-- Conversations are created through the checked RPCs, not direct client INSERT.
+-- The client only needs to read conversation metadata.
+revoke all privileges on table public.conversations
+  from anon, authenticated;
+grant select on table public.conversations to authenticated;
+
+-- Messages are readable by conversation members, insertable only with
+-- the fields used by the messaging client, and editable only through the
+-- sender-scoped RLS policy on the permitted columns.
+revoke all privileges on table public.conversation_messages
+  from anon, authenticated;
+
+grant select on table public.conversation_messages
+  to authenticated;
+
+grant insert (
+  conversation_id,
+  sender_id,
+  body,
+  reply_to_message_id,
+  attachment_path,
+  attachment_mime_type,
+  attachment_filename
+)
+on table public.conversation_messages
+to authenticated;
+
+grant update (
+  body,
+  edited_at,
+  deleted_for_everyone_at
+)
+on table public.conversation_messages
+to authenticated;
