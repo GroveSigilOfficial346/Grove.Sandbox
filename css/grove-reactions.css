@@ -3,7 +3,7 @@
   width: 100%;
   min-width: 0;
   margin-top: 9px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .grove-reaction-buttons {
@@ -14,7 +14,8 @@
   max-width: 100%;
 }
 
-.grove-reaction {
+.grove-reaction,
+.grove-reaction-more {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -35,7 +36,8 @@
     transform 0.15s ease;
 }
 
-.grove-reaction:hover:not(:disabled) {
+.grove-reaction:hover:not(:disabled),
+.grove-reaction-more:hover {
   border-color: rgba(5, 201, 244, 0.55);
   background: rgba(133, 30, 255, 0.15);
   transform: translateY(-1px);
@@ -68,6 +70,23 @@
   display: none;
 }
 
+.grove-reaction-more {
+  min-width: 48px;
+  color: rgba(247, 245, 255, 0.8);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+.grove-reaction[hidden] {
+  display: none !important;
+}
+
+.grove-reaction:focus-visible,
+.grove-reaction-more:focus-visible {
+  outline: 2px solid #05c9f4;
+  outline-offset: 2px;
+}
+
 @media (max-width: 640px) {
   .grove-reactions {
     margin-top: 7px;
@@ -77,8 +96,8 @@
     gap: 4px;
   }
 
-  .grove-reaction {
-    min-width: 34px;
+  .grove-reaction,
+  .grove-reaction-more {
     min-height: 35px;
     padding: 5px 7px;
   }
