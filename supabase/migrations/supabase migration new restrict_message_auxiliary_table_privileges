@@ -1,0 +1,20 @@
+revoke all privileges on table public.conversation_message_edit_history
+  from anon, authenticated;
+
+grant select, insert
+  on table public.conversation_message_edit_history
+  to authenticated;
+
+revoke all privileges on table public.conversation_message_pins
+  from anon, authenticated;
+
+grant select, insert, delete
+  on table public.conversation_message_pins
+  to authenticated;
+
+revoke all privileges on table public.message_hidden_for
+  from anon, authenticated;
+
+grant select, insert, delete
+  on table public.message_hidden_for
+  to authenticated;
