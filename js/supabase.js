@@ -14,7 +14,7 @@ const SUPABASE_URL =
   "https://fpkrvgcpbnrusbfmhinj.supabase.co";
 
 const SUPABASE_ANON_KEY =
-  "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EkJkW6U0Z";
+  "sb_publishable_UmVS_gKz5AW09p64FWf4yA_EKjW6U0Z";
 
 const REMEMBER_KEY = "grove:remember-session";
 
