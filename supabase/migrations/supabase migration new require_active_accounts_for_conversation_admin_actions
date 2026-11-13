@@ -1,0 +1,25 @@
+create or replace function private.is_conversation_admin(
+  p_conversation_id uuid
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $function$
+  select
+    (select private.grove_account_is_active())
+    and exists (
+      select 1
+      from public.conversation_members m
+      where m.conversation_id = p_conversation_id
+        and m.user_id = (select auth.uid())
+        and m.role in ('owner','admin')
+    );
+$function$;
+
+revoke all on function private.is_conversation_admin(uuid)
+  from public, anon;
+
+grant execute on function private.is_conversation_admin(uuid)
+  to authenticated;
