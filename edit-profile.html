@@ -15,6 +15,7 @@
   <link rel="stylesheet" href="/css/grove-warm-controls.css?v=20261112-1">
   <link rel="stylesheet" href="/css/grove-fonts.css?v=20261112-1">
   <link rel="stylesheet" href="/css/grove-account-experience.css?v=20261112-1">
+  <link rel="stylesheet" href="/css/grove-partner-tag-picker.css?v=20261113-1">
 
   <script type="module" src="/js/edit-profile.js?v=20261112-1"></script>
   <script type="module" src="/js/grove-account-experience.js?v=20261112-1"></script>
@@ -111,23 +112,23 @@
         <hr>
 
         <section id="partner-tag-settings" aria-labelledby="partner-tag-heading">
-          <h2 id="partner-tag-heading">Partner tag</h2>
+          <h2 id="partner-tag-heading">Partner / Owner tag</h2>
           <p class="field-hint">
-            Request to display another Grove member as your partner.
+            Search for a Grove member and request a Partner or Owner tag.
             They must accept before the tag appears publicly.
           </p>
 
-          <label for="partner-tag-username">Grove username</label>
+          <label for="partner-tag-username">Search Grove members</label>
           <input
             id="partner-tag-username"
             type="text"
-            maxlength="30"
+            maxlength="60"
             autocomplete="off"
-            placeholder="Enter their username"
+            placeholder="Search username or display name"
           >
 
           <button id="partner-tag-send" class="button primary" type="button">
-            Send partner request
+            Send tag request
           </button>
 
           <p id="partner-tag-status" class="field-hint"
