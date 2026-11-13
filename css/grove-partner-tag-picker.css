@@ -1,0 +1,41 @@
+.partner-tag-suggestions {
+  display: grid;
+  gap: 5px;
+  max-height: 260px;
+  overflow-y: auto;
+  margin: 7px 0 10px;
+  padding: 7px;
+  border: 1px solid rgba(133, 30, 255, .42);
+  border-radius: 12px;
+  background: #100b25;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, .35);
+}
+
+.partner-tag-suggestions[hidden] {
+  display: none;
+}
+
+.partner-tag-suggestion {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, .045);
+  color: #f7f5ff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.partner-tag-suggestion:hover,
+.partner-tag-suggestion:focus-visible {
+  border-color: #851eff;
+  background: rgba(133, 30, 255, .2);
+  outline: none;
+}
+
+.partner-tag-selected {
+  margin: 6px 0 12px;
+  color: #7bd7a2;
+  font-size: .82rem;
+  overflow-wrap: anywhere;
+}
