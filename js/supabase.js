@@ -3,6 +3,7 @@ import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 import { installGroveShell } from "./grove-shell.js";
 import { installGroveCompactUI } from "./grove-compact-ui.js";
 import { installGroveLayoutDensity } from "./grove-layout-density.js";
+import { installGroupMemberManagement } from "./group-member-management.js";
 import { installGroveNotifications } from "./grove-notifications.js";
 import { installGroveActivityTab } from "./grove-activity-tab.js";
 import { installGroveSanctionStatus } from "./grove-sanction-status.js";
@@ -89,6 +90,7 @@ window.groveClient = supabase;
 installGroveShell(supabase);
 installGroveCompactUI();
 installGroveLayoutDensity();
+installGroupMemberManagement();
 installGroveSanctionStatus(supabase);
 installGroveButtonTheme(supabase);
 installGroveUpdates(supabase);
