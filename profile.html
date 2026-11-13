@@ -20,12 +20,9 @@
   <link rel="stylesheet" href="css/profile-post-composer.css?v=20261111-3">
   <link rel="stylesheet" href="css/grove-warm-controls.css?v=20261111-1">
   <link rel="stylesheet" href="css/grove-fonts.css?v=20261112-1">
-  <link rel="stylesheet" href="css/grove-adult-content-reveal.css?v=20261112-1">
 
   <script type="module" src="js/profile-view.js?v=20261112-2"></script>
   <script type="module" src="js/grove-font-loader.js?v=20261112-1"></script>
-  <script type="module" src="js/grove-adult-profile-label.js?v=20261112-1"></script>
-  <script type="module" src="js/grove-adult-content-reveal.js?v=20261112-1"></script>
   <script type="module" src="js/profile-pins.js?v=20261105-2"></script>
   <script type="module" src="js/profile-mobile-compat.js?v=20261105-2"></script>
   <script type="module" src="js/profile-social.js?v=20261105-2"></script>
@@ -171,30 +168,6 @@
             <option value="followers">Followers</option>
             <option value="private">Only me</option>
           </select>
-
-          <label for="profile-post-rating">Content rating</label>
-
-          <select id="profile-post-rating">
-            <option value="general">General content</option>
-            <option value="adult" disabled>Adult — verified accounts only</option>
-          </select>
-
-          <p id="profile-post-rating-hint">
-            Adult posting requires verified Adult account access.
-          </p>
-
-          <div id="profile-post-warning-wrap" hidden>
-            <label for="profile-post-content-warning">
-              Content warning — required for Adult posts
-            </label>
-
-            <input
-              id="profile-post-content-warning"
-              type="text"
-              maxlength="120"
-              placeholder="Briefly describe the type of content"
-            >
-          </div>
 
           <div class="profile-post-submit-row">
             <p id="profile-post-status" role="status" aria-live="polite"></p>
