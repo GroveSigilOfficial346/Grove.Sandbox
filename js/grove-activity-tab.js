@@ -347,6 +347,33 @@ export function installGroveActivityTab(supabase) {
     }
   }
 
+  const CATEGORY_KINDS = {
+    notify_messages: ["message"],
+    notify_follows: ["follow", "follow_request"],
+    notify_likes: ["like"],
+    notify_comments: ["comment"],
+    notify_nudges: ["nudge"],
+    notify_mentions: ["mention"]
+  };
+
+  function disabledCategoryKinds() {
+    return Object.entries(CATEGORY_KINDS)
+      .filter(([preference]) => preferences[preference] === false)
+      .flatMap(([, kinds]) => kinds);
+  }
+
+  function applyEnabledCategoryFilter(query) {
+    const disabledKinds = disabledCategoryKinds();
+
+    if (!disabledKinds.length) return query;
+
+    const values = disabledKinds
+      .map(kind => '"' + kind + '"')
+      .join(",");
+
+    return query.not("kind", "in", "(" + values + ")");
+  }
+
   async function loadPreferences() {
     if (!user) return;
 
@@ -374,7 +401,7 @@ export function installGroveActivityTab(supabase) {
       return;
     }
 
-    const { count: exactCount, error } = await supabase
+    let countQuery = supabase
       .from("notifications")
       .select("id", {
         count: "exact",
@@ -382,6 +409,10 @@ export function installGroveActivityTab(supabase) {
       })
       .eq("recipient_id", user.id)
       .is("read_at", null);
+
+    countQuery = applyEnabledCategoryFilter(countQuery);
+
+    const { count: exactCount, error } = await countQuery;
 
     if (error) throw error;
 
@@ -570,11 +601,15 @@ export function installGroveActivityTab(supabase) {
     markRead.disabled = true;
 
     try {
-      const { error } = await supabase
+      let markReadQuery = supabase
         .from("notifications")
         .update({ read_at: new Date().toISOString() })
         .eq("recipient_id", user.id)
         .is("read_at", null);
+
+      markReadQuery = applyEnabledCategoryFilter(markReadQuery);
+
+      const { error } = await markReadQuery;
 
       if (error) throw error;
 
