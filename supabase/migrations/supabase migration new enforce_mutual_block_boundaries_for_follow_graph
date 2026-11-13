@@ -1,0 +1,121 @@
+-- Enforce mutual block boundaries across follow relationships.
+-- The helper checks both directions without exposing block-list rows.
+
+create or replace function private.grove_is_blocked_from_profile(
+  p_profile_id uuid
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $function$
+  select
+    case
+      when (select auth.uid()) is null or p_profile_id is null then false
+      when p_profile_id = (select auth.uid()) then false
+      else exists (
+        select 1
+        from public.user_blocks b
+        where
+          (
+            b.blocker_id = (select auth.uid())
+            and b.blocked_id = p_profile_id
+          )
+          or
+          (
+            b.blocker_id = p_profile_id
+            and b.blocked_id = (select auth.uid())
+          )
+      )
+    end;
+$function$;
+
+revoke all on function
+  private.grove_is_blocked_from_profile(uuid)
+  from public;
+
+grant execute on function
+  private.grove_is_blocked_from_profile(uuid)
+  to anon, authenticated;
+
+
+-- Follow graph visibility: both endpoints must be visible
+-- and neither endpoint may have blocked the viewer.
+
+drop policy if exists
+  "Follows are readable only when both profiles are visible"
+  on public.follows;
+
+create policy
+  "Follows are readable only when both profiles are visible"
+on public.follows
+for select
+to anon, authenticated
+using (
+  private.grove_can_view_follow_graph_endpoint(follows.follower_id)
+  and private.grove_can_view_follow_graph_endpoint(follows.following_id)
+  and not private.grove_is_blocked_from_profile(follows.follower_id)
+  and not private.grove_is_blocked_from_profile(follows.following_id)
+);
+
+
+-- Blocked members cannot create new follows.
+
+drop policy if exists
+  "Users can follow public accounts as themselves"
+  on public.follows;
+
+create policy
+  "Users can follow public accounts as themselves"
+on public.follows
+for insert
+to authenticated
+with check (
+  follower_id = (select auth.uid())
+  and follower_id <> following_id
+  and (select private.grove_account_is_active())
+  and (select private.grove_profile_is_public(follows.following_id))
+  and not private.grove_is_blocked_from_profile(follows.following_id)
+);
+
+
+-- Blocked members cannot send new follow requests.
+
+drop policy if exists
+  "Members create their own follow requests"
+  on public.follow_requests;
+
+create policy
+  "Members create their own follow requests"
+on public.follow_requests
+for insert
+to authenticated
+with check (
+  requester_id = (select auth.uid())
+  and requester_id <> target_id
+  and (select private.grove_account_is_active())
+  and not private.grove_is_blocked_from_profile(follow_requests.target_id)
+);
+
+
+-- Blocked members cannot complete a pending follow request.
+
+drop policy if exists
+  "Targets update incoming follow requests"
+  on public.follow_requests;
+
+create policy
+  "Targets update incoming follow requests"
+on public.follow_requests
+for update
+to authenticated
+using (
+  target_id = (select auth.uid())
+  and (select private.grove_account_is_active())
+)
+with check (
+  target_id = (select auth.uid())
+  and (select private.grove_account_is_active())
+  and not private.grove_is_blocked_from_profile(follow_requests.requester_id)
+);
