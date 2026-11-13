@@ -1,0 +1,72 @@
+create or replace function private.grove_can_view_follow_graph_endpoint(
+  p_profile_id uuid
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $function$
+  select
+    case
+      when p_profile_id is null then false
+      when (select auth.uid()) = p_profile_id then true
+      when exists (
+        select 1
+        from public.profiles p
+        where p.id = p_profile_id
+          and p.is_private = false
+      ) then true
+      when (select auth.uid()) is null then false
+      else exists (
+        select 1
+        from public.follows f
+        where f.follower_id = (select auth.uid())
+          and f.following_id = p_profile_id
+          and f.status = 'accepted'
+      )
+    end;
+$function$;
+
+revoke all on function
+  private.grove_can_view_follow_graph_endpoint(uuid)
+  from public;
+
+grant execute on function
+  private.grove_can_view_follow_graph_endpoint(uuid)
+  to anon, authenticated;
+
+drop policy if exists
+  "Follows are readable unless members are blocked"
+  on public.follows;
+
+create policy
+  "Follows are readable only when both profiles are visible"
+on public.follows
+for select
+to anon, authenticated
+using (
+  private.grove_can_view_follow_graph_endpoint(follows.follower_id)
+  and private.grove_can_view_follow_graph_endpoint(follows.following_id)
+  and not exists (
+    select 1
+    from public.user_blocks b
+    where
+      (
+        b.blocker_id = (select auth.uid())
+        and b.blocked_id = follows.follower_id
+      )
+      or (
+        b.blocker_id = follows.follower_id
+        and b.blocked_id = (select auth.uid())
+      )
+      or (
+        b.blocker_id = (select auth.uid())
+        and b.blocked_id = follows.following_id
+      )
+      or (
+        b.blocker_id = follows.following_id
+        and b.blocked_id = (select auth.uid())
+      )
+  )
+);
