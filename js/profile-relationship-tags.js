@@ -9,13 +9,7 @@ import { supabase } from "./supabase.js";
   const currentContainer = document.getElementById("partner-tag-current");
   const incomingContainer = document.getElementById("partner-tag-incoming");
 
-  if (
-    !input ||
-    !sendButton ||
-    !status ||
-    !currentContainer ||
-    !incomingContainer
-  ) return;
+  if (!input || !sendButton || !status || !currentContainer || !incomingContainer) return;
 
   let currentUser = null;
   let selectedMember = null;
@@ -57,14 +51,9 @@ import { supabase } from "./supabase.js";
   typeSelect.insertAdjacentElement("afterend", selectedNotice);
 
   const heading = document.getElementById("partner-tag-heading");
+  if (heading) heading.textContent = "Partner / Owner tag";
 
-  if (heading) {
-    heading.textContent = "Partner / Owner tag";
-  }
-
-  const sendDescription = input
-    .closest("section")
-    ?.querySelector(".field-hint");
+  const sendDescription = input.closest("section")?.querySelector(".field-hint");
 
   if (sendDescription) {
     sendDescription.textContent =
@@ -78,11 +67,7 @@ import { supabase } from "./supabase.js";
     status.style.color = error ? "#ff8585" : "#05c9f4";
   }
 
-  function makeButton(
-    label,
-    action,
-    className = "button secondary"
-  ) {
+  function makeButton(label, action, className = "button secondary") {
     const button = document.createElement("button");
     button.type = "button";
     button.className = className;
@@ -108,9 +93,7 @@ import { supabase } from "./supabase.js";
       member.username ||
       "Grove member";
 
-    return member.username
-      ? `${name} (@${member.username})`
-      : name;
+    return member.username ? `${name} (@${member.username})` : name;
   }
 
   function clearSelection() {
@@ -130,9 +113,7 @@ import { supabase } from "./supabase.js";
     selectedNotice.textContent =
       `Selected ${typeName(typeSelect.value)}: ${memberLabel(member)}`;
 
-    showStatus(
-      "Member selected. Choose Partner or Owner, then send the request."
-    );
+    showStatus("Member selected. Choose Partner or Owner, then send the request.");
   }
 
   async function searchMembers(term) {
@@ -147,9 +128,7 @@ import { supabase } from "./supabase.js";
     }
 
     picker.hidden = false;
-    picker.replaceChildren(
-      makeText("Searching Grove members...")
-    );
+    picker.replaceChildren(makeText("Searching Grove members..."));
 
     const pattern = `%${safeQuery}%`;
 
@@ -168,7 +147,6 @@ import { supabase } from "./supabase.js";
     ]);
 
     if (token !== searchToken) return;
-
     if (usernames.error) throw usernames.error;
     if (displayNames.error) throw displayNames.error;
 
@@ -188,9 +166,7 @@ import { supabase } from "./supabase.js";
     const results = [...unique.values()].slice(0, 10);
 
     if (!results.length) {
-      picker.append(
-        makeText("No matching Grove members found.")
-      );
+      picker.append(makeText("No matching Grove members found."));
       picker.hidden = false;
       return;
     }
@@ -207,9 +183,7 @@ import { supabase } from "./supabase.js";
         event.preventDefault();
       });
 
-      option.addEventListener("click", () => {
-        selectMember(member);
-      });
+      option.addEventListener("click", () => selectMember(member));
 
       picker.append(option);
     }
@@ -232,9 +206,7 @@ import { supabase } from "./supabase.js";
       const date = new Date(requestedAt);
 
       if (!Number.isNaN(date.getTime())) {
-        card.append(
-          makeText(`Requested ${date.toLocaleDateString()}`)
-        );
+        card.append(makeText(`Requested ${date.toLocaleDateString()}`));
       }
     }
 
@@ -267,10 +239,7 @@ import { supabase } from "./supabase.js";
 
     if (partnerError) throw partnerError;
 
-    const label = partner
-      ? memberLabel(partner)
-      : "Grove member";
-
+    const label = partner ? memberLabel(partner) : "Grove member";
     const tagName = typeName(data.tag_type);
 
     if (data.status === "accepted") {
@@ -284,13 +253,11 @@ import { supabase } from "./supabase.js";
           removeCurrentTag
         )
       );
-
     } else if (data.status === "pending") {
       currentContainer.append(
         makeText(`${tagName} request pending: ${label}`),
         makeButton("Cancel request", removeCurrentTag)
       );
-
     } else {
       currentContainer.append(
         makeText(
@@ -305,9 +272,7 @@ import { supabase } from "./supabase.js";
 
     if (!window.confirm(
       "Remove this relationship tag or cancel the pending request?"
-    )) {
-      return;
-    }
+    )) return;
 
     try {
       showStatus("Removing tag...");
@@ -321,16 +286,11 @@ import { supabase } from "./supabase.js";
 
       clearSelection();
       showStatus("Relationship tag removed.");
-
       await refreshRelationshipTags();
 
     } catch (error) {
       console.error(error);
-
-      showStatus(
-        error.message || "Could not remove the tag.",
-        true
-      );
+      showStatus(error.message || "Could not remove the tag.", true);
     }
   }
 
@@ -341,9 +301,7 @@ import { supabase } from "./supabase.js";
 
     if (!window.confirm(
       `Remove this accepted ${name.toLowerCase()} tag from your profile?`
-    )) {
-      return;
-    }
+    )) return;
 
     try {
       showStatus(`Removing accepted ${name.toLowerCase()} tag...`);
@@ -366,12 +324,10 @@ import { supabase } from "./supabase.js";
       }
 
       showStatus(`${name} tag removed successfully.`);
-
       await refreshRelationshipTags();
 
     } catch (error) {
       console.error("Incoming relationship tag removal failed:", error);
-
       showStatus(
         error.message || "Could not remove this relationship tag.",
         true
@@ -425,9 +381,6 @@ import { supabase } from "./supabase.js";
         );
       }
 
-      // A declined row occupies the profile_id primary key.
-      // Delete it first because the current RLS rules do not allow
-      // the requester to update their own declined row through upsert.
       if (existing?.status === "declined") {
         const { error: deleteError } = await supabase
           .from("profile_relationship_tags")
@@ -466,11 +419,7 @@ import { supabase } from "./supabase.js";
 
     } catch (error) {
       console.error("Relationship tag request failed:", error);
-
-      showStatus(
-        error.message || "Could not send the request.",
-        true
-      );
+      showStatus(error.message || "Could not send the request.", true);
 
     } finally {
       sending = false;
@@ -514,11 +463,7 @@ import { supabase } from "./supabase.js";
 
     } catch (error) {
       console.error(error);
-
-      showStatus(
-        error.message || "Could not update this request.",
-        true
-      );
+      showStatus(error.message || "Could not update this request.", true);
     }
   }
 
@@ -610,7 +555,9 @@ import { supabase } from "./supabase.js";
 
     if (!data?.length) {
       section.append(
-        makeText("No other members currently have an accepted tag involving your account.")
+        makeText(
+          "No other members currently have an accepted tag involving your account."
+        )
       );
       incomingContainer.append(section);
       return;
@@ -651,7 +598,7 @@ import { supabase } from "./supabase.js";
         )
       );
 
-      incomingContainer.append(card);
+      section.append(card);
     }
 
     incomingContainer.append(section);
@@ -665,11 +612,9 @@ import { supabase } from "./supabase.js";
     try {
       incomingContainer.replaceChildren();
 
-      await Promise.all([
-        loadCurrentRequest(),
-        loadIncomingRequests(),
-        loadAcceptedIncomingTags()
-      ]);
+      await loadCurrentRequest();
+      await loadIncomingRequests();
+      await loadAcceptedIncomingTags();
 
     } finally {
       refreshing = false;
@@ -709,12 +654,7 @@ import { supabase } from "./supabase.js";
     searchTimer = window.setTimeout(() => {
       searchMembers(term).catch(error => {
         console.error("Member search failed:", error);
-
-        showStatus(
-          error.message || "Member search failed.",
-          true
-        );
-
+        showStatus(error.message || "Member search failed.", true);
         picker.hidden = true;
       });
     }, 220);
@@ -728,16 +668,11 @@ import { supabase } from "./supabase.js";
   });
 
   input.addEventListener("keydown", event => {
-    if (event.key === "Escape") {
-      picker.hidden = true;
-    }
+    if (event.key === "Escape") picker.hidden = true;
   });
 
   document.addEventListener("click", event => {
-    if (
-      event.target !== input &&
-      !picker.contains(event.target)
-    ) {
+    if (event.target !== input && !picker.contains(event.target)) {
       picker.hidden = true;
     }
   });
