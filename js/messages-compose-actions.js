@@ -18,6 +18,7 @@ import { supabase } from "./supabase.js";
   let user = null;
   let realtimeChannel = null;
   let dialog = null;
+  let historyDialog = null;
 
   const editedMessages = new Set();
   const checkedMessages = new Set();
@@ -76,6 +77,16 @@ import { supabase } from "./supabase.js";
     return button;
   }
 
+  function installHistoryButton(article) {
+    if (!article?.dataset.messageId) return;
+
+    const row = actionRow(article);
+
+    if (!$('[data-compose-action="history"]', row)) {
+      row.append(makeButton("Edit history", "history"));
+    }
+  }
+
   function installButtons(article) {
     const messageId = article?.dataset.messageId;
 
@@ -102,6 +113,10 @@ import { supabase } from "./supabase.js";
 
     if (!$('[data-compose-action="forward"]', row)) {
       row.append(makeButton("Forward", "forward"));
+    }
+
+    if (editedMessages.has(messageId)) {
+      installHistoryButton(article);
     }
   }
 
@@ -135,9 +150,7 @@ import { supabase } from "./supabase.js";
       messageList
     );
 
-    if (!article) return;
-
-    if (message.deleted_for_everyone_at) return;
+    if (!article || message.deleted_for_everyone_at) return;
 
     const paragraph = $("p", article);
 
@@ -149,6 +162,7 @@ import { supabase } from "./supabase.js";
       addEditedIndicator(article, message.edited_at);
       editedMessages.add(message.id);
       checkedMessages.add(message.id);
+      installHistoryButton(article);
     }
   }
 
@@ -203,11 +217,12 @@ import { supabase } from "./supabase.js";
             messageList
           );
 
+          editedMessages.add(message.id);
+
           if (article) {
             addEditedIndicator(article, message.edited_at);
+            installHistoryButton(article);
           }
-
-          editedMessages.add(message.id);
         }
       }
     } finally {
@@ -311,6 +326,122 @@ import { supabase } from "./supabase.js";
 
     updateMessageInView(data);
     status("Message updated.");
+  }
+
+  function createHistoryDialog() {
+    if (historyDialog) return historyDialog;
+
+    historyDialog = document.createElement("dialog");
+    historyDialog.className = "message-edit-history-dialog";
+    historyDialog.setAttribute(
+      "aria-labelledby",
+      "message-edit-history-title"
+    );
+
+    const panel = document.createElement("section");
+    panel.className = "message-edit-history-panel";
+
+    const header = document.createElement("header");
+    header.className = "message-edit-history-header";
+
+    const title = document.createElement("h2");
+    title.id = "message-edit-history-title";
+    title.textContent = "Edit history";
+
+    const close = document.createElement("button");
+    close.type = "button";
+    close.className = "message-edit-history-close";
+    close.textContent = "Close";
+    close.addEventListener("click", () => historyDialog.close());
+
+    const intro = document.createElement("p");
+    intro.className = "message-edit-history-intro";
+    intro.textContent =
+      "Earlier versions of this message are shown below, newest first.";
+
+    const current = document.createElement("article");
+    current.className =
+      "message-edit-history-version message-edit-history-current";
+
+    const currentLabel = document.createElement("strong");
+    currentLabel.textContent = "Current version";
+
+    const currentBody = document.createElement("p");
+    currentBody.dataset.historyCurrentBody = "true";
+
+    current.append(currentLabel, currentBody);
+
+    const versions = document.createElement("div");
+    versions.className = "message-edit-history-versions";
+    versions.dataset.historyVersions = "true";
+
+    const statusNode = document.createElement("p");
+    statusNode.className = "message-edit-history-status";
+    statusNode.setAttribute("role", "status");
+
+    header.append(title, close);
+    panel.append(header, intro, current, versions, statusNode);
+    historyDialog.append(panel);
+    document.body.append(historyDialog);
+
+    return historyDialog;
+  }
+
+  async function showEditHistory(article) {
+    const messageId = article?.dataset.messageId;
+    const conversationId = activeConversationId();
+
+    if (!messageId || !conversationId) {
+      throw new Error("Choose a conversation first.");
+    }
+
+    const modal = createHistoryDialog();
+    const currentBody = $("[data-history-current-body]", modal);
+    const versions = $("[data-history-versions]", modal);
+    const statusNode = $(".message-edit-history-status", modal);
+
+    currentBody.textContent = messageBody(article);
+    versions.replaceChildren();
+    statusNode.textContent = "Loading edit history...";
+
+    modal.showModal();
+
+    const { data, error } = await supabase
+      .from("conversation_message_edit_history")
+      .select("previous_body,previous_edited_at,created_at")
+      .eq("message_id", messageId)
+      .eq("conversation_id", conversationId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error) {
+      statusNode.textContent = "Edit history could not be loaded.";
+      throw error;
+    }
+
+    if (!data?.length) {
+      statusNode.textContent = "No earlier versions were found.";
+      return;
+    }
+
+    statusNode.textContent = "";
+
+    for (const version of data) {
+      const card = document.createElement("article");
+      card.className = "message-edit-history-version";
+
+      const date = document.createElement("time");
+      date.dateTime = version.created_at;
+      date.textContent = new Date(
+        version.created_at
+      ).toLocaleString();
+
+      const body = document.createElement("p");
+      body.textContent = version.previous_body || "";
+
+      card.append(date, body);
+      versions.append(card);
+    }
   }
 
   function quoteReply(article) {
@@ -604,6 +735,9 @@ import { supabase } from "./supabase.js";
 
       } else if (action === "forward") {
         await forwardMessage(article);
+
+      } else if (action === "history") {
+        await showEditHistory(article);
       }
 
     } catch (error) {
