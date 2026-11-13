@@ -6,6 +6,12 @@ import { supabase } from "./supabase.js";
   const details = document.querySelector("#details");
   if (!details) return;
 
+  if (details.dataset.groveRelationshipDisplay === "installed") {
+    return;
+  }
+
+  details.dataset.groveRelationshipDisplay = "installed";
+
   const LABELS = {
     not_set: "",
     single: "Single",
@@ -20,15 +26,22 @@ import { supabase } from "./supabase.js";
     prefer_not_to_say: "Prefer not to say"
   };
 
-  const ROLE_LABELS = {
-    owner: "Owner"
-  };
-
   const HIDE_DATE = new Set([
     "not_set",
     "single",
     "prefer_not_to_say"
   ]);
+
+  let relationshipData = null;
+  let acceptedTagLabels = [];
+  let rendering = false;
+  let renderTimer = null;
+
+  const wrapper = document.createElement("div");
+
+  wrapper.className = "profile-relationship-details";
+  wrapper.style.display = "contents";
+  wrapper.setAttribute("aria-label", "Relationship details");
 
   function formatDate(value) {
     if (!value || typeof value !== "string") return "";
@@ -118,8 +131,6 @@ import { supabase } from "./supabase.js";
       });
     }
 
-    if (!relationships.length) return [];
-
     const counterpartIds = [
       ...new Set(
         relationships
@@ -130,8 +141,7 @@ import { supabase } from "./supabase.js";
 
     if (!counterpartIds.length) return [];
 
-    // The profiles table's RLS policy controls which names
-    // this visitor is allowed to retrieve.
+    // Existing profiles RLS determines which names are visible.
     const { data: profiles, error } = await supabase
       .from("profiles")
       .select("id,username,display_name")
@@ -150,17 +160,134 @@ import { supabase } from "./supabase.js";
       .map(item => {
         const name = profileMap.get(item.counterpartId);
 
-        if (!name) return null;
-
-        return item.textPrefix + name;
+        return name
+          ? item.textPrefix + name
+          : null;
       })
       .filter(Boolean);
   }
 
-  async function loadRelationshipDisplay() {
-    const requestedProfileId = getProfileId();
+  function removeLegacyRelationshipDetail() {
+    details
+      .querySelectorAll(":scope > .profile-detail")
+      .forEach(item => {
+        if (
+          item.textContent.trim().toLowerCase().startsWith("relationship:")
+        ) {
+          item.remove();
+        }
+      });
+  }
 
-    let profileId = requestedProfileId;
+  function render() {
+    if (!relationshipData || rendering) return;
+
+    rendering = true;
+
+    try {
+      removeLegacyRelationshipDetail();
+
+      const fragment = document.createDocumentFragment();
+
+      const status = String(
+        relationshipData.relationship_status || "not_set"
+      ).toLowerCase();
+
+      if (LABELS[status]) {
+        fragment.append(
+          createDetail(LABELS[status])
+        );
+      }
+
+      const date = formatDate(
+        relationshipData.relationship_since
+      );
+
+      if (!HIDE_DATE.has(status) && date) {
+        fragment.append(
+          createDetail(
+            status === "married"
+              ? `Married since: ${date}`
+              : `Together since: ${date}`
+          )
+        );
+      }
+
+      const role = String(
+        relationshipData.relationship_dynamic_tag || ""
+      ).toLowerCase();
+
+      if (role === "owner") {
+        fragment.append(
+          createDetail("Profile tag: Owner")
+        );
+      }
+
+      for (const label of acceptedTagLabels) {
+        fragment.append(createDetail(label));
+      }
+
+      wrapper.replaceChildren(fragment);
+
+      if (!wrapper.isConnected) {
+        details.append(wrapper);
+      }
+    } finally {
+      rendering = false;
+    }
+  }
+
+  function scheduleRender() {
+    window.clearTimeout(renderTimer);
+
+    renderTimer = window.setTimeout(() => {
+      if (!relationshipData) return;
+
+      // profile-view.js may replace the entire details container.
+      // Reattach our dedicated wrapper if that happens.
+      if (!wrapper.isConnected) {
+        render();
+        return;
+      }
+
+      removeLegacyRelationshipDetail();
+    }, 0);
+  }
+
+  const observer = new MutationObserver(records => {
+    if (rendering) return;
+
+    const externalChange = records.some(record => {
+      const changedNodes = [
+        ...record.addedNodes,
+        ...record.removedNodes
+      ];
+
+      return changedNodes.some(node => {
+        if (node === wrapper) return false;
+
+        if (node.nodeType !== Node.ELEMENT_NODE) {
+          return true;
+        }
+
+        return !node.classList.contains(
+          "profile-relationship-details"
+        );
+      });
+    });
+
+    if (externalChange || !wrapper.isConnected) {
+      scheduleRender();
+    }
+  });
+
+  observer.observe(details, {
+    childList: true,
+    subtree: false
+  });
+
+  async function loadRelationshipDisplay() {
+    let profileId = getProfileId();
 
     if (!profileId) {
       const { data: auth, error: authError } =
@@ -184,57 +311,26 @@ import { supabase } from "./supabase.js";
     if (error) throw error;
     if (!data) return;
 
-    details
-      .querySelectorAll(".profile-relationship-detail")
-      .forEach(item => item.remove());
+    relationshipData = data;
 
-    const status = String(
-      data.relationship_status || "not_set"
-    ).toLowerCase();
-
-    // Display the selected relationship status.
-    if (LABELS[status]) {
-      details.append(
-        createDetail(LABELS[status])
-      );
-    }
-
-    // Display the date only for statuses where a date is relevant.
-    const date = formatDate(data.relationship_since);
-
-    if (!HIDE_DATE.has(status) && date) {
-      details.append(
-        createDetail(
-          `${status === "married" ? "Married since" : "Together since"}: ${date}`
-        )
-      );
-    }
-
-    // Preserve the optional Owner profile label.
-    const role = String(
-      data.relationship_dynamic_tag || ""
-    ).toLowerCase();
-
-    if (ROLE_LABELS[role]) {
-      details.append(
-        createDetail(`Profile tag: ${ROLE_LABELS[role]}`)
-      );
-    }
-
-    // Show accepted Partner/Owner requests on both relevant profiles.
     try {
-      const acceptedTags = await loadAcceptedTags(profileId);
-
-      for (const label of acceptedTags) {
-        details.append(createDetail(label));
-      }
+      acceptedTagLabels = await loadAcceptedTags(profileId);
     } catch (tagError) {
       console.error(
         "Grove accepted relationship tags could not load:",
         tagError
       );
+
+      acceptedTagLabels = [];
     }
+
+    render();
   }
+
+  window.addEventListener("beforeunload", () => {
+    observer.disconnect();
+    window.clearTimeout(renderTimer);
+  });
 
   loadRelationshipDisplay().catch(error => {
     console.error(
