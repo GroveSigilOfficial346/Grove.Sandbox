@@ -1,0 +1,225 @@
+-- Enforce account standing inside privileged SECURITY DEFINER functions.
+-- RLS policies alone cannot protect writes performed by these functions.
+
+create or replace function public.grove_can_invite_to_channel(
+  p_channel uuid,
+  p_user uuid
+)
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $function$
+  select
+    (select auth.uid()) is not null
+    and (select private.grove_account_is_active())
+    and p_user = (select auth.uid())
+    and (
+      exists (
+        select 1
+        from public.broadcast_channels c
+        where c.id = p_channel
+          and c.owner_id = (select auth.uid())
+      )
+      or exists (
+        select 1
+        from public.channel_members m
+        where m.channel_id = p_channel
+          and m.user_id = (select auth.uid())
+          and m.role in ('owner','moderator','publisher')
+      )
+    );
+$function$;
+
+
+create or replace function public.grove_is_admin()
+returns boolean
+language sql
+stable
+security definer
+set search_path = ''
+as $function$
+  select
+    (select auth.uid()) is not null
+    and (select private.grove_account_is_active())
+    and exists (
+      select 1
+      from public.grove_admins a
+      where a.user_id = (select auth.uid())
+        and a.role in ('owner','admin','moderator')
+    );
+$function$;
+
+
+create or replace function public.grove_create_group_conversation(
+  p_member_ids uuid[],
+  p_title text
+)
+returns uuid
+language plpgsql
+security definer
+set search_path = ''
+as $function$
+declare
+  v_actor uuid := (select auth.uid());
+  v_conversation_id uuid;
+  v_ids uuid[];
+  v_id uuid;
+  v_privacy text;
+  v_actor_follows_member boolean;
+  v_member_follows_actor boolean;
+begin
+  if v_actor is null then
+    raise exception 'You must be signed in.';
+  end if;
+
+  if not (select private.grove_account_is_active()) then
+    raise exception 'Your account is suspended or banned.';
+  end if;
+
+  if p_title is null or length(trim(p_title)) < 1 or length(trim(p_title)) > 80 then
+    raise exception 'Group name must be between 1 and 80 characters.';
+  end if;
+
+  select array_agg(distinct x order by x)
+    into v_ids
+  from unnest(coalesce(p_member_ids, array[]::uuid[])) as x
+  where x is not null;
+
+  if v_ids is null then
+    v_ids := array[]::uuid[];
+  end if;
+
+  if cardinality(v_ids) < 2 or cardinality(v_ids) > 49 then
+    raise exception 'A group needs you and 2–49 other members.';
+  end if;
+
+  if v_actor = any(v_ids) then
+    raise exception 'Do not include your own account in the member list.';
+  end if;
+
+  if exists (
+    select 1
+    from unnest(v_ids) as requested(id)
+    where not exists (
+      select 1
+      from auth.users u
+      where u.id = requested.id
+    )
+  ) then
+    raise exception 'One or more selected members could not be found.';
+  end if;
+
+  if exists (
+    select 1
+    from public.user_blocks b
+    where
+      (b.blocker_id = v_actor and b.blocked_id = any(v_ids))
+      or
+      (b.blocked_id = v_actor and b.blocker_id = any(v_ids))
+  ) then
+    raise exception 'A group cannot include a member blocked by either side.';
+  end if;
+
+  foreach v_id in array v_ids loop
+    select coalesce(pref.message_privacy, 'following_or_followers')
+      into v_privacy
+    from public.user_preferences pref
+    where pref.user_id = v_id;
+
+    v_privacy := coalesce(v_privacy, 'following_or_followers');
+
+    select exists (
+      select 1
+      from public.follows f
+      where f.follower_id = v_actor
+        and f.following_id = v_id
+        and f.status = 'accepted'
+    )
+    into v_actor_follows_member;
+
+    select exists (
+      select 1
+      from public.follows f
+      where f.follower_id = v_id
+        and f.following_id = v_actor
+        and f.status = 'accepted'
+    )
+    into v_member_follows_actor;
+
+    if not (
+      v_privacy = 'everyone'
+      or (v_privacy = 'following' and v_actor_follows_member)
+      or (v_privacy = 'followers' and v_member_follows_actor)
+      or (
+        v_privacy = 'following_or_followers'
+        and (v_actor_follows_member or v_member_follows_actor)
+      )
+      or (
+        v_privacy = 'mutuals'
+        and v_actor_follows_member
+        and v_member_follows_actor
+      )
+    ) then
+      raise exception
+        'At least one selected member is not accepting group messages from your account.';
+    end if;
+  end loop;
+
+  insert into public.conversations (
+    conversation_type,
+    title,
+    created_by
+  )
+  values ('group', trim(p_title), v_actor)
+  returning id into v_conversation_id;
+
+  insert into public.conversation_members (
+    conversation_id,
+    user_id,
+    role
+  )
+  values (v_conversation_id, v_actor, 'admin');
+
+  foreach v_id in array v_ids loop
+    insert into public.conversation_members (
+      conversation_id,
+      user_id,
+      role
+    )
+    values (v_conversation_id, v_id, 'member');
+  end loop;
+
+  return v_conversation_id;
+end;
+$function$;
+
+
+-- Preserve intentional signed-in access while removing PUBLIC access.
+
+revoke all on function
+  public.grove_can_invite_to_channel(uuid, uuid)
+  from public;
+
+grant execute on function
+  public.grove_can_invite_to_channel(uuid, uuid)
+  to authenticated;
+
+
+revoke all on function
+  public.grove_create_group_conversation(uuid[], text)
+  from public;
+
+grant execute on function
+  public.grove_create_group_conversation(uuid[], text)
+  to authenticated;
+
+
+revoke all on function
+  public.grove_is_admin()
+  from public;
+
+grant execute on function
+  public.grove_is_admin()
+  to authenticated;
