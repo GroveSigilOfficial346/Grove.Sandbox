@@ -14,7 +14,6 @@ import { supabase } from "./supabase.js";
   const showLogin = $("show-login");
   const sessionNotice = $("session-notice");
 
-  // Optional elements: older login.html versions may not contain these.
   const accountType = $("register-account-type");
   const accountNote = $("register-account-note");
 
@@ -25,11 +24,9 @@ import { supabase } from "./supabase.js";
     "creator",
     "professional",
     "business",
-    "organization",
-    "adult"
+    "organization"
   ]);
 
-  // Only essential login elements are required.
   if (
     !loginForm ||
     !registerForm ||
@@ -50,7 +47,6 @@ import { supabase } from "./supabase.js";
 
   function setLoading(form, loading) {
     const button = form.querySelector('button[type="submit"]');
-
     if (button) button.disabled = loading;
   }
 
@@ -106,7 +102,6 @@ import { supabase } from "./supabase.js";
     if (!accountType || !accountNote) return;
 
     const notes = {
-      adult: "Adult accounts require authorized age verification. Restricted features remain locked until verification.",
       creator: "For members publishing creative work and building an audience.",
       professional: "For professional identity, networking, and career activity.",
       business: "For businesses and commercial profiles.",
@@ -189,7 +184,6 @@ import { supabase } from "./supabase.js";
 
       if (sessionError) throw sessionError;
 
-      // Allow account switching without affecting other devices.
       if (existing?.session) {
         const { error: signOutError } =
           await supabase.auth.signOut({ scope: "local" });
@@ -210,7 +204,6 @@ import { supabase } from "./supabase.js";
       }
 
       showMessage("Welcome back. Opening Grove...");
-
       window.location.replace("/profile.html");
 
     } catch (error) {
@@ -260,7 +253,6 @@ import { supabase } from "./supabase.js";
 
     const email = $("register-email").value.trim();
     const password = $("register-password").value;
-
     const remember = registerRemember?.checked || false;
 
     const selectedAccountType = accountType?.value || "personal";
