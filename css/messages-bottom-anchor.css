@@ -1,0 +1,62 @@
+/* GROVE — LATEST MESSAGE CONTROL */
+
+.chat-panel {
+  position: relative;
+}
+
+.grove-jump-latest {
+  position: absolute;
+  z-index: 20;
+  right: 22px;
+  bottom: 94px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 16px;
+  border: 1px solid rgba(5, 201, 244, 0.45);
+  border-radius: 999px;
+  background: rgba(16, 11, 37, 0.96);
+  color: #f7f5ff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.3),
+    0 0 18px rgba(5, 201, 244, 0.12);
+  cursor: pointer;
+  transition:
+    transform 0.18s ease,
+    border-color 0.18s ease,
+    background 0.18s ease;
+}
+
+.grove-jump-latest:hover {
+  transform: translateY(-2px);
+  border-color: #05c9f4;
+  background: #17102f;
+}
+
+.grove-jump-latest:focus-visible {
+  outline: 2px solid #05c9f4;
+  outline-offset: 3px;
+}
+
+.grove-jump-latest[hidden] {
+  display: none !important;
+}
+
+@media (max-width: 640px) {
+  .grove-jump-latest {
+    right: 12px;
+    bottom: 82px;
+    min-height: 38px;
+    padding: 0 13px;
+    font-size: 0.73rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .grove-jump-latest {
+    transition: none;
+  }
+}
