@@ -110,7 +110,6 @@ import { supabase } from "./supabase.js";
       unique.set(channel.id, channel);
     }
 
-    // Members must also be able to see private channels they joined.
     const memberChannelIds = [...state.memberships.keys()];
 
     if (memberChannelIds.length) {
@@ -153,7 +152,6 @@ import { supabase } from "./supabase.js";
       throw error;
     }
 
-    // A duplicate can mean a previous attempt already succeeded.
     const { data, error: verifyError } = await supabase
       .from("channel_members")
       .select("channel_id,role")
@@ -343,7 +341,6 @@ import { supabase } from "./supabase.js";
       }
 
       if (response === "accepted") {
-        // The SQL policy must be installed before this insert can succeed.
         await ensureMembership(invite.channel_id);
 
         await Promise.all([
@@ -394,6 +391,7 @@ import { supabase } from "./supabase.js";
     for (const post of posts) {
       const article = document.createElement("article");
       article.className = "channel-post";
+      article.dataset.channelPostId = post.id;
 
       const body = document.createElement("p");
       body.textContent = post.body;
@@ -900,8 +898,6 @@ import { supabase } from "./supabase.js";
       await requireUser();
       bindEvents();
 
-      // Load existing memberships first, then repair any accepted
-      // invitations that were accepted before membership was created.
       await loadMemberships();
 
       const repair = await reconcileAcceptedInvites();
