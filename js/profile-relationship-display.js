@@ -81,9 +81,41 @@ import { supabase } from "./supabase.js";
     return item;
   }
 
-  function getProfileId() {
+  async function resolveProfileId() {
     const params = new URLSearchParams(window.location.search);
-    return params.get("id");
+
+    const requestedId = params.get("id");
+    const requestedUsername = params.get("username");
+
+    if (requestedId) {
+      return requestedId;
+    }
+
+    if (requestedUsername) {
+      const username = requestedUsername
+        .trim()
+        .replace(/^@/, "")
+        .toLowerCase();
+
+      if (!username) return null;
+
+      const { data, error } = await supabase
+        .from("profile_directory")
+        .select("id")
+        .eq("username", username)
+        .maybeSingle();
+
+      if (error) throw error;
+
+      return data?.id || null;
+    }
+
+    const { data: auth, error: authError } =
+      await supabase.auth.getUser();
+
+    if (authError) throw authError;
+
+    return auth?.user?.id || null;
   }
 
   function memberName(profile) {
@@ -141,7 +173,6 @@ import { supabase } from "./supabase.js";
 
     if (!counterpartIds.length) return [];
 
-    // Existing profiles RLS determines which names are visible.
     const { data: profiles, error } = await supabase
       .from("profiles")
       .select("id,username,display_name")
@@ -232,6 +263,7 @@ import { supabase } from "./supabase.js";
       if (!wrapper.isConnected) {
         details.append(wrapper);
       }
+
     } finally {
       rendering = false;
     }
@@ -243,8 +275,6 @@ import { supabase } from "./supabase.js";
     renderTimer = window.setTimeout(() => {
       if (!relationshipData) return;
 
-      // profile-view.js may replace the entire details container.
-      // Reattach our dedicated wrapper if that happens.
       if (!wrapper.isConnected) {
         render();
         return;
@@ -287,16 +317,7 @@ import { supabase } from "./supabase.js";
   });
 
   async function loadRelationshipDisplay() {
-    let profileId = getProfileId();
-
-    if (!profileId) {
-      const { data: auth, error: authError } =
-        await supabase.auth.getUser();
-
-      if (authError) throw authError;
-
-      profileId = auth?.user?.id;
-    }
+    const profileId = await resolveProfileId();
 
     if (!profileId) return;
 
@@ -315,6 +336,7 @@ import { supabase } from "./supabase.js";
 
     try {
       acceptedTagLabels = await loadAcceptedTags(profileId);
+
     } catch (tagError) {
       console.error(
         "Grove accepted relationship tags could not load:",
