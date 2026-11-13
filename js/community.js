@@ -183,7 +183,9 @@ function appendTextWithLinks(container, text) {
 
   if (cursor < value.length) {
     container.append(
-      document.createTextNode(value.slice(cursor))
+      document.createTextNode(
+        value.slice(cursor)
+      )
     );
   }
 }
@@ -232,6 +234,7 @@ async function shareContent({ title, text, url }) {
 
 async function shareGrove() {
   const url = window.location.origin + "/";
+
   await shareContent({
     title: "Grove",
     text: "Join me on Grove — connect and share with the community.",
@@ -440,8 +443,10 @@ function createEditDialog() {
 
     } catch (error) {
       console.error("Post edit failed:", error);
+
       editStatus.textContent =
         error.message || "Could not save post changes.";
+
     } finally {
       editSaveButton.disabled = false;
     }
@@ -698,7 +703,8 @@ function renderComments(post, comments, profiles) {
     const author = profiles.get(comment.author_id);
     const commentBox = createElement("div", "comment");
 
-    // Stable UUID used by the shared Grove reactions module.
+    // Expose the database UUID so the shared reaction module
+    // can attach reactions to this exact comment.
     commentBox.dataset.commentId = comment.id;
 
     const name = createElement(
@@ -1152,7 +1158,7 @@ async function loadFeed() {
     for (const repost of repostsResult.data || []) {
       repostsByPost.set(
         repost.post_id,
-        (repostsByPost.get(post.post_id) || 0) + 1
+        (repostsByPost.get(repost.post_id) || 0) + 1
       );
 
       if (repost.reposter_id === currentUser.id) {
