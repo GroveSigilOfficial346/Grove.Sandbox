@@ -9,13 +9,20 @@ import { supabase } from "./supabase.js";
   const currentContainer = document.getElementById("partner-tag-current");
   const incomingContainer = document.getElementById("partner-tag-incoming");
 
-  if (!input || !sendButton || !status || !currentContainer || !incomingContainer) return;
+  if (
+    !input ||
+    !sendButton ||
+    !status ||
+    !currentContainer ||
+    !incomingContainer
+  ) return;
 
   let currentUser = null;
   let selectedMember = null;
   let searchTimer = null;
   let searchToken = 0;
   let sending = false;
+  let refreshing = false;
 
   const picker = document.createElement("div");
   picker.id = "partner-tag-suggestions";
@@ -50,7 +57,10 @@ import { supabase } from "./supabase.js";
   typeSelect.insertAdjacentElement("afterend", selectedNotice);
 
   const heading = document.getElementById("partner-tag-heading");
-  if (heading) heading.textContent = "Partner / Owner tag";
+
+  if (heading) {
+    heading.textContent = "Partner / Owner tag";
+  }
 
   const sendDescription = input
     .closest("section")
@@ -68,7 +78,11 @@ import { supabase } from "./supabase.js";
     status.style.color = error ? "#ff8585" : "#05c9f4";
   }
 
-  function makeButton(label, action, className = "button secondary") {
+  function makeButton(
+    label,
+    action,
+    className = "button secondary"
+  ) {
     const button = document.createElement("button");
     button.type = "button";
     button.className = className;
@@ -116,7 +130,9 @@ import { supabase } from "./supabase.js";
     selectedNotice.textContent =
       `Selected ${typeName(typeSelect.value)}: ${memberLabel(member)}`;
 
-    showStatus("Member selected. Choose Partner or Owner, then send the request.");
+    showStatus(
+      "Member selected. Choose Partner or Owner, then send the request."
+    );
   }
 
   async function searchMembers(term) {
@@ -268,11 +284,13 @@ import { supabase } from "./supabase.js";
           removeCurrentTag
         )
       );
+
     } else if (data.status === "pending") {
       currentContainer.append(
         makeText(`${tagName} request pending: ${label}`),
         makeButton("Cancel request", removeCurrentTag)
       );
+
     } else {
       currentContainer.append(
         makeText(
@@ -303,12 +321,59 @@ import { supabase } from "./supabase.js";
 
       clearSelection();
       showStatus("Relationship tag removed.");
-      await loadCurrentRequest();
+
+      await refreshRelationshipTags();
 
     } catch (error) {
       console.error(error);
+
       showStatus(
         error.message || "Could not remove the tag.",
+        true
+      );
+    }
+  }
+
+  async function removeIncomingTag(profileId, tagType) {
+    if (!currentUser || !profileId) return;
+
+    const name = typeName(tagType);
+
+    if (!window.confirm(
+      `Remove this accepted ${name.toLowerCase()} tag from your profile?`
+    )) {
+      return;
+    }
+
+    try {
+      showStatus(`Removing accepted ${name.toLowerCase()} tag...`);
+
+      const { data, error } = await supabase
+        .from("profile_relationship_tags")
+        .delete()
+        .eq("profile_id", profileId)
+        .eq("partner_id", currentUser.id)
+        .eq("status", "accepted")
+        .select("profile_id")
+        .maybeSingle();
+
+      if (error) throw error;
+
+      if (!data) {
+        throw new Error(
+          "This tag was already removed or is no longer available."
+        );
+      }
+
+      showStatus(`${name} tag removed successfully.`);
+
+      await refreshRelationshipTags();
+
+    } catch (error) {
+      console.error("Incoming relationship tag removal failed:", error);
+
+      showStatus(
+        error.message || "Could not remove this relationship tag.",
         true
       );
     }
@@ -397,7 +462,7 @@ import { supabase } from "./supabase.js";
         `${typeName(tagType)} request sent. The other member must accept it.`
       );
 
-      await loadCurrentRequest();
+      await refreshRelationshipTags();
 
     } catch (error) {
       console.error("Relationship tag request failed:", error);
@@ -445,10 +510,7 @@ import { supabase } from "./supabase.js";
           : `${typeName(data.tag_type)} request declined.`
       );
 
-      await Promise.all([
-        loadIncomingRequests(),
-        loadCurrentRequest()
-      ]);
+      await refreshRelationshipTags();
 
     } catch (error) {
       console.error(error);
@@ -470,12 +532,18 @@ import { supabase } from "./supabase.js";
 
     if (error) throw error;
 
-    incomingContainer.replaceChildren();
+    const section = document.createElement("section");
+    section.className = "partner-tag-incoming-requests";
+
+    const heading = document.createElement("h3");
+    heading.textContent = "Pending requests";
+    section.append(heading);
 
     if (!data?.length) {
-      incomingContainer.append(
+      section.append(
         makeText("You have no pending Partner or Owner requests.")
       );
+      incomingContainer.append(section);
       return;
     }
 
@@ -517,7 +585,94 @@ import { supabase } from "./supabase.js";
       );
 
       card.append(actions);
+      section.append(card);
+    }
+
+    incomingContainer.append(section);
+  }
+
+  async function loadAcceptedIncomingTags() {
+    const { data, error } = await supabase
+      .from("profile_relationship_tags")
+      .select("profile_id,requested_at,responded_at,tag_type")
+      .eq("partner_id", currentUser.id)
+      .eq("status", "accepted")
+      .order("responded_at", { ascending: false });
+
+    if (error) throw error;
+
+    const section = document.createElement("section");
+    section.className = "partner-tag-accepted-incoming";
+
+    const heading = document.createElement("h3");
+    heading.textContent = "Accepted tags involving your account";
+    section.append(heading);
+
+    if (!data?.length) {
+      section.append(
+        makeText("No other members currently have an accepted tag involving your account.")
+      );
+      incomingContainer.append(section);
+      return;
+    }
+
+    const ids = data.map(item => item.profile_id);
+
+    const { data: members, error: membersError } = await supabase
+      .from("profile_directory")
+      .select("id,username,display_name")
+      .in("id", ids);
+
+    if (membersError) throw membersError;
+
+    const memberMap = new Map(
+      (members || []).map(member => [member.id, member])
+    );
+
+    for (const tag of data) {
+      const member = memberMap.get(tag.profile_id);
+      const name = member ? memberLabel(member) : "Grove member";
+      const tagName = typeName(tag.tag_type);
+
+      const card = document.createElement("div");
+      card.className = "partner-tag-request partner-tag-accepted-card";
+
+      card.append(
+        makeText(
+          `${name} has tagged you as ${tagName}.`,
+          "partner-tag-request-name"
+        ),
+        makeText(
+          "This accepted tag is visible on the relevant public profile."
+        ),
+        makeButton(
+          `Remove ${tagName.toLowerCase()} tag`,
+          () => removeIncomingTag(tag.profile_id, tag.tag_type)
+        )
+      );
+
       incomingContainer.append(card);
+    }
+
+    incomingContainer.append(section);
+  }
+
+  async function refreshRelationshipTags() {
+    if (refreshing || !currentUser) return;
+
+    refreshing = true;
+
+    try {
+      incomingContainer.replaceChildren();
+
+      await Promise.all([
+        loadCurrentRequest(),
+        loadIncomingRequests(),
+        loadAcceptedIncomingTags()
+      ]);
+
+    } finally {
+      refreshing = false;
     }
   }
 
@@ -537,10 +692,7 @@ import { supabase } from "./supabase.js";
 
     currentUser = data.user;
 
-    await Promise.all([
-      loadCurrentRequest(),
-      loadIncomingRequests()
-    ]);
+    await refreshRelationshipTags();
 
     input.disabled = false;
     typeSelect.disabled = false;
