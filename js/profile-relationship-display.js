@@ -23,7 +23,10 @@ import { supabase } from "./supabase.js";
   const ROLE_LABELS = {
     domme: "Domme",
     dom: "Dom",
-    submissive: "Submissive"
+    sub: "Sub",
+    submissive: "Submissive",
+    switch: "Switch",
+    owner: "Owner"
   };
 
   const HIDE_DATE = new Set([
@@ -68,7 +71,6 @@ import { supabase } from "./supabase.js";
     ).toLowerCase();
 
     const desired = [];
-
     const statusLabel = LABELS[status] || "";
 
     if (statusLabel) {
@@ -122,7 +124,7 @@ import { supabase } from "./supabase.js";
     }
   }
 
-  function getOrCreatePartnerContainer() {
+  function getOrCreateTagContainer() {
     let container = document.getElementById("grove-accepted-partner");
 
     if (!container) {
@@ -136,13 +138,13 @@ import { supabase } from "./supabase.js";
     return container;
   }
 
-  async function renderAcceptedPartner(profileId) {
-    const container = getOrCreatePartnerContainer();
+  async function renderAcceptedTag(profileId) {
+    const container = getOrCreateTagContainer();
     container.replaceChildren();
 
     const { data: tag, error } = await supabase
       .from("profile_relationship_tags")
-      .select("partner_id,status")
+      .select("partner_id,status,tag_type")
       .eq("profile_id", profileId)
       .eq("status", "accepted")
       .maybeSingle();
@@ -163,12 +165,20 @@ import { supabase } from "./supabase.js";
     link.className = "profile-detail grove-partner-link";
     link.href = `/profile.html?id=${encodeURIComponent(partner.id)}`;
 
-    const name = partner.display_name || partner.username || "Grove member";
+    const name =
+      partner.display_name ||
+      partner.username ||
+      "Grove member";
+
     const username = partner.username
       ? ` (@${partner.username})`
       : "";
 
-    link.textContent = `Partner: ${name}${username}`;
+    const tagLabel = tag.tag_type === "owner"
+      ? "Owner"
+      : "Partner";
+
+    link.textContent = `${tagLabel}: ${name}${username}`;
     container.append(link);
   }
 
@@ -192,6 +202,7 @@ import { supabase } from "./supabase.js";
         id: currentUser.id,
         is_private: false
       };
+
     } else {
       let query = supabase
         .from("profile_directory")
@@ -247,7 +258,7 @@ import { supabase } from "./supabase.js";
       subtree: false
     });
 
-    await renderAcceptedPartner(viewedProfile.id);
+    await renderAcceptedTag(viewedProfile.id);
   }
 
   initialize().catch(error => {
