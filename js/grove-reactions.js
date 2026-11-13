@@ -14,28 +14,30 @@ import { supabase } from "./supabase.js";
   const TARGETS = [
     {
       type: "post",
-      selector: ".post-card[data-post-id]",
-      attribute: "postId"
+      selector: ".post-card[data-post-id], .feed-post[id^='post-']",
+      getId: element =>
+        element.dataset.postId ||
+        element.id.replace(/^post-/, "")
     },
     {
       type: "comment",
       selector: ".comment[data-comment-id]",
-      attribute: "commentId"
+      getId: element => element.dataset.commentId
     },
     {
       type: "message",
       selector: ".message-bubble[data-message-id]",
-      attribute: "messageId"
+      getId: element => element.dataset.messageId
     },
     {
       type: "channel_post",
       selector: "[data-channel-post-id]",
-      attribute: "channelPostId"
+      getId: element => element.dataset.channelPostId
     },
     {
       type: "live_chat_message",
       selector: "[data-live-chat-message-id]",
-      attribute: "liveChatMessageId"
+      getId: element => element.dataset.liveChatMessageId
     }
   ];
 
@@ -50,37 +52,45 @@ import { supabase } from "./supabase.js";
   const $ = (selector, root = document) =>
     root.querySelector(selector);
 
-  function targetKey(type, id) {
+  function keyFor(type, id) {
     return `${type}:${id}`;
   }
 
-  function getTargetFromElement(element, config) {
-    const id = element.dataset[config.attribute];
-
-    if (!id) return null;
-
-    return {
-      type: config.type,
-      id,
-      key: targetKey(config.type, id),
-      element
-    };
-  }
-
-  function findTargets() {
+  function scanTargets() {
     const found = [];
 
     for (const config of TARGETS) {
       document.querySelectorAll(config.selector).forEach(element => {
-        const target = getTargetFromElement(element, config);
+        const id = config.getId(element);
 
-        if (target && !element.querySelector(":scope > [data-grove-reactions]")) {
-          found.push(target);
-        } else if (target) {
-          const existing = widgets.get(target.key);
+        if (!id) return;
 
-          if (existing) existing.element = element;
+        const key = keyFor(config.type, id);
+        const existing = widgets.get(key);
+
+        if (
+          existing &&
+          existing.element === element &&
+          existing.wrapper.isConnected
+        ) {
+          return;
         }
+
+        if (
+          existing &&
+          existing.element !== element &&
+          existing.wrapper.isConnected &&
+          existing.element.isConnected
+        ) {
+          return;
+        }
+
+        found.push({
+          type: config.type,
+          id,
+          key,
+          element
+        });
       });
     }
 
@@ -96,6 +106,7 @@ import { supabase } from "./supabase.js";
     wrapper.dataset.targetId = target.id;
 
     const buttons = document.createElement("div");
+
     buttons.className = "grove-reaction-buttons";
     buttons.setAttribute("role", "group");
     buttons.setAttribute("aria-label", "React to this content");
@@ -117,7 +128,6 @@ import { supabase } from "./supabase.js";
 
       const count = document.createElement("span");
       count.className = "grove-reaction-count";
-      count.textContent = "0";
 
       button.append(icon, count);
       buttons.append(button);
@@ -127,33 +137,46 @@ import { supabase } from "./supabase.js";
 
     const anchor =
       target.element.querySelector(".post-actions") ||
+      target.element.querySelector(".feed-actions") ||
       target.element.querySelector(".message-compose-action-row") ||
-      target.element.querySelector(".message-action-row") ||
-      target.element;
+      target.element.querySelector(".message-action-row");
 
-    if (anchor === target.element) {
-      target.element.append(wrapper);
-    } else {
+    if (anchor) {
       anchor.insertAdjacentElement("afterend", wrapper);
+    } else {
+      target.element.append(wrapper);
     }
 
     widgets.set(target.key, {
       ...target,
       wrapper
     });
-
-    return wrapper;
   }
 
   function ensureWidgets() {
-    const targets = findTargets();
+    for (const target of scanTargets()) {
+      const existing = widgets.get(target.key);
 
-    for (const target of targets) {
-      if (widgets.has(target.key)) continue;
+      if (existing?.wrapper?.isConnected) {
+        existing.wrapper.remove();
+      }
+
       createWidget(target);
     }
 
-    if (targets.length) scheduleRefresh();
+    pruneDisconnectedWidgets();
+    scheduleRefresh();
+  }
+
+  function pruneDisconnectedWidgets() {
+    for (const [key, widget] of widgets.entries()) {
+      if (
+        !widget.element.isConnected ||
+        !widget.wrapper.isConnected
+      ) {
+        widgets.delete(key);
+      }
+    }
   }
 
   function renderWidget(widget, rows) {
@@ -189,7 +212,7 @@ import { supabase } from "./supabase.js";
         }
 
         button.title = matches.length
-          ? `${emoji} ${matches.length}`
+          ? `${emoji} · ${matches.length}`
           : `React ${emoji}`;
       });
   }
@@ -203,19 +226,25 @@ import { supabase } from "./supabase.js";
     refreshRunning = true;
 
     try {
-      const activeWidgets = [...widgets.values()].filter(
-        widget => widget.element.isConnected &&
-          widget.wrapper.isConnected
+      pruneDisconnectedWidgets();
+
+      const active = [...widgets.values()].filter(widget =>
+        widget.element.isConnected &&
+        widget.wrapper.isConnected
       );
 
-      for (const type of [...new Set(
-        activeWidgets.map(widget => widget.type)
-      )]) {
-        const group = activeWidgets.filter(
+      const types = [...new Set(
+        active.map(widget => widget.type)
+      )];
+
+      for (const type of types) {
+        const group = active.filter(
           widget => widget.type === type
         );
 
-        const ids = [...new Set(group.map(widget => widget.id))];
+        const ids = [...new Set(
+          group.map(widget => widget.id)
+        )];
 
         if (!ids.length) continue;
 
@@ -227,25 +256,28 @@ import { supabase } from "./supabase.js";
 
         if (error) throw error;
 
-        const rowsByTarget = new Map();
+        const byTarget = new Map();
 
         for (const row of data || []) {
-          if (!rowsByTarget.has(row.target_id)) {
-            rowsByTarget.set(row.target_id, []);
+          if (!byTarget.has(row.target_id)) {
+            byTarget.set(row.target_id, []);
           }
 
-          rowsByTarget.get(row.target_id).push(row);
+          byTarget.get(row.target_id).push(row);
         }
 
         for (const widget of group) {
           renderWidget(
             widget,
-            rowsByTarget.get(widget.id) || []
+            byTarget.get(widget.id) || []
           );
         }
       }
     } catch (error) {
-      console.error("Grove reactions could not refresh:", error);
+      console.error(
+        "Grove reactions could not refresh:",
+        error
+      );
     } finally {
       refreshRunning = false;
 
@@ -259,9 +291,10 @@ import { supabase } from "./supabase.js";
   function scheduleRefresh() {
     window.clearTimeout(refreshTimer);
 
-    refreshTimer = window.setTimeout(() => {
-      refreshWidgets();
-    }, 140);
+    refreshTimer = window.setTimeout(
+      refreshWidgets,
+      180
+    );
   }
 
   async function toggleReaction(button) {
@@ -282,14 +315,15 @@ import { supabase } from "./supabase.js";
     button.disabled = true;
 
     try {
-      const { data: existing, error: lookupError } = await supabase
-        .from("content_reactions")
-        .select("id")
-        .eq("target_type", type)
-        .eq("target_id", id)
-        .eq("user_id", user.id)
-        .eq("reaction", emoji)
-        .maybeSingle();
+      const { data: existing, error: lookupError } =
+        await supabase
+          .from("content_reactions")
+          .select("id")
+          .eq("target_type", type)
+          .eq("target_id", id)
+          .eq("user_id", user.id)
+          .eq("reaction", emoji)
+          .maybeSingle();
 
       if (lookupError) throw lookupError;
 
@@ -315,17 +349,18 @@ import { supabase } from "./supabase.js";
       }
 
       await refreshWidgets();
-
     } catch (error) {
       console.error("Grove reaction failed:", error);
 
-      const status = $(
-        "#messages-status"
-      ) || $("#community-status");
+      const status =
+        $("#messages-status") ||
+        $("#community-status") ||
+        $("#feed-status");
 
       if (status) {
         status.textContent =
           error.message || "Could not update reaction.";
+
         status.style.color = "#ff8585";
       }
     } finally {
@@ -345,26 +380,12 @@ import { supabase } from "./supabase.js";
   });
 
   const observer = new MutationObserver(records => {
-    let shouldScan = false;
+    const changed = records.some(record =>
+      record.type === "childList" &&
+      record.addedNodes.length > 0
+    );
 
-    for (const record of records) {
-      if (record.type === "childList" && record.addedNodes.length) {
-        shouldScan = true;
-        break;
-      }
-
-      if (
-        record.type === "attributes" &&
-        record.target.matches?.(
-          ".post-card, .message-bubble, .comment"
-        )
-      ) {
-        shouldScan = true;
-        break;
-      }
-    }
-
-    if (shouldScan) ensureWidgets();
+    if (changed) ensureWidgets();
   });
 
   async function initialize() {
@@ -379,15 +400,7 @@ import { supabase } from "./supabase.js";
 
     observer.observe(document.body, {
       childList: true,
-      subtree: true,
-      attributes: true,
-      attributeFilter: [
-        "data-post-id",
-        "data-comment-id",
-        "data-message-id",
-        "data-channel-post-id",
-        "data-live-chat-message-id"
-      ]
+      subtree: true
     });
 
     realtimeChannel = supabase
@@ -399,9 +412,7 @@ import { supabase } from "./supabase.js";
           schema: "public",
           table: "content_reactions"
         },
-        () => {
-          scheduleRefresh();
-        }
+        scheduleRefresh
       )
       .subscribe();
   }
@@ -416,6 +427,9 @@ import { supabase } from "./supabase.js";
   });
 
   initialize().catch(error => {
-    console.error("Grove reactions failed to initialize:", error);
+    console.error(
+      "Grove reactions failed to initialize:",
+      error
+    );
   });
 })();
