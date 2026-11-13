@@ -12,6 +12,8 @@ import { supabase } from "./supabase.js";
 
   window.__groveMessageModerationInstalled = true;
 
+  const BUCKET = "grove-private";
+
   let user = null;
   let activeConversationId = null;
   let pinChannel = null;
@@ -390,13 +392,81 @@ import { supabase } from "./supabase.js";
     }
   }
 
+  function isOwnedConversationAttachment(path, conversationId) {
+    if (
+      typeof path !== "string" ||
+      !path ||
+      !conversationId ||
+      !user?.id
+    ) {
+      return false;
+    }
+
+    const expectedPrefix = `${conversationId}/${user.id}/`;
+
+    if (!path.startsWith(expectedPrefix)) {
+      return false;
+    }
+
+    const filename = path.slice(expectedPrefix.length);
+
+    return (
+      filename.length > 0 &&
+      !filename.includes("/") &&
+      !filename.includes("\\") &&
+      !filename.includes("..")
+    );
+  }
+
+  async function cleanupUnsentAttachment(path, conversationId) {
+    if (!path) {
+      return { removed: true };
+    }
+
+    if (!isOwnedConversationAttachment(path, conversationId)) {
+      console.warn(
+        "Skipped attachment cleanup because the storage path did not match the sender's conversation folder."
+      );
+
+      return {
+        removed: false,
+        reason: "The attachment path did not match the sender's folder."
+      };
+    }
+
+    const { data, error } = await supabase.storage
+      .from(BUCKET)
+      .remove([path]);
+
+    if (error) {
+      console.warn(
+        "The message was unsent, but its attachment cleanup failed.",
+        error
+      );
+
+      return {
+        removed: false,
+        reason: error.message || "Storage cleanup failed."
+      };
+    }
+
+    const removed = Array.isArray(data) && data.length > 0;
+
+    return {
+      removed,
+      reason: removed
+        ? ""
+        : "The storage object was not confirmed as removed."
+    };
+  }
+
   async function unsendMessage(article, button) {
     const id = messageId(article);
 
     if (!id || !isOwnMessage(article) || button.disabled) return;
 
     const confirmed = window.confirm(
-      "Unsend this message for everyone in the conversation? This cannot be undone."
+      "Unsend this message for everyone in the conversation? Its attachment will also be removed if it belongs to your account. This cannot be undone."
     );
 
     if (!confirmed) return;
@@ -415,7 +485,9 @@ import { supabase } from "./supabase.js";
         .eq("id", id)
         .eq("sender_id", user.id)
         .is("deleted_for_everyone_at", null)
-        .select("id,deleted_for_everyone_at")
+        .select(
+          "id,conversation_id,attachment_path,deleted_for_everyone_at"
+        )
         .maybeSingle();
 
       if (error) throw error;
@@ -431,7 +503,25 @@ import { supabase } from "./supabase.js";
       );
 
       renderPins();
-      status("Message unsent for everyone.");
+
+      const cleanup = await cleanupUnsentAttachment(
+        data.attachment_path,
+        data.conversation_id
+      );
+
+      if (cleanup.removed) {
+        status(
+          data.attachment_path
+            ? "Message unsent for everyone. Its attachment was removed."
+            : "Message unsent for everyone."
+        );
+      } else {
+        status(
+          "Message unsent for everyone, but its attachment could not be removed automatically. " +
+            cleanup.reason,
+          true
+        );
+      }
 
     } catch (error) {
       console.error("Could not unsend message:", error);
