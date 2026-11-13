@@ -3,21 +3,24 @@ import { supabase } from "./supabase.js";
 (() => {
   "use strict";
 
-  const GENERAL_THEMES = [
-    ["default", "Use account default"],
+  const THEMES = [
+    ["default", "Use default appearance"],
     ["galaxy", "Galaxy"],
+    ["midnight-galaxy", "Midnight Galaxy"],
     ["gothic", "Gothic"],
-    ["velvet", "Velvet"],
-    ["rose", "Rose"],
-    ["ember", "Ember"],
-    ["obsidian", "Obsidian"]
-  ];
-
-  const ADULT_THEMES = [
+    ["gothic-violet", "Gothic Violet"],
+    ["witchlight", "Witchlight"],
+    ["moonlit", "Moonlit"],
+    ["velvet", "Velvet Noir"],
+    ["velvet-noir", "Velvet Noir"],
     ["dark-romance", "Dark Romance"],
+    ["rose", "Rose Chrome"],
+    ["rose-chrome", "Rose Chrome"],
+    ["ember", "Ember"],
     ["blood-moon", "Blood Moon"],
-    ["silver-key", "Silver Key"],
-    ["enchanted-lock", "Enchanted Lock"],
+    ["obsidian", "Obsidian"],
+    ["silver-key", "Silver Mist"],
+    ["enchanted-lock", "Enchanted Forest"],
     ["celestial-velvet", "Celestial Velvet"],
     ["neon-noir", "Neon Noir"]
   ];
@@ -27,8 +30,6 @@ import { supabase } from "./supabase.js";
   let user = null;
   let activeId = null;
   let loadToken = 0;
-  let isVerifiedAdult = false;
-  let defaultAdultTheme = "midnight-galaxy";
   let currentNickname = "";
   let currentTheme = "default";
 
@@ -68,7 +69,7 @@ import { supabase } from "./supabase.js";
   const description = element(
     "p",
     "grove-chat-style-description",
-    "These settings are private to your account."
+    "Choose a visual style and private nickname for this conversation. Only your account's settings are changed."
   );
 
   const nicknameLabel = element(
@@ -127,25 +128,17 @@ import { supabase } from "./supabase.js";
   dialog.append(panel);
 
   function setStatus(message, error = false) {
-    status.textContent = message;
+    status.textContent = message || "";
     status.classList.toggle("is-error", error);
   }
 
   function setThemeOptions() {
     themeSelect.replaceChildren();
 
-    for (const [value, label] of GENERAL_THEMES) {
+    for (const [value, label] of THEMES) {
       const option = element("option", "", label);
       option.value = value;
       themeSelect.append(option);
-    }
-
-    if (isVerifiedAdult) {
-      for (const [value, label] of ADULT_THEMES) {
-        const option = element("option", "", label);
-        option.value = value;
-        themeSelect.append(option);
-      }
     }
   }
 
@@ -159,26 +152,15 @@ import { supabase } from "./supabase.js";
   }
 
   function applyTheme(theme) {
-    const allowed = [
-      ...GENERAL_THEMES.map(item => item[0]),
-      ...(isVerifiedAdult
-        ? ADULT_THEMES.map(item => item[0])
-        : [])
-    ];
+    const allowed = THEMES.map(item => item[0]);
+    const selected = allowed.includes(theme) ? theme : "default";
 
-    const selected = allowed.includes(theme)
-      ? theme
-      : "default";
-
-    const effective = selected === "default"
-      ? (isVerifiedAdult ? defaultAdultTheme : "")
-      : selected;
-
-    if (effective) {
-      document.body.dataset.groveAdultTheme = effective;
-    } else {
-      delete document.body.dataset.groveAdultTheme;
+    if (selected === "default") {
+      delete document.body.dataset.groveChatTheme;
+      return;
     }
+
+    document.body.dataset.groveChatTheme = selected;
   }
 
   function applyNickname() {
@@ -198,8 +180,7 @@ import { supabase } from "./supabase.js";
       }
     }
 
-    const nameNode =
-      activeButton?.querySelector(".conversation-name");
+    const nameNode = activeButton?.querySelector(".conversation-name");
 
     if (nameNode) {
       if (!baseNames.has(activeId)) {
@@ -218,11 +199,7 @@ import { supabase } from "./supabase.js";
 
     const title = $("#chat-title");
 
-    if (
-      title &&
-      currentNickname &&
-      title.textContent !== currentNickname
-    ) {
+    if (title && currentNickname && title.textContent !== currentNickname) {
       title.textContent = currentNickname;
     }
   }
@@ -257,7 +234,15 @@ import { supabase } from "./supabase.js";
 
     styleButton.disabled = !nextId;
 
-    if (!nextId || nextId === activeId) {
+    if (!nextId) {
+      activeId = null;
+      currentNickname = "";
+      currentTheme = "default";
+      applyTheme("default");
+      return;
+    }
+
+    if (nextId === activeId) {
       applyNickname();
       return;
     }
@@ -285,10 +270,12 @@ import { supabase } from "./supabase.js";
     const theme = themeSelect.value;
 
     if (nickname.length > 60) {
-      setStatus(
-        "Nicknames must be 60 characters or fewer.",
-        true
-      );
+      setStatus("Nicknames must be 60 characters or fewer.", true);
+      return;
+    }
+
+    if (!THEMES.some(([value]) => value === theme)) {
+      setStatus("Choose a valid conversation theme.", true);
       return;
     }
 
@@ -361,56 +348,22 @@ import { supabase } from "./supabase.js";
   }
 
   async function initialize() {
-    const heading = $(".chat-heading");
+    const chatHeading = $(".chat-heading");
+    const list = $(".conversation-list");
 
-    if (!heading || !$(".conversation-list")) return;
+    if (!chatHeading || !list) return;
 
-    const { data: auth, error: authError } =
-      await supabase.auth.getUser();
+    const { data: auth, error } = await supabase.auth.getUser();
 
-    if (authError) throw authError;
+    if (error) throw error;
     if (!auth.user) return;
 
     user = auth.user;
 
-    const { data: profile, error: profileError } = await supabase
-      .from("profiles")
-      .select("account_type")
-      .eq("id", user.id)
-      .maybeSingle();
-
-    if (profileError) throw profileError;
-
-    if (profile?.account_type === "adult") {
-      const { data: access, error: accessError } = await supabase
-        .from("grove_adult_access")
-        .select("verification_status")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (accessError) throw accessError;
-
-      isVerifiedAdult =
-        access?.verification_status === "verified";
-
-      if (isVerifiedAdult) {
-        const { data: preferences, error } = await supabase
-          .from("grove_adult_preferences")
-          .select("theme_id")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (error) throw error;
-
-        defaultAdultTheme =
-          preferences?.theme_id || "midnight-galaxy";
-      }
-    }
-
     setThemeOptions();
     applyTheme("default");
 
-    heading.append(styleButton);
+    chatHeading.append(styleButton);
     document.body.append(dialog);
 
     styleButton.addEventListener("click", openDialog);
@@ -420,8 +373,6 @@ import { supabase } from "./supabase.js";
     dialog.addEventListener("click", event => {
       if (event.target === dialog) dialog.close();
     });
-
-    const list = $(".conversation-list");
 
     const observer = new MutationObserver(() => {
       syncActiveConversation().catch(error => {
@@ -450,9 +401,7 @@ import { supabase } from "./supabase.js";
       });
     }
 
-    syncActiveConversation().catch(error => {
-      console.warn("Initial conversation settings failed:", error);
-    });
+    await syncActiveConversation();
   }
 
   initialize().catch(error => {
