@@ -1,14 +1,14 @@
-const script = document.createElement("script");
+if (!window.supabase) {
+  throw new Error("Supabase library did not load.");
+}
 
-script.src = "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2";
+if (!window.GROVE_CONFIG) {
+  throw new Error("Grove configuration did not load.");
+}
 
-script.onload = () => {
-  window.supabaseClient = window.supabase.createClient(
-    window.GROVE_CONFIG.SUPABASE_URL,
-    window.GROVE_CONFIG.SUPABASE_KEY
-  );
+window.supabaseClient = window.supabase.createClient(
+  window.GROVE_CONFIG.SUPABASE_URL,
+  window.GROVE_CONFIG.SUPABASE_KEY
+);
 
-  console.log("Grove Supabase connected.");
-};
-
-document.head.appendChild(script);
+console.log("Grove Supabase client initialized.");
