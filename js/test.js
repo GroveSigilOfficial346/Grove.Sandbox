@@ -1,22 +1,15 @@
 (async function () {
-  const status = document.createElement("div");
-
-  status.style.cssText = `
-    position: fixed;
-    bottom: 20px;
-    left: 0;
-    width: 100%;
-    text-align: center;
-    color: #888;
-    font: 13px Arial, sans-serif;
-  `;
-
-  status.textContent = "Checking Grove connection...";
-  document.body.appendChild(status);
-
   try {
+    if (!window.supabase) {
+      throw new Error("Supabase library did not load.");
+    }
+
+    if (!window.GROVE_CONFIG) {
+      throw new Error("Grove config did not load.");
+    }
+
     if (!window.supabaseClient) {
-      throw new Error("Supabase client not initialized.");
+      throw new Error("Supabase client did not initialize.");
     }
 
     const { error } = await window.supabaseClient
@@ -24,11 +17,12 @@
       .select("id")
       .limit(1);
 
-    if (error) throw error;
+    if (error) {
+      throw error;
+    }
 
-    status.textContent = "Grove database connected.";
+    console.log("Grove database connection verified.");
   } catch (error) {
-    status.textContent = "Grove connection failed.";
-    console.error("Grove test:", error.message);
+    window.alert("Grove connection error: " + error.message);
   }
 })();
