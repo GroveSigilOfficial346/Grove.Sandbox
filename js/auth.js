@@ -4,7 +4,6 @@ const $ = id => document.getElementById(id);
 
 const loginScreen = $("loginScreen");
 const appShell = $("appShell");
-const forms = ["loginForm", "signupForm", "forgotForm", "resetForm"];
 
 let recoveryMode = false;
 
@@ -12,12 +11,14 @@ function message(text) {
   $("authMessage").textContent = text;
 }
 
-function showForm(name) {
-  forms.forEach(id => $(id).classList.toggle("hidden", id !== name));
+function showForm(formId) {
+  ["loginForm", "signupForm", "forgotForm", "resetForm"].forEach(id => {
+    $(id).classList.toggle("hidden", id !== formId);
+  });
 
-  $("showSignup").classList.toggle("hidden", name !== "loginForm");
-  $("showForgot").classList.toggle("hidden", name !== "loginForm");
-  $("showLogin").classList.toggle("hidden", name === "loginForm");
+  $("showSignup").classList.toggle("hidden", formId !== "loginForm");
+  $("showForgot").classList.toggle("hidden", formId !== "loginForm");
+  $("showLogin").classList.toggle("hidden", formId === "loginForm");
 
   message("");
 }
@@ -33,10 +34,20 @@ function isOwner(user) {
 
 function showDashboard(user) {
   if (!isOwner(user)) return;
+
+  recoveryMode = false;
   loginScreen.classList.add("hidden");
   appShell.classList.remove("hidden");
+
   $("ownerLabel").textContent = user.email;
   $("settingsEmail").textContent = user.email;
+}
+
+function showRecoveryScreen() {
+  recoveryMode = true;
+  showLoginScreen();
+  showForm("resetForm");
+  message("Recovery verified. Enter your new password below.");
 }
 
 async function rejectNonOwner() {
@@ -45,6 +56,28 @@ async function rejectNonOwner() {
   showForm("loginForm");
   message("This account is not authorized.");
 }
+
+// Register the listener before restoring the session.
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event === "PASSWORD_RECOVERY") {
+    showRecoveryScreen();
+    return;
+  }
+
+  if (event === "SIGNED_OUT") {
+    recoveryMode = false;
+    showLoginScreen();
+    return;
+  }
+
+  if (session?.user && !recoveryMode) {
+    if (isOwner(session.user)) {
+      showDashboard(session.user);
+    } else {
+      rejectNonOwner();
+    }
+  }
+});
 
 // SIGN IN
 $("loginForm").addEventListener("submit", async event => {
@@ -81,7 +114,7 @@ $("loginForm").addEventListener("submit", async event => {
   showDashboard(data.user);
 });
 
-// FIRST-TIME OWNER SIGNUP
+// CREATE OWNER ACCOUNT
 $("signupForm").addEventListener("submit", async event => {
   event.preventDefault();
 
@@ -94,13 +127,13 @@ $("signupForm").addEventListener("submit", async event => {
   }
 
   $("signupButton").disabled = true;
-  message("Creating your account...");
+  message("Creating account...");
 
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: window.location.origin + "/"
+      emailRedirectTo: "https://grovesandbox.vercel.app/"
     }
   });
 
@@ -115,7 +148,7 @@ $("signupForm").addEventListener("submit", async event => {
     showDashboard(data.user);
   } else {
     showForm("loginForm");
-    message("Account created. Confirm your email using the link Supabase sent, then sign in.");
+    message("Account created. Check your email to confirm your account.");
   }
 });
 
@@ -131,10 +164,10 @@ $("forgotForm").addEventListener("submit", async event => {
   }
 
   $("forgotButton").disabled = true;
-  message("Sending password reset email...");
+  message("Sending recovery email...");
 
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: window.location.origin + "/"
+    redirectTo: "https://grovesandbox.vercel.app/"
   });
 
   $("forgotButton").disabled = false;
@@ -144,28 +177,28 @@ $("forgotForm").addEventListener("submit", async event => {
     return;
   }
 
-  message("Password reset email sent. Open the link in that email to return here and choose a new password.");
+  message("Recovery email sent. Open the newest email and follow its link.");
 });
 
-// SAVE NEW PASSWORD AFTER OPENING EMAIL LINK
+// SAVE NEW PASSWORD
 $("resetForm").addEventListener("submit", async event => {
   event.preventDefault();
 
   const password = $("newPassword").value;
-  const confirm = $("confirmPassword").value;
+  const confirmation = $("confirmPassword").value;
 
   if (password.length < 8) {
-    message("Your password must be at least 8 characters.");
+    message("Password must contain at least 8 characters.");
     return;
   }
 
-  if (password !== confirm) {
-    message("The passwords do not match.");
+  if (password !== confirmation) {
+    message("Your passwords do not match.");
     return;
   }
 
   $("resetButton").disabled = true;
-  message("Updating your password...");
+  message("Saving your new password...");
 
   const { data, error } = await supabase.auth.updateUser({
     password
@@ -178,12 +211,14 @@ $("resetForm").addEventListener("submit", async event => {
     return;
   }
 
-  recoveryMode = false;
   $("newPassword").value = "";
   $("confirmPassword").value = "";
 
+  recoveryMode = false;
+
   if (isOwner(data.user)) {
     showDashboard(data.user);
+    message("Your new password has been saved.");
   } else {
     await supabase.auth.signOut();
     showLoginScreen();
@@ -193,11 +228,15 @@ $("resetForm").addEventListener("submit", async event => {
 });
 
 // LOGIN SCREEN NAVIGATION
-$("showSignup").addEventListener("click", () => showForm("signupForm"));
+$("showSignup").addEventListener("click", () => {
+  showForm("signupForm");
+});
+
 $("showLogin").addEventListener("click", () => {
   recoveryMode = false;
   showForm("loginForm");
 });
+
 $("showForgot").addEventListener("click", () => {
   $("forgotEmail").value = $("loginEmail").value || OWNER_EMAIL;
   showForm("forgotForm");
@@ -215,26 +254,34 @@ $("logoutButton").addEventListener("click", async () => {
   recoveryMode = false;
   showLoginScreen();
   showForm("loginForm");
-  message("You have signed out.");
+  message("Signed out.");
 });
 
-// HANDLE SUPABASE EMAIL LINKS AND RESTORED SESSIONS
-const hash = window.location.hash;
-const isRecoveryLink = hash.includes("type=recovery");
+// RESTORE SESSION AND DETECT RECOVERY LINKS
+async function initializeAuth() {
+  const url = new URL(window.location.href);
+  const hash = new URLSearchParams(url.hash.replace(/^#/, ""));
 
-if (isRecoveryLink) {
-  recoveryMode = true;
-  showLoginScreen();
-  showForm("resetForm");
-  message("Choose your new password.");
-} else {
+  const recoveryInHash = hash.get("type") === "recovery";
+
+  if (recoveryInHash) {
+    showRecoveryScreen();
+  }
+
   const { data, error } = await supabase.auth.getSession();
 
   if (error) {
     showLoginScreen();
-    showForm("loginForm");
-    message("Could not restore your session. Please sign in.");
-  } else if (data.session?.user) {
+    if (!recoveryMode) {
+      showForm("loginForm");
+      message("Session error: " + error.message);
+    }
+    return;
+  }
+
+  if (recoveryMode) return;
+
+  if (data.session?.user) {
     if (isOwner(data.session.user)) {
       showDashboard(data.session.user);
     } else {
@@ -246,21 +293,4 @@ if (isRecoveryLink) {
   }
 }
 
-supabase.auth.onAuthStateChange((event, session) => {
-  if (event === "PASSWORD_RECOVERY") {
-    recoveryMode = true;
-    showLoginScreen();
-    showForm("resetForm");
-    message("Choose your new password.");
-    return;
-  }
-
-  if (!session) {
-    if (!recoveryMode) showLoginScreen();
-    return;
-  }
-
-  if (isOwner(session.user) && !recoveryMode) {
-    showDashboard(session.user);
-  }
-});
+initializeAuth();
