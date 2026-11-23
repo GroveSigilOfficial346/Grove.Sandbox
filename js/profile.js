@@ -1,4 +1,6 @@
-(function () {
+function () {
+  const client = window.supabaseClient;
+
   const form = document.getElementById("profile-form");
   const status = document.getElementById("profile-status");
   const mediaStatus = document.getElementById("media-status");
@@ -17,6 +19,7 @@
   const displayName = document.getElementById("display-name");
   const username = document.getElementById("username");
   const avatar = document.getElementById("avatar");
+  const bioDisplay = document.getElementById("bio-display");
 
   const coverImage = document.getElementById("cover-image");
   const coverPlaceholder = document.getElementById("cover-placeholder");
@@ -91,10 +94,23 @@
     coverImage.src = url;
   }
 
+  function showBio(value) {
+    const cleanBio = String(value || "").trim();
+
+    if (!cleanBio) {
+      bioDisplay.textContent = "No bio added yet.";
+      bioDisplay.classList.add("empty");
+      return;
+    }
+
+    bioDisplay.textContent = cleanBio;
+    bioDisplay.classList.remove("empty");
+  }
+
   async function loadProfile() {
     try {
       const { data: userData, error: userError } =
-        await window.supabaseClient.auth.getUser();
+        await client.auth.getUser();
 
       if (userError) throw userError;
 
@@ -105,7 +121,7 @@
         return;
       }
 
-      const { data, error } = await window.supabaseClient
+      const { data, error } = await client
         .from("profiles")
         .select(
           "id, username, display_name, bio, avatar_url, cover_url, created_at"
@@ -129,6 +145,7 @@
 
       showAvatar(data.avatar_url);
       showCover(data.cover_url);
+      showBio(data.bio);
 
       if (data.created_at) {
         const date = new Date(data.created_at);
@@ -191,7 +208,7 @@
       const filePath =
         currentUser.id + "/" + kind + "." + extension;
 
-      const { error: uploadError } = await window.supabaseClient
+      const { error: uploadError } = await client
         .storage
         .from(BUCKET)
         .upload(filePath, file, {
@@ -202,40 +219,42 @@
 
       if (uploadError) throw uploadError;
 
-      const { data: publicData } = window.supabaseClient
+      const { data: publicData } = client
         .storage
         .from(BUCKET)
         .getPublicUrl(filePath);
-
-      const imageUrl =
-        publicData.publicUrl + "?updated=" + Date.now();
 
       const column = kind === "avatar"
         ? "avatar_url"
         : "cover_url";
 
-      const { data: updatedProfile, error: updateError } =
-        await window.supabaseClient
-          .from("profiles")
-          .update({
-            [column]: publicData.publicUrl,
-            updated_at: new Date().toISOString()
-          })
-          .eq("id", currentUser.id)
-          .select("id")
-          .single();
+      const { data: updatedProfile, error: updateError } = await client
+        .from("profiles")
+        .update({
+          [column]: publicData.publicUrl,
+          updated_at: new Date().toISOString()
+        })
+        .eq("id", currentUser.id)
+        .select("id")
+        .single();
 
       if (updateError) throw updateError;
+
       if (!updatedProfile) {
-        throw new Error("The profile image was uploaded, but the profile did not update.");
+        throw new Error(
+          "The image uploaded, but the profile did not update."
+        );
       }
+
+      const displayUrl =
+        publicData.publicUrl + "?updated=" + Date.now();
 
       if (kind === "avatar") {
         profile.avatar_url = publicData.publicUrl;
-        showAvatar(imageUrl);
+        showAvatar(displayUrl);
       } else {
         profile.cover_url = publicData.publicUrl;
-        showCover(imageUrl);
+        showCover(displayUrl);
       }
 
       showStatus(mediaStatus, "Image uploaded successfully.", "success");
@@ -264,7 +283,11 @@
     event.preventDefault();
 
     if (!currentUser) {
-      showStatus(status, "You must be logged in to save your profile.", "error");
+      showStatus(
+        status,
+        "You must be logged in to save your profile.",
+        "error"
+      );
       return;
     }
 
@@ -280,7 +303,7 @@
     showStatus(status, "", "info");
 
     try {
-      const { error } = await window.supabaseClient
+      const { error } = await client
         .from("profiles")
         .update({
           display_name: cleanName,
@@ -296,6 +319,8 @@
 
       displayName.textContent =
         cleanName || profile.username || "Grove Member";
+
+      showBio(cleanBio);
 
       if (!profile.avatar_url) {
         showAvatar(null);
