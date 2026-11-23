@@ -20,6 +20,8 @@
       align-items: center;
       justify-content: center;
       font-family: Arial, sans-serif;
+      text-align: center;
+      padding: 24px;
     }
 
     h1 {
@@ -27,16 +29,88 @@
       font-weight: 400;
       letter-spacing: 10px;
     }
+
+    .actions {
+      margin-top: 28px;
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    a, button {
+      border: 1px solid #fff;
+      padding: 12px 20px;
+      background: transparent;
+      color: #fff;
+      font-size: 12px;
+      letter-spacing: 1px;
+      text-decoration: none;
+      cursor: pointer;
+    }
+
+    button {
+      display: none;
+    }
+
+    #account-status {
+      margin-top: 18px;
+      color: #999;
+      font-size: 13px;
+    }
   </style>
 </head>
 
 <body>
-  <h1>GROVE.</h1>
+  <main>
+    <h1>GROVE.</h1>
+
+    <div class="actions">
+      <a id="signup-link" href="signup.html">CREATE ACCOUNT</a>
+      <a id="login-link" href="login.html">LOG IN</a>
+      <button id="logout-button" type="button">LOG OUT</button>
+    </div>
+
+    <p id="account-status" aria-live="polite"></p>
+  </main>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
   <script src="js/supabase.js"></script>
   <script src="js/auth.js"></script>
-  <script src="js/test.js"></script>
+
+  <script>
+    (async function () {
+      const signupLink = document.getElementById("signup-link");
+      const loginLink = document.getElementById("login-link");
+      const logoutButton = document.getElementById("logout-button");
+      const status = document.getElementById("account-status");
+
+      try {
+        const session = await window.GROVE_AUTH.checkSession();
+
+        if (session) {
+          signupLink.style.display = "none";
+          loginLink.style.display = "none";
+          logoutButton.style.display = "inline-block";
+          status.textContent = "You are logged in.";
+        }
+      } catch (error) {
+        status.textContent = "Connection error: " + error.message;
+      }
+
+      logoutButton.addEventListener("click", async function () {
+        logoutButton.disabled = true;
+
+        try {
+          await window.GROVE_AUTH.signOut();
+          window.location.reload();
+        } catch (error) {
+          status.textContent = error.message;
+          logoutButton.disabled = false;
+        }
+      });
+    })();
+  </script>
 </body>
 </html>
