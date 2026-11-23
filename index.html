@@ -38,7 +38,8 @@
       flex-wrap: wrap;
     }
 
-    a, button {
+    .actions a,
+    .actions button {
       border: 1px solid #fff;
       padding: 12px 20px;
       background: transparent;
@@ -49,7 +50,7 @@
       cursor: pointer;
     }
 
-    button {
+    .actions button {
       display: none;
     }
 
@@ -68,6 +69,9 @@
     <div class="actions">
       <a id="signup-link" href="signup.html">CREATE ACCOUNT</a>
       <a id="login-link" href="login.html">LOG IN</a>
+      <a id="profile-link" href="profile.html" style="display:none">
+        MY PROFILE
+      </a>
       <button id="logout-button" type="button">LOG OUT</button>
     </div>
 
@@ -83,6 +87,7 @@
     (async function () {
       const signupLink = document.getElementById("signup-link");
       const loginLink = document.getElementById("login-link");
+      const profileLink = document.getElementById("profile-link");
       const logoutButton = document.getElementById("logout-button");
       const status = document.getElementById("account-status");
 
@@ -92,6 +97,7 @@
         if (session) {
           signupLink.style.display = "none";
           loginLink.style.display = "none";
+          profileLink.style.display = "inline-block";
           logoutButton.style.display = "inline-block";
           status.textContent = "You are logged in.";
         }
