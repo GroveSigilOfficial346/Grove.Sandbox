@@ -11,6 +11,10 @@ body {
   font-family: Arial, sans-serif;
 }
 
+button, input, textarea, select {
+  font: inherit;
+}
+
 .topbar {
   min-height: 68px;
   padding: 0 6%;
@@ -134,7 +138,8 @@ body {
   margin-top: 6px;
 }
 
-.profile-bio-section {
+.profile-bio-section,
+.relationship-display-section {
   margin-top: 24px;
   padding: 0 18px;
 }
@@ -146,7 +151,8 @@ body {
   margin-bottom: 10px;
 }
 
-.bio-display {
+.bio-display,
+.relationship-display {
   color: #ccc;
   font-size: 14px;
   line-height: 1.7;
@@ -154,7 +160,8 @@ body {
   overflow-wrap: anywhere;
 }
 
-.bio-display.empty {
+.bio-display.empty,
+.relationship-display.empty {
   color: #666;
   font-style: italic;
 }
@@ -182,13 +189,14 @@ label {
 }
 
 input:not([type="file"]),
-textarea {
+textarea,
+select {
   width: 100%;
   padding: 13px;
   border: 1px solid #333;
+  border-radius: 0;
   background: #111;
   color: #fff;
-  font: inherit;
   font-size: 14px;
   outline: none;
 }
@@ -208,7 +216,8 @@ textarea {
 }
 
 input:focus,
-textarea:focus {
+textarea:focus,
+select:focus {
   border-color: #aaa;
 }
 
@@ -231,9 +240,89 @@ textarea:focus {
   margin-top: 22px;
 }
 
+#partner-search-button,
+.secondary-button {
+  border: 1px solid #555;
+  background: #171717;
+  color: #eee;
+  padding: 12px 14px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  cursor: pointer;
+}
+
+.partner-search-row {
+  display: flex;
+  gap: 8px;
+}
+
+.partner-search-row input {
+  min-width: 0;
+  flex: 1;
+}
+
+.partner-search-row button {
+  flex: 0 0 auto;
+}
+
+.partner-results {
+  display: grid;
+  gap: 7px;
+  margin-top: 10px;
+}
+
+.partner-result {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #292929;
+  background: #111;
+  color: #eee;
+  text-align: left;
+  cursor: pointer;
+}
+
+.partner-result:hover {
+  border-color: #aaa;
+}
+
+.partner-result strong {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.partner-result span {
+  display: block;
+  color: #888;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+.selected-partner {
+  margin-top: 12px;
+  padding: 12px;
+  border: 1px solid #292929;
+  color: #ccc;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+
+.secondary-button {
+  width: 100%;
+  margin-top: 8px;
+}
+
+.field-note {
+  color: #777;
+  font-size: 11px;
+  line-height: 1.5;
+  margin-top: 10px;
+}
+
 #avatar-upload:disabled,
 #cover-upload:disabled,
-#save-button:disabled {
+#save-button:disabled,
+#partner-search-button:disabled {
   opacity: .5;
   cursor: wait;
 }
@@ -305,7 +394,16 @@ textarea:focus {
     font-size: 21px;
   }
 
-  .profile-bio-section {
+  .profile-bio-section,
+  .relationship-display-section {
     padding: 0 8px;
+  }
+
+  .partner-search-row {
+    flex-direction: column;
+  }
+
+  #partner-search-button {
+    width: 100%;
   }
 }
