@@ -11,6 +11,7 @@
     <a class="wordmark" href="index.html">GROVE.</a>
     <nav>
       <a href="index.html">HOME</a>
+      <a href="feed.html">COMMUNITY</a>
       <button id="logout-button" type="button">LOG OUT</button>
     </nav>
   </header>
@@ -31,6 +32,11 @@
           <p id="username" class="username"></p>
         </div>
       </div>
+
+      <section class="profile-bio-section">
+        <p class="section-label">ABOUT</p>
+        <p id="bio-display" class="bio-display">Loading bio...</p>
+      </section>
 
       <div class="profile-divider"></div>
 
@@ -59,7 +65,7 @@
       <div class="profile-divider"></div>
 
       <form id="profile-form">
-        <h2>PROFILE DETAILS</h2>
+        <h2>EDIT PROFILE</h2>
 
         <label for="name-input">DISPLAY NAME</label>
         <input
