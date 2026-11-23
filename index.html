@@ -3,136 +3,250 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Grove</title>
+  <meta name="theme-color" content="#08051a">
+  <meta name="description" content="Grove — A world connected. Find your people, share your world, and grow together.">
+  <title>Grove — A World Connected</title>
 
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-    body {
-      min-height: 100vh;
-      background: #000;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-family: Arial, sans-serif;
-      text-align: center;
-      padding: 24px;
-    }
-
-    h1 {
-      font-size: 42px;
-      font-weight: 400;
-      letter-spacing: 10px;
-    }
-
-    .actions {
-      margin-top: 28px;
-      display: flex;
-      gap: 12px;
-      justify-content: center;
-      flex-wrap: wrap;
-    }
-
-    .actions a,
-    .actions button {
-      border: 1px solid #fff;
-      padding: 12px 20px;
-      background: transparent;
-      color: #fff;
-      font-size: 12px;
-      letter-spacing: 1px;
-      text-decoration: none;
-      cursor: pointer;
-    }
-
-    .actions button {
-      display: none;
-    }
-
-    #account-status {
-      margin-top: 18px;
-      color: #999;
-      font-size: 13px;
-    }
-  </style>
+  <link rel="stylesheet" href="css/landing.css">
 </head>
 
 <body>
-  <main>
-    <h1>GROVE.</h1>
+  <div class="ambient ambient-one" aria-hidden="true"></div>
+  <div class="ambient ambient-two" aria-hidden="true"></div>
 
-    <div class="actions">
-      <a id="signup-link" href="signup.html">
-        CREATE ACCOUNT
-      </a>
+  <header class="site-header">
+    <a class="wordmark" href="index.html" aria-label="Grove home">
+      GROVE<span>.</span>
+    </a>
 
-      <a id="login-link" href="login.html">
+    <nav class="header-nav" aria-label="Main navigation">
+      <a href="#about">ABOUT</a>
+      <a href="#community">COMMUNITY</a>
+
+      <a class="nav-login" id="login-link" href="login.html">
         LOG IN
       </a>
 
-      <a id="profile-link" href="profile.html" style="display:none">
-        MY PROFILE
+      <a class="nav-join" id="signup-link" href="signup.html">
+        JOIN GROVE <span>↗</span>
       </a>
 
-      <a id="feed-link" href="feed.html" style="display:none">
-        COMMUNITY
+      <a class="nav-join" id="profile-link" href="profile.html" hidden>
+        MY PROFILE <span>↗</span>
       </a>
 
-      <button id="logout-button" type="button">
+      <button class="nav-logout" id="logout-button" type="button" hidden>
         LOG OUT
       </button>
-    </div>
+    </nav>
+  </header>
 
-    <p id="account-status" aria-live="polite"></p>
+  <main>
+    <section class="hero">
+      <div class="hero-copy">
+        <p class="eyebrow">
+          <span class="status-dot"></span>
+          A NEW KIND OF SOCIAL SPACE
+        </p>
+
+        <h1>
+          A world<br>
+          <span>connected.</span>
+        </h1>
+
+        <p class="hero-description">
+          Your people. Your perspective. Your place to grow.
+          Build connections and shape a community that moves with you.
+        </p>
+
+        <div class="hero-actions">
+          <a class="button button-primary" id="hero-join" href="signup.html">
+            CREATE YOUR ACCOUNT <span>↗</span>
+          </a>
+
+          <a class="button button-secondary" id="hero-community" href="feed.html">
+            EXPLORE GROVE
+          </a>
+        </div>
+
+        <p class="hero-note" id="account-status" aria-live="polite">
+          A growing network, built around people.
+        </p>
+      </div>
+
+      <div class="hero-art" role="img" aria-label="Luminous digital tree representing a connected community">
+        <div class="orbit orbit-a"></div>
+        <div class="orbit orbit-b"></div>
+        <div class="orbit orbit-c"></div>
+        <div class="tree-glow"></div>
+
+        <svg class="neural-tree" viewBox="0 0 520 570" aria-hidden="true">
+          <defs>
+            <linearGradient id="trunk" x1="0" y1="1" x2="1" y2="0">
+              <stop offset="0" stop-color="#8d35ff"/>
+              <stop offset=".55" stop-color="#d34cff"/>
+              <stop offset="1" stop-color="#48d8ff"/>
+            </linearGradient>
+
+            <filter id="treeGlow">
+              <feGaussianBlur stdDeviation="5" result="blur"/>
+              <feMerge>
+                <feMergeNode in="blur"/>
+                <feMergeNode in="SourceGraphic"/>
+              </feMerge>
+            </filter>
+          </defs>
+
+          <g fill="none" stroke="url(#trunk)" stroke-width="4"
+             stroke-linecap="round" stroke-linejoin="round"
+             filter="url(#treeGlow)">
+            <path d="M258 500 C250 420 270 365 254 300 C238 235 270 176 260 112"/>
+            <path d="M256 385 C205 345 168 307 122 270 C95 249 72 226 58 192"/>
+            <path d="M257 350 C311 318 349 278 390 231 C415 202 438 170 448 133"/>
+            <path d="M251 292 C202 256 184 215 170 171 C161 141 146 116 121 96"/>
+            <path d="M263 257 C313 226 337 190 351 151 C363 119 383 92 413 70"/>
+            <path d="M255 435 C211 410 176 388 143 356 M263 416 C312 393 348 364 380 330"/>
+            <path d="M258 182 C229 157 211 128 207 94 M266 160 C294 134 311 107 315 76"/>
+          </g>
+
+          <g fill="#e5a5ff" filter="url(#treeGlow)">
+            <circle cx="58" cy="192" r="5"/>
+            <circle cx="122" cy="270" r="5"/>
+            <circle cx="170" cy="171" r="5"/>
+            <circle cx="121" cy="96" r="5"/>
+            <circle cx="448" cy="133" r="5"/>
+            <circle cx="390" cy="231" r="5"/>
+            <circle cx="413" cy="70" r="5"/>
+            <circle cx="351" cy="151" r="5"/>
+            <circle cx="143" cy="356" r="5"/>
+            <circle cx="380" cy="330" r="5"/>
+            <circle cx="207" cy="94" r="5"/>
+            <circle cx="315" cy="76" r="5"/>
+          </g>
+
+          <g fill="#55dfff">
+            <circle cx="260" cy="112" r="7"/>
+            <circle cx="254" cy="300" r="6"/>
+            <circle cx="258" cy="500" r="7"/>
+          </g>
+        </svg>
+
+        <div class="art-label label-top">
+          CONNECTION <span>01</span>
+        </div>
+
+        <div class="art-label label-bottom">
+          GROW TOGETHER <span>∞</span>
+        </div>
+      </div>
+
+      <div class="scroll-cue">
+        <span></span>
+        SCROLL TO DISCOVER
+      </div>
+    </section>
+
+    <section class="intro-section" id="about">
+      <div class="section-kicker">01 / THE IDEA</div>
+
+      <div class="intro-content">
+        <h2>
+          More than a feed.<br>
+          <span>A place to belong.</span>
+        </h2>
+
+        <p>
+          Grove is being built for meaningful connection — a space to share
+          what matters, discover new perspectives, and create something
+          better together.
+        </p>
+      </div>
+    </section>
+
+    <section class="feature-section" id="community">
+      <div class="section-kicker">02 / WHAT'S GROWING</div>
+
+      <div class="feature-grid">
+        <article class="feature-card feature-card-large">
+          <div class="feature-number">01</div>
+          <div class="feature-icon">◎</div>
+
+          <h3>Your space</h3>
+
+          <p>
+            Make your profile yours. Share your interests, your story,
+            and the things that make you who you are.
+          </p>
+
+          <span class="feature-line"></span>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-number">02</div>
+          <div class="feature-icon">⌁</div>
+
+          <h3>Real connection</h3>
+
+          <p>
+            Follow people, build friendships, and stay connected
+            to the conversations that matter.
+          </p>
+
+          <span class="feature-line"></span>
+        </article>
+
+        <article class="feature-card">
+          <div class="feature-number">03</div>
+          <div class="feature-icon">✳</div>
+
+          <h3>Shared momentum</h3>
+
+          <p>
+            Post, respond, and help a growing community become
+            something bigger than the sum of its parts.
+          </p>
+
+          <span class="feature-line"></span>
+        </article>
+      </div>
+    </section>
+
+    <section class="closing-section">
+      <div class="closing-orb" aria-hidden="true"></div>
+
+      <p class="eyebrow">THE NETWORK IS TAKING ROOT</p>
+
+      <h2>
+        Find your place<br>
+        in the <span>grove.</span>
+      </h2>
+
+      <a class="button button-primary" id="closing-join" href="signup.html">
+        GET STARTED <span>↗</span>
+      </a>
+    </section>
   </main>
+
+  <footer class="site-footer">
+    <a class="wordmark" href="index.html">
+      GROVE<span>.</span>
+    </a>
+
+    <p>A WORLD CONNECTED.</p>
+
+    <span>
+      © <span id="year"></span> GROVE
+    </span>
+  </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="js/config.js"></script>
   <script src="js/supabase.js"></script>
   <script src="js/auth.js"></script>
-
-  <script>
-    (async function () {
-      const signupLink = document.getElementById("signup-link");
-      const loginLink = document.getElementById("login-link");
-      const profileLink = document.getElementById("profile-link");
-      const feedLink = document.getElementById("feed-link");
-      const logoutButton = document.getElementById("logout-button");
-      const status = document.getElementById("account-status");
-
-      try {
-        const session = await window.GROVE_AUTH.checkSession();
-
-        if (session) {
-          signupLink.style.display = "none";
-          loginLink.style.display = "none";
-          profileLink.style.display = "inline-block";
-          feedLink.style.display = "inline-block";
-          logoutButton.style.display = "inline-block";
-
-          status.textContent = "You are logged in.";
-        }
-      } catch (error) {
-        status.textContent = "Connection error: " + error.message;
-      }
-
-      logoutButton.addEventListener("click", async function () {
-        logoutButton.disabled = true;
-
-        try {
-          await window.GROVE_AUTH.signOut();
-          window.location.reload();
-        } catch (error) {
-          status.textContent = error.message;
-          logoutButton.disabled = false;
-        }
-      });
-    })();
-  </script>
+  <script src="js/landing.js"></script>
 </body>
 </html>
