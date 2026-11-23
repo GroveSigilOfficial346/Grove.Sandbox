@@ -1,18 +1,25 @@
 import { supabase, OWNER_EMAIL } from "./supabase.js";
 
-const loginScreen = document.getElementById("loginScreen");
-const appShell = document.getElementById("appShell");
-const loginForm = document.getElementById("loginForm");
-const signupForm = document.getElementById("signupForm");
-const authMessage = document.getElementById("authMessage");
+const $ = id => document.getElementById(id);
 
-const showSignup = document.getElementById("showSignup");
-const showLogin = document.getElementById("showLogin");
-const loginButton = document.getElementById("loginButton");
-const signupButton = document.getElementById("signupButton");
+const loginScreen = $("loginScreen");
+const appShell = $("appShell");
+const forms = ["loginForm", "signupForm", "forgotForm", "resetForm"];
+
+let recoveryMode = false;
 
 function message(text) {
-  authMessage.textContent = text;
+  $("authMessage").textContent = text;
+}
+
+function showForm(name) {
+  forms.forEach(id => $(id).classList.toggle("hidden", id !== name));
+
+  $("showSignup").classList.toggle("hidden", name !== "loginForm");
+  $("showForgot").classList.toggle("hidden", name !== "loginForm");
+  $("showLogin").classList.toggle("hidden", name === "loginForm");
+
+  message("");
 }
 
 function showLoginScreen() {
@@ -20,44 +27,46 @@ function showLoginScreen() {
   loginScreen.classList.remove("hidden");
 }
 
-function showDashboard(user) {
-  loginScreen.classList.add("hidden");
-  appShell.classList.remove("hidden");
-
-  document.getElementById("ownerLabel").textContent = user.email;
-  document.getElementById("settingsEmail").textContent = user.email;
-}
-
 function isOwner(user) {
   return user?.email?.toLowerCase() === OWNER_EMAIL;
+}
+
+function showDashboard(user) {
+  if (!isOwner(user)) return;
+  loginScreen.classList.add("hidden");
+  appShell.classList.remove("hidden");
+  $("ownerLabel").textContent = user.email;
+  $("settingsEmail").textContent = user.email;
 }
 
 async function rejectNonOwner() {
   await supabase.auth.signOut();
   showLoginScreen();
-  message("This account is not authorized for Grove Headquarters.");
+  showForm("loginForm");
+  message("This account is not authorized.");
 }
 
-loginForm.addEventListener("submit", async event => {
+// SIGN IN
+$("loginForm").addEventListener("submit", async event => {
   event.preventDefault();
-  loginButton.disabled = true;
-  message("Signing in...");
 
-  const email = document.getElementById("loginEmail").value.trim().toLowerCase();
-  const password = document.getElementById("loginPassword").value;
+  const email = $("loginEmail").value.trim().toLowerCase();
+  const password = $("loginPassword").value;
 
   if (email !== OWNER_EMAIL) {
     message("That email is not authorized.");
-    loginButton.disabled = false;
     return;
   }
+
+  $("loginButton").disabled = true;
+  message("Signing in...");
 
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password
   });
 
-  loginButton.disabled = false;
+  $("loginButton").disabled = false;
 
   if (error) {
     message(error.message);
@@ -69,39 +78,33 @@ loginForm.addEventListener("submit", async event => {
     return;
   }
 
-  message("");
   showDashboard(data.user);
 });
 
-signupForm.addEventListener("submit", async event => {
+// FIRST-TIME OWNER SIGNUP
+$("signupForm").addEventListener("submit", async event => {
   event.preventDefault();
-  signupButton.disabled = true;
-  message("Creating your owner account...");
 
-  const email = document.getElementById("signupEmail").value.trim().toLowerCase();
-  const password = document.getElementById("signupPassword").value;
+  const email = $("signupEmail").value.trim().toLowerCase();
+  const password = $("signupPassword").value;
 
   if (email !== OWNER_EMAIL) {
-    message("Only the owner email can create an account.");
-    signupButton.disabled = false;
+    message("Only the owner email can register.");
     return;
   }
 
-  if (password.length < 8) {
-    message("Use a password with at least 8 characters.");
-    signupButton.disabled = false;
-    return;
-  }
+  $("signupButton").disabled = true;
+  message("Creating your account...");
 
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
     options: {
-      emailRedirectTo: window.location.origin
+      emailRedirectTo: window.location.origin + "/"
     }
   });
 
-  signupButton.disabled = false;
+  $("signupButton").disabled = false;
 
   if (error) {
     message(error.message);
@@ -109,31 +112,99 @@ signupForm.addEventListener("submit", async event => {
   }
 
   if (data.session && isOwner(data.user)) {
-    message("");
     showDashboard(data.user);
+  } else {
+    showForm("loginForm");
+    message("Account created. Confirm your email using the link Supabase sent, then sign in.");
+  }
+});
+
+// REQUEST PASSWORD RESET
+$("forgotForm").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  const email = $("forgotEmail").value.trim().toLowerCase();
+
+  if (email !== OWNER_EMAIL) {
+    message("That email is not authorized.");
     return;
   }
 
-  message("Account created. Check your email to confirm it, then return here and sign in.");
+  $("forgotButton").disabled = true;
+  message("Sending password reset email...");
+
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + "/"
+  });
+
+  $("forgotButton").disabled = false;
+
+  if (error) {
+    message(error.message);
+    return;
+  }
+
+  message("Password reset email sent. Open the link in that email to return here and choose a new password.");
 });
 
-showSignup.addEventListener("click", () => {
-  loginForm.classList.add("hidden");
-  signupForm.classList.remove("hidden");
-  showSignup.classList.add("hidden");
-  showLogin.classList.remove("hidden");
-  message("");
+// SAVE NEW PASSWORD AFTER OPENING EMAIL LINK
+$("resetForm").addEventListener("submit", async event => {
+  event.preventDefault();
+
+  const password = $("newPassword").value;
+  const confirm = $("confirmPassword").value;
+
+  if (password.length < 8) {
+    message("Your password must be at least 8 characters.");
+    return;
+  }
+
+  if (password !== confirm) {
+    message("The passwords do not match.");
+    return;
+  }
+
+  $("resetButton").disabled = true;
+  message("Updating your password...");
+
+  const { data, error } = await supabase.auth.updateUser({
+    password
+  });
+
+  $("resetButton").disabled = false;
+
+  if (error) {
+    message(error.message);
+    return;
+  }
+
+  recoveryMode = false;
+  $("newPassword").value = "";
+  $("confirmPassword").value = "";
+
+  if (isOwner(data.user)) {
+    showDashboard(data.user);
+  } else {
+    await supabase.auth.signOut();
+    showLoginScreen();
+    showForm("loginForm");
+    message("Password updated. Sign in with your owner account.");
+  }
 });
 
-showLogin.addEventListener("click", () => {
-  signupForm.classList.add("hidden");
-  loginForm.classList.remove("hidden");
-  showLogin.classList.add("hidden");
-  showSignup.classList.remove("hidden");
-  message("");
+// LOGIN SCREEN NAVIGATION
+$("showSignup").addEventListener("click", () => showForm("signupForm"));
+$("showLogin").addEventListener("click", () => {
+  recoveryMode = false;
+  showForm("loginForm");
+});
+$("showForgot").addEventListener("click", () => {
+  $("forgotEmail").value = $("loginEmail").value || OWNER_EMAIL;
+  showForm("forgotForm");
 });
 
-document.getElementById("logoutButton").addEventListener("click", async () => {
+// SIGN OUT
+$("logoutButton").addEventListener("click", async () => {
   const { error } = await supabase.auth.signOut();
 
   if (error) {
@@ -141,34 +212,55 @@ document.getElementById("logoutButton").addEventListener("click", async () => {
     return;
   }
 
+  recoveryMode = false;
   showLoginScreen();
+  showForm("loginForm");
   message("You have signed out.");
 });
 
-const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+// HANDLE SUPABASE EMAIL LINKS AND RESTORED SESSIONS
+const hash = window.location.hash;
+const isRecoveryLink = hash.includes("type=recovery");
 
-if (sessionError) {
+if (isRecoveryLink) {
+  recoveryMode = true;
   showLoginScreen();
-  message("Could not restore your session. Please sign in again.");
-} else if (sessionData.session?.user) {
-  if (isOwner(sessionData.session.user)) {
-    showDashboard(sessionData.session.user);
-  } else {
-    await rejectNonOwner();
-  }
+  showForm("resetForm");
+  message("Choose your new password.");
 } else {
-  showLoginScreen();
+  const { data, error } = await supabase.auth.getSession();
+
+  if (error) {
+    showLoginScreen();
+    showForm("loginForm");
+    message("Could not restore your session. Please sign in.");
+  } else if (data.session?.user) {
+    if (isOwner(data.session.user)) {
+      showDashboard(data.session.user);
+    } else {
+      await rejectNonOwner();
+    }
+  } else {
+    showLoginScreen();
+    showForm("loginForm");
+  }
 }
 
-supabase.auth.onAuthStateChange((_event, session) => {
-  if (!session) {
+supabase.auth.onAuthStateChange((event, session) => {
+  if (event === "PASSWORD_RECOVERY") {
+    recoveryMode = true;
     showLoginScreen();
+    showForm("resetForm");
+    message("Choose your new password.");
     return;
   }
 
-  if (isOwner(session.user)) {
+  if (!session) {
+    if (!recoveryMode) showLoginScreen();
+    return;
+  }
+
+  if (isOwner(session.user) && !recoveryMode) {
     showDashboard(session.user);
-  } else {
-    rejectNonOwner();
   }
 });
