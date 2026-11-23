@@ -1,4 +1,6 @@
 (function () {
+  "use strict";
+
   const client = window.supabaseClient;
 
   const composer = document.getElementById("composer");
@@ -46,6 +48,40 @@
     });
   }
 
+  function getPostUrl(postId) {
+    return window.location.origin +
+      window.location.pathname +
+      "#post-" + postId;
+  }
+
+  async function sharePost(postId) {
+    const url = getPostUrl(postId);
+
+    try {
+      if (navigator.share) {
+        await navigator.share({
+          title: "Grove post",
+          text: "Check out this post on Grove.",
+          url: url
+        });
+        return;
+      }
+
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        await navigator.clipboard.writeText(url);
+        alert("Post link copied.");
+        return;
+      }
+
+      window.prompt("Copy this Grove post link:", url);
+    } catch (error) {
+      if (error.name !== "AbortError") {
+        console.error("Grove share error:", error);
+        window.prompt("Copy this Grove post link:", url);
+      }
+    }
+  }
+
   async function loadFeed() {
     status(feedStatus, "Loading posts...", "info");
     postList.replaceChildren();
@@ -74,28 +110,38 @@
       const authorIds = [...new Set(posts.map(post => post.author_id))];
       const postIds = posts.map(post => post.id);
 
-      const [profileResult, likesResult, commentsResult] =
-        await Promise.all([
-          client
-            .from("profiles")
-            .select("id, username, display_name")
-            .in("id", authorIds),
+      const [
+        profileResult,
+        likesResult,
+        commentsResult,
+        repostsResult
+      ] = await Promise.all([
+        client
+          .from("profiles")
+          .select("id, username, display_name")
+          .in("id", authorIds),
 
-          client
-            .from("post_likes")
-            .select("post_id, user_id")
-            .in("post_id", postIds),
+        client
+          .from("post_likes")
+          .select("post_id, user_id")
+          .in("post_id", postIds),
 
-          client
-            .from("post_comments")
-            .select("id, post_id, author_id, body, created_at")
-            .in("post_id", postIds)
-            .order("created_at", { ascending: true })
-        ]);
+        client
+          .from("post_comments")
+          .select("id, post_id, author_id, body, created_at")
+          .in("post_id", postIds)
+          .order("created_at", { ascending: true }),
+
+        client
+          .from("post_reposts")
+          .select("post_id, user_id")
+          .in("post_id", postIds)
+      ]);
 
       if (profileResult.error) throw profileResult.error;
       if (likesResult.error) throw likesResult.error;
       if (commentsResult.error) throw commentsResult.error;
+      if (repostsResult.error) throw repostsResult.error;
 
       const profiles = new Map(
         (profileResult.data || []).map(profile => [
@@ -106,6 +152,7 @@
 
       const likes = likesResult.data || [];
       const comments = commentsResult.data || [];
+      const reposts = repostsResult.data || [];
 
       const commentAuthorIds = [
         ...new Set(comments.map(comment => comment.author_id))
@@ -122,7 +169,10 @@
         if (error) throw error;
 
         commentProfiles = new Map(
-          (data || []).map(profile => [profile.id, profile])
+          (data || []).map(profile => [
+            profile.id,
+            profile
+          ])
         );
       }
 
@@ -130,13 +180,25 @@
 
       posts.forEach(post => {
         const author = profiles.get(post.author_id);
-        const postLikes = likes.filter(like => like.post_id === post.id);
+
+        const postLikes = likes.filter(
+          like => like.post_id === post.id
+        );
+
         const postComments = comments.filter(
           comment => comment.post_id === post.id
         );
 
+        const postReposts = reposts.filter(
+          repost => repost.post_id === post.id
+        );
+
         const likedByMe = currentUser
           ? postLikes.some(like => like.user_id === currentUser.id)
+          : false;
+
+        const repostedByMe = currentUser
+          ? postReposts.some(repost => repost.user_id === currentUser.id)
           : false;
 
         renderPost({
@@ -144,10 +206,21 @@
           author,
           postLikes,
           postComments,
+          postReposts,
           commentProfiles,
-          likedByMe
+          likedByMe,
+          repostedByMe
         });
       });
+
+      if (window.location.hash.startsWith("#post-")) {
+        const targetId = window.location.hash.slice(1);
+        const target = document.getElementById(targetId);
+
+        if (target) {
+          target.scrollIntoView({ behavior: "smooth", block: "start" });
+        }
+      }
     } catch (error) {
       console.error("Grove feed error:", error);
 
@@ -165,11 +238,15 @@
       author,
       postLikes,
       postComments,
+      postReposts,
       commentProfiles,
-      likedByMe
+      likedByMe,
+      repostedByMe
     } = data;
 
     const card = makeElement("article", "post-card");
+    card.id = "post-" + post.id;
+
     const header = makeElement("div", "post-header");
     const authorBlock = makeElement("div", "author-block");
 
@@ -189,7 +266,11 @@
       makeElement("div", "author-username", username)
     );
 
-    const dateBlock = makeElement("div", "post-date", formatDate(post.created_at));
+    const dateBlock = makeElement(
+      "div",
+      "post-date",
+      formatDate(post.created_at)
+    );
 
     header.append(authorBlock, dateBlock);
     card.appendChild(header);
@@ -212,6 +293,28 @@
     );
 
     actions.appendChild(likeButton);
+
+    const repostButton = makeButton(
+      (repostedByMe ? "REPOSTED" : "REPOST") +
+        " · " + postReposts.length,
+      repostedByMe ? "action-button liked" : "action-button",
+      () => toggleRepost(post.id)
+    );
+
+    if (!currentUser) {
+      repostButton.disabled = true;
+      repostButton.title = "Log in to repost.";
+    }
+
+    actions.appendChild(repostButton);
+
+    actions.appendChild(
+      makeButton(
+        "SHARE",
+        "action-button",
+        () => sharePost(post.id)
+      )
+    );
 
     actions.appendChild(
       makeElement(
@@ -237,6 +340,7 @@
 
     postComments.forEach(comment => {
       const commentAuthor = commentProfiles.get(comment.author_id);
+
       const commentName = commentAuthor
         ? commentAuthor.display_name || commentAuthor.username
         : "Grove Member";
@@ -257,7 +361,7 @@
       const commentInput = document.createElement("input");
 
       commentInput.type = "text";
-      commentInput.maxLength = 1000;
+      commentInput.maxLength = 2000;
       commentInput.placeholder = "Write a comment...";
       commentInput.required = true;
 
@@ -388,6 +492,45 @@
     }
   }
 
+  async function toggleRepost(postId) {
+    if (!currentUser) return;
+
+    try {
+      const { data: existing, error: findError } = await client
+        .from("post_reposts")
+        .select("id")
+        .eq("post_id", postId)
+        .eq("user_id", currentUser.id)
+        .maybeSingle();
+
+      if (findError) throw findError;
+
+      if (existing) {
+        const { error } = await client
+          .from("post_reposts")
+          .delete()
+          .eq("id", existing.id)
+          .eq("user_id", currentUser.id);
+
+        if (error) throw error;
+      } else {
+        const { error } = await client
+          .from("post_reposts")
+          .insert({
+            post_id: postId,
+            user_id: currentUser.id
+          });
+
+        if (error) throw error;
+      }
+
+      await loadFeed();
+    } catch (error) {
+      console.error("Grove repost error:", error);
+      alert(error.message || "Could not update repost.");
+    }
+  }
+
   async function deletePost(postId) {
     if (!currentUser) return;
 
@@ -432,7 +575,6 @@
   }
 
   postForm.addEventListener("submit", createPost);
-
   refreshButton.addEventListener("click", loadFeed);
 
   logoutButton.addEventListener("click", async function () {
@@ -446,6 +588,11 @@
       logoutButton.disabled = false;
     }
   });
+
+  if (!client) {
+    status(feedStatus, "Supabase is not connected.", "error");
+    return;
+  }
 
   initialize();
 })();
