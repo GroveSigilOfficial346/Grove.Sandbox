@@ -14,6 +14,7 @@
       <a href="feed.html">COMMUNITY</a>
       <a href="profile.html">MY PROFILE</a>
       <a href="follows.html">FOLLOWERS</a>
+      <a href="notifications-settings.html">SETTINGS</a>
       <button id="logout-button" type="button">LOG OUT</button>
     </nav>
   </header>
@@ -30,10 +31,17 @@
         aria-live="polite">Loading notifications...</p>
 
       <div class="toolbar-actions">
+        <button id="enable-sound-button" type="button">
+          ENABLE SOUND HERE
+        </button>
         <button id="mark-all-button" type="button">MARK ALL READ</button>
         <button id="refresh-button" type="button">REFRESH</button>
       </div>
     </section>
+
+    <p id="sound-status" class="status">
+      Sound requires one click here to unlock browser audio.
+    </p>
 
     <div id="notification-list" class="notification-list"></div>
   </main>
