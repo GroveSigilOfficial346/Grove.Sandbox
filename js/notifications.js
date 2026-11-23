@@ -4,13 +4,21 @@
   const client = window.supabaseClient;
 
   const statusElement = document.getElementById("notification-status");
+  const soundStatus = document.getElementById("sound-status");
   const listElement = document.getElementById("notification-list");
+
   const refreshButton = document.getElementById("refresh-button");
   const markAllButton = document.getElementById("mark-all-button");
+  const enableSoundButton = document.getElementById("enable-sound-button");
   const logoutButton = document.getElementById("logout-button");
 
   let currentUser = null;
   let loading = false;
+  let pendingRefresh = false;
+  let soundEnabled = false;
+  let soundReady = false;
+  let audioContext = null;
+  let realtimeChannel = null;
 
   const messages = {
     follow: "started following you.",
@@ -42,8 +50,105 @@
     });
   }
 
+  async function loadSoundPreference() {
+    const { data, error } = await client
+      .from("notification_preferences")
+      .select("sound_enabled")
+      .eq("user_id", currentUser.id)
+      .maybeSingle();
+
+    if (error) throw error;
+
+    soundEnabled = Boolean(data && data.sound_enabled);
+
+    soundStatus.textContent = soundEnabled
+      ? "Sound preference is on. Click ENABLE SOUND HERE to unlock audio in this tab."
+      : "Sound preference is off. Change it in Settings.";
+  }
+
+  async function enableSound() {
+    try {
+      const AudioContextClass =
+        window.AudioContext || window.webkitAudioContext;
+
+      if (!AudioContextClass) {
+        throw new Error("This browser does not support Web Audio.");
+      }
+
+      if (!audioContext) {
+        audioContext = new AudioContextClass();
+      }
+
+      if (audioContext.state === "suspended") {
+        await audioContext.resume();
+      }
+
+      soundReady = audioContext.state === "running";
+
+      if (!soundReady) {
+        throw new Error("Browser audio is still blocked.");
+      }
+
+      enableSoundButton.textContent = "SOUND ENABLED";
+      soundStatus.textContent = soundEnabled
+        ? "Sound is ready for new notifications in this tab."
+        : "Audio is unlocked, but notification sound is switched off in Settings.";
+
+      if (soundEnabled) {
+        playNotificationSound();
+      }
+    } catch (error) {
+      console.error("Grove audio unlock error:", error);
+      soundStatus.textContent =
+        error.message || "Could not enable sound.";
+    }
+  }
+
+  function playNotificationSound() {
+    if (!soundEnabled || !soundReady || !audioContext) return;
+
+    try {
+      const oscillator = audioContext.createOscillator();
+      const gain = audioContext.createGain();
+
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(
+        740,
+        audioContext.currentTime
+      );
+
+      gain.gain.setValueAtTime(
+        0.0001,
+        audioContext.currentTime
+      );
+
+      gain.gain.exponentialRampToValueAtTime(
+        0.1,
+        audioContext.currentTime + 0.025
+      );
+
+      gain.gain.exponentialRampToValueAtTime(
+        0.0001,
+        audioContext.currentTime + 0.2
+      );
+
+      oscillator.connect(gain);
+      gain.connect(audioContext.destination);
+
+      oscillator.start();
+      oscillator.stop(audioContext.currentTime + 0.21);
+    } catch (error) {
+      console.warn("Grove notification sound failed:", error);
+    }
+  }
+
   async function loadNotifications() {
-    if (loading || !currentUser) return;
+    if (!currentUser) return;
+
+    if (loading) {
+      pendingRefresh = true;
+      return;
+    }
 
     loading = true;
     refreshButton.disabled = true;
@@ -55,7 +160,9 @@
     try {
       const { data: notifications, error } = await client
         .from("notifications")
-        .select("id, recipient_id, actor_id, kind, post_id, read_at, created_at")
+        .select(
+          "id, recipient_id, actor_id, kind, post_id, read_at, created_at"
+        )
         .eq("recipient_id", currentUser.id)
         .order("created_at", { ascending: false })
         .limit(100);
@@ -122,6 +229,11 @@
       loading = false;
       refreshButton.disabled = false;
       markAllButton.disabled = false;
+
+      if (pendingRefresh) {
+        pendingRefresh = false;
+        loadNotifications();
+      }
     }
   }
 
@@ -134,7 +246,6 @@
     );
 
     const content = makeElement("div", "notification-content");
-
     const actor = profiles.get(notification.actor_id);
 
     const actorName = actor
@@ -267,8 +378,43 @@
     }
   }
 
+  function subscribeToNotifications() {
+    realtimeChannel = client
+      .channel("grove-notifications-" + currentUser.id)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "notifications",
+          filter: "recipient_id=eq." + currentUser.id
+        },
+        function () {
+          playNotificationSound();
+          loadNotifications();
+        }
+      )
+      .subscribe(function (state) {
+        if (state === "SUBSCRIBED") {
+          console.log("Grove notification realtime connected.");
+        }
+
+        if (state === "CHANNEL_ERROR" || state === "TIMED_OUT") {
+          console.warn("Grove notification realtime:", state);
+          setStatus(
+            "Live updates disconnected. Use REFRESH to check notifications.",
+            "error"
+          );
+        }
+      });
+  }
+
   async function initialize() {
     try {
+      if (!client) {
+        throw new Error("Supabase is not connected.");
+      }
+
       const { data, error } = await client.auth.getUser();
 
       if (error) throw error;
@@ -280,7 +426,9 @@
         return;
       }
 
+      await loadSoundPreference();
       await loadNotifications();
+      subscribeToNotifications();
     } catch (error) {
       console.error("Grove notification initialization:", error);
       setStatus(error.message || "Could not connect.", "error");
@@ -289,11 +437,16 @@
 
   refreshButton.addEventListener("click", loadNotifications);
   markAllButton.addEventListener("click", markAllRead);
+  enableSoundButton.addEventListener("click", enableSound);
 
   logoutButton.addEventListener("click", async function () {
     logoutButton.disabled = true;
 
     try {
+      if (realtimeChannel) {
+        await client.removeChannel(realtimeChannel);
+      }
+
       await window.GROVE_AUTH.signOut();
       window.location.href = "index.html";
     } catch (error) {
@@ -302,10 +455,11 @@
     }
   });
 
-  if (!client) {
-    setStatus("Supabase is not connected.", "error");
-    return;
-  }
+  window.addEventListener("beforeunload", function () {
+    if (realtimeChannel) {
+      client.removeChannel(realtimeChannel);
+    }
+  });
 
   initialize();
 })();
