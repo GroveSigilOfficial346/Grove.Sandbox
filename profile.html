@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>My Profile — Grove</title>
+  <link rel="stylesheet" href="css/profile.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="wordmark" href="index.html">GROVE.</a>
+    <nav>
+      <a href="index.html">HOME</a>
+      <button id="logout-button" type="button">LOG OUT</button>
+    </nav>
+  </header>
+
+  <main class="profile-shell">
+    <section class="profile-card">
+      <div class="avatar" id="avatar">G</div>
+
+      <div class="profile-heading">
+        <p class="eyebrow">GROVE MEMBER</p>
+        <h1 id="display-name">Loading profile...</h1>
+        <p id="username" class="username"></p>
+      </div>
+
+      <div class="profile-divider"></div>
+
+      <form id="profile-form">
+        <label for="name-input">DISPLAY NAME</label>
+        <input
+          id="name-input"
+          name="display_name"
+          type="text"
+          maxlength="40"
+          placeholder="Your display name"
+        >
+
+        <label for="bio-input">BIO</label>
+        <textarea
+          id="bio-input"
+          name="bio"
+          maxlength="300"
+          rows="5"
+          placeholder="Write something about yourself..."
+        ></textarea>
+
+        <button id="save-button" type="submit">SAVE PROFILE</button>
+        <p id="profile-status" role="status" aria-live="polite"></p>
+      </form>
+
+      <p class="member-since" id="member-since"></p>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/profile.js"></script>
+</body>
+</html>
