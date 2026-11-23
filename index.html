@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Grove Headquarters</title>
+
+<style>
+:root {
+  --bg: #000;
+  --panel: #0b0b0b;
+  --panel2: #111;
+  --border: #242424;
+  --text: #fff;
+  --muted: #888;
+  --accent: #ddd;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+}
+
+button, input, textarea {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.app {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* SIDEBAR */
+
+.sidebar {
+  width: 245px;
+  background: #050505;
+  border-right: 1px solid var(--border);
+  padding: 28px 18px;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+}
+
+.brand {
+  font-size: 25px;
+  font-weight: 800;
+  letter-spacing: 5px;
+  padding: 4px 12px;
+}
+
+.brand-sub {
+  color: var(--muted);
+  font-size: 10px;
+  letter-spacing: 2px;
+  padding: 8px 12px 35px;
+}
+
+.nav-label {
+  color: #666;
+  font-size: 10px;
+  letter-spacing: 2px;
+  margin: 20px 12px 12px;
+}
+
+.nav-button {
+  display: block;
+  width: 100%;
+  background: transparent;
+  border: 1px solid transparent;
+  color: #999;
+  text-align: left;
+  padding: 13px 12px;
+  border-radius: 7px;
+  margin-bottom: 5px;
+  font-size: 13px;
+  transition: .2s;
+}
+
+.nav-button:hover,
+.nav-button.active {
+  background: #151515;
+  color: white;
+  border-color: #292929;
+}
+
+.sidebar-bottom {
+  margin-top: auto;
+  padding: 15px 12px 0;
+  border-top: 1px solid var(--border);
+}
+
+.owner {
+  font-size: 12px;
+  color: white;
+}
+
+.owner-email {
+  color: var(--muted);
+  font-size: 10px;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}
+
+/* MAIN */
+
+.main {
+  flex: 1;
+  min-width: 0;
+  padding: 35px 42px;
+}
+
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 23px;
+  margin-bottom: 38px;
+  gap: 15px;
+}
+
+.breadcrumb {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.status {
+  color: #999;
+  border: 1px solid var(--border);
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-size: 10px;
+  letter-spacing: 1px;
+}
+
+.page {
+  display: none;
+}
+
+.page.active {
+  display: block;
+}
+
+.page-heading {
+  margin-bottom: 30px;
+}
+
+.eyebrow {
+  color: #777;
+  font-size: 10px;
+  letter-spacing: 2px;
+  margin-bottom: 13px;
+}
+
+h1 {
+  font-size: clamp(27px, 4vw, 38px);
+  letter-spacing: -1.5px;
+  font-weight: 600;
+}
+
+.subtitle {
+  color: var(--muted);
+  font-size: 13px;
+  margin-top: 11px;
+  line-height: 1.6;
+}
+
+/* CARDS */
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 15px;
+  margin-bottom: 28px;
+}
+
+.card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 22px;
+}
+
+.card-label {
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 1px;
+}
+
+.card-number {
+  font-size: 31px;
+  margin-top: 17px;
+  font-weight: 500;
+}
+
+.card-description {
+  color: #666;
+  font-size: 11px;
+  margin-top: 8px;
+}
+
+.section-title {
+  font-size: 15px;
+  font-weight: 600;
+  margin-bottom: 17px;
+}
+
+.panel {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 23px;
+  margin-bottom: 20px;
+}
+
+.panel-grid {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 17px;
+}
+
+.list-item {
+  padding: 15px 0;
+  border-bottom: 1px solid #202020;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  font-size: 12px;
+}
+
+.list-item:last-child {
+  border-bottom: none;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.small-button {
+  background: #171717;
+  color: white;
+  border: 1px solid #333;
+  border-radius: 6px;
+  padding: 9px 13px;
+  font-size: 11px;
+}
+
+.small-button:hover {
+  background: #292929;
+}
+
+input, textarea {
+  width: 100%;
+  background: #080808;
+  color: white;
+  border: 1px solid #303030;
+  border-radius: 6px;
+  padding: 12px;
+  outline: none;
+  font-size: 12px;
+}
+
+input:focus, textarea:focus {
+  border-color: #777;
+}
+
+.input-row {
+  display: flex;
+  gap: 9px;
+  margin-top: 15px;
+}
+
+textarea {
+  resize: vertical;
+  min-height: 120px;
+}
+
+.project-card {
+  min-height: 155px;
+}
+
+.project-card h3 {
+  font-size: 16px;
+  margin: 18px 0 9px;
+}
+
+.project-card p {
+  color: var(--muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+
+.tag {
+  color: #999;
+  font-size: 9px;
+  border: 1px solid #303030;
+  padding: 5px 8px;
+  border-radius: 20px;
+}
+
+.empty {
+  color: #666;
+  font-size: 12px;
+  padding: 15px 0;
+}
+
+/* MOBILE */
+
+.mobile-brand {
+  display: none;
+}
+
+@media(max-width: 850px) {
+  .sidebar {
+    width: 205px;
+  }
+
+  .main {
+    padding: 28px 23px;
+  }
+
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .panel-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media(max-width: 600px) {
+  .app {
+    display: block;
+  }
+
+  .sidebar {
+    width: 100%;
+    padding: 15px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .brand {
+    font-size: 21px;
+  }
+
+  .brand-sub {
+    padding: 5px 12px 17px;
+  }
+
+  .nav-label, .sidebar-bottom {
+    display: none;
+  }
+
+  .navigation {
+    display: flex;
+    gap: 5px;
+    overflow-x: auto;
+    padding-bottom: 3px;
+  }
+
+  .nav-button {
+    width: auto;
+    white-space: nowrap;
+    padding: 10px 12px;
+    margin: 0;
+  }
+
+  .main {
+    padding: 22px 16px;
+  }
+
+  .topbar {
+    margin-bottom: 27px;
+  }
+
+  .grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 9px;
+  }
+
+  .card {
+    padding: 16px;
+  }
+
+  .card-number {
+    font-size: 25px;
+  }
+
+  .panel {
+    padding: 17px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand">GROVE</div>
+    <div class="brand-sub">PERSONAL HEADQUARTERS</div>
+
+    <div class="nav-label">WORKSPACE</div>
+
+    <nav class="navigation">
+      <button class="nav-button active" data-page="overview">Overview</button>
+      <button class="nav-button" data-page="projects">Projects</button>
+      <button class="nav-button" data-page="tasks">Tasks</button>
+      <button class="nav-button" data-page="notes">Notes</button>
+      <button class="nav-button" data-page="planning">Planning</button>
+      <button class="nav-button" data-page="archive">Archive</button>
+      <button class="nav-button" data-page="settings">Settings</button>
+    </nav>
+
+    <div class="sidebar-bottom">
+      <div class="owner">HEADQUARTERS OWNER</div>
+      <div class="owner-email">bleedvow@gmail.com</div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <header class="topbar">
+      <div class="breadcrumb">GROVE / <span id="current-location">OVERVIEW</span></div>
+      <div class="status">PRIVATE WORKSPACE</div>
+    </header>
+
+    <!-- OVERVIEW -->
+
+    <section class="page active" id="overview">
+      <div class="page-heading">
+        <div class="eyebrow">PERSONAL COMMAND CENTER</div>
+        <h1>Welcome back.</h1>
+        <p class="subtitle">Your workspace. Your priorities. Your direction.</p>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <div class="card-label">ACTIVE PROJECTS</div>
+          <div class="card-number" id="project-count">0</div>
+          <div class="card-description">Projects in your workspace</div>
+        </div>
+
+        <div class="card">
+          <div class="card-label">OPEN TASKS</div>
+          <div class="card-number" id="task-count">0</div>
+          <div class="card-description">Items awaiting completion</div>
+        </div>
+
+        <div class="card">
+          <div class="card-label">COMPLETED TASKS</div>
+          <div class="card-number" id="completed-count">0</div>
+          <div class="card-description">Tasks completed</div>
+        </div>
+      </div>
+
+      <div class="panel-grid">
+        <div class="panel">
+          <div class="section-title">Priority Tasks</div>
+          <div id="overview-tasks">
+            <div class="empty">Nothing on the board yet.</div>
+          </div>
+          <button class="small-button" onclick="showPage('tasks')">Manage tasks</button>
+        </div>
+
+        <div class="panel">
+          <div class="section-title">Workspace</div>
+          <div class="list-item">
+            <span>Projects</span>
+            <span class="muted">Manage work</span>
+          </div>
+          <div class="list-item">
+            <span>Notes</span>
+            <span class="muted">Save ideas</span>
+          </div>
+          <div class="list-item">
+            <span>Planning</span>
+            <span class="muted">Set direction</span>
+          </div>
+          <div class="list-item">
+            <span>Archive</span>
+            <span class="muted">Past work</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROJECTS -->
+
+    <section class="page" id="projects">
+      <div class="page-heading">
+        <div class="eyebrow">WORKSPACE</div>
+        <h1>Projects</h1>
+        <p class="subtitle">Organize the things you're building.</p>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">Create a project</div>
+        <input id="project-name" placeholder="Project name">
+        <div class="input-row">
+          <input id="project-description" placeholder="Short description">
+          <button class="small-button" onclick="addProject()">Create</button>
+        </div>
+      </div>
+
+      <div class="grid" id="project-list"></div>
+    </section>
+
+    <!-- TASKS -->
+
+    <section class="page" id="tasks">
+      <div class="page-heading">
+        <div class="eyebrow">EXECUTION</div>
+        <h1>Tasks</h1>
+        <p class="subtitle">Keep track of what needs to get done.</p>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">Add a task</div>
+        <div class="input-row">
+          <input id="task-input" placeholder="What needs to get done?">
+          <button class="small-button" onclick="addTask()">Add task</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">Your task list</div>
+        <div id="task-list"></div>
+      </div>
+    </section>
+
+    <!-- NOTES -->
+
+    <section class="page" id="notes">
+      <div class="page-heading">
+        <div class="eyebrow">PERSONAL RECORDS</div>
+        <h1>Notes</h1>
+        <p class="subtitle">Capture thoughts, ideas, and information.</p>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">New note</div>
+        <input id="note-title" placeholder="Note title">
+        <div style="height:10px"></div>
+        <textarea id="note-content" placeholder="Write something..."></textarea>
+        <div style="height:12px"></div>
+        <button class="small-button" onclick="addNote()">Save note</button>
+      </div>
+
+      <div id="note-list" class="grid"></div>
+    </section>
+
+    <!-- PLANNING -->
+
+    <section class="page" id="planning">
+      <div class="page-heading">
+        <div class="eyebrow">LONG-TERM DIRECTION</div>
+        <h1>Planning</h1>
+        <p class="subtitle">Your goals, routines, and future priorities.</p>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">Planning workspace</div>
+        <textarea id="planning-content" placeholder="Write your goals, plans, schedules, and priorities here..."></textarea>
+        <div style="height:12px"></div>
+        <button class="small-button" onclick="savePlanning()">Save planning notes</button>
+        <p class="muted" style="font-size:10px;margin-top:12px" id="planning-status">Your planning notes are stored in this browser.</p>
+      </div>
+    </section>
+
+    <!-- ARCHIVE -->
+
+    <section class="page" id="archive">
+      <div class="page-heading">
+        <div class="eyebrow">RECORDS</div>
+        <h1>Archive</h1>
+        <p class="subtitle">Completed work and stored records.</p>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">Completed tasks</div>
+        <div id="archive-list"></div>
+      </div>
+    </section>
+
+    <!-- SETTINGS -->
+
+    <section class="page" id="settings">
+      <div class="page-heading">
+        <div class="eyebrow">CONFIGURATION</div>
+        <h1>Settings</h1>
+        <p class="subtitle">Personalize your headquarters.</p>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">Owner information</div>
+        <div class="list-item">
+          <span>Workspace</span>
+          <span class="muted">Grove Headquarters</span>
+        </div>
+        <div class="list-item">
+          <span>Owner email</span>
+          <span class="muted">bleedvow@gmail.com</span>
+        </div>
+        <div class="list-item">
+          <span>Interface</span>
+          <span class="muted">Pure black</span>
+        </div>
+        <div class="list-item">
+          <span>Version</span>
+          <span class="muted">Prototype 1.0</span>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">Local workspace data</div>
+        <p class="muted" style="font-size:12px;line-height:1.7;margin-bottom:15px">
+          This prototype stores its information in your current browser. It is not yet connected to a database or protected by owner authentication.
+        </p>
+        <button class="small-button" onclick="clearWorkspace()">Clear local workspace</button>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+const storageKey = "grove_dashboard_v1";
+
+let data = JSON.parse(localStorage.getItem(storageKey) || "{}");
+
+data.projects ||= [];
+data.tasks ||= [];
+data.notes ||= [];
+data.planning ||= "";
+
+function saveData() {
+  localStorage.setItem(storageKey, JSON.stringify(data));
+  render();
+}
+
+function showPage(page) {
+  document.querySelectorAll(".page").forEach(section => {
+    section.classList.toggle("active", section.id === page);
+  });
+
+  document.querySelectorAll(".nav-button").forEach(button => {
+    button.classList.toggle("active", button.dataset.page === page);
+  });
+
+  document.getElementById("current-location").textContent = page.toUpperCase();
+}
+
+document.querySelectorAll(".nav-button").forEach(button => {
+  button.addEventListener("click", () => showPage(button.dataset.page));
+});
+
+function addProject() {
+  const name = document.getElementById("project-name").value.trim();
+  const description = document.getElementById("project-description").value.trim();
+
+  if (!name) return;
+
+  data.projects.push({
+    id: Date.now(),
+    name,
+    description
+  });
+
+  document.getElementById("project-name").value = "";
+  document.getElementById("project-description").value = "";
+
+  saveData();
+}
+
+function addTask() {
+  const input = document.getElementById("task-input");
+  const title = input.value.trim();
+
+  if (!title) return;
+
+  data.tasks.push({
+    id: Date.now(),
+    title,
+    completed: false
+  });
+
+  input.value = "";
+  saveData();
+}
+
+function toggleTask(id) {
+  const task = data.tasks.find(item => item.id === id);
+  if (!task) return;
+
+  task.completed = !task.completed;
+  saveData();
+}
+
+function deleteTask(id) {
+  data.tasks = data.tasks.filter(item => item.id !== id);
+  saveData();
+}
+
+function addNote() {
+  const title = document.getElementById("note-title").value.trim();
+  const content = document.getElementById("note-content").value.trim();
+
+  if (!title || !content) return;
+
+  data.notes.push({
+    id: Date.now(),
+    title,
+    content
+  });
+
+  document.getElementById("note-title").value = "";
+  document.getElementById("note-content").value = "";
+
+  saveData();
+}
+
+function deleteNote(id) {
+  data.notes = data.notes.filter(note => note.id !== id);
+  saveData();
+}
+
+function savePlanning() {
+  data.planning = document.getElementById("planning-content").value;
+  saveData();
+
+  document.getElementById("planning-status").textContent = "Planning notes saved.";
+}
+
+function clearWorkspace() {
+  if (!confirm("Permanently clear this browser's Grove prototype data?")) return;
+
+  localStorage.removeItem(storageKey);
+
+  data = {
+    projects: [],
+    tasks: [],
+    notes: [],
+    planning: ""
+  };
+
+  render();
+}
+
+function render() {
+  const openTasks = data.tasks.filter(task => !task.completed);
+  const completedTasks = data.tasks.filter(task => task.completed);
+
+  document.getElementById("project-count").textContent = data.projects.length;
+  document.getElementById("task-count").textContent = openTasks.length;
+  document.getElementById("completed-count").textContent = completedTasks.length;
+
+  document.getElementById("project-list").innerHTML =
+    data.projects.map(project => `
+      <div class="card project-card">
+        <span class="tag">PROJECT</span>
+        <h3>${escapeHTML(project.name)}</h3>
+        <p>${escapeHTML(project.description || "No description added.")}</p>
+      </div>
+    `).join("") || '<div class="empty">No projects yet.</div>';
+
+  document.getElementById("task-list").innerHTML =
+    data.tasks.map(task => `
+      <div class="list-item">
+        <label style="display:flex;align-items:center;gap:10px;flex:1">
+          <input type="checkbox" style="width:15px" ${task.completed ? "checked" : ""}
+            onchange="toggleTask(${task.id})">
+          <span style="${task.completed ? "text-decoration:line-through;color:#666" : ""}">
+            ${escapeHTML(task.title)}
+          </span>
+        </label>
+        <button class="small-button" onclick="deleteTask(${task.id})">Delete</button>
+      </div>
+    `).join("") || '<div class="empty">No tasks yet. Add your first one above.</div>';
+
+  document.getElementById("overview-tasks").innerHTML =
+    openTasks.slice(0, 5).map(task => `
+      <div class="list-item">${escapeHTML(task.title)}</div>
+    `).join("") || '<div class="empty">No outstanding priorities.</div>';
+
+  document.getElementById("note-list").innerHTML =
+    data.notes.map(note => `
+      <div class="card">
+        <h3 style="font-size:15px;margin-bottom:12px">${escapeHTML(note.title)}</h3>
+        <p class="muted" style="font-size:12px;line-height:1.7;white-space:pre-wrap">${escapeHTML(note.content)}</p>
+        <div style="margin-top:15px">
+          <button class="small-button" onclick="deleteNote(${note.id})">Delete note</button>
+        </div>
+      </div>
+    `).join("") || '<div class="empty">No saved notes yet.</div>';
+
+  document.getElementById("archive-list").innerHTML =
+    completedTasks.map(task => `
+      <div class="list-item">
+        <span>${escapeHTML(task.title)}</span>
+        <span class="tag">COMPLETED</span>
+      </div>
+    `).join("") || '<div class="empty">Your completed tasks will appear here.</div>';
+
+  const planning = document.getElementById("planning-content");
+  if (planning && planning.value !== data.planning) {
+    planning.value = data.planning;
+  }
+}
+
+function escapeHTML(value) {
+  return String(value).replace(/[&<>"']/g, character => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;"
+  })[character]);
+}
+
+render();
+</script>
+
+</body>
+</html>
