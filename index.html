@@ -67,12 +67,25 @@
     <h1>GROVE.</h1>
 
     <div class="actions">
-      <a id="signup-link" href="signup.html">CREATE ACCOUNT</a>
-      <a id="login-link" href="login.html">LOG IN</a>
+      <a id="signup-link" href="signup.html">
+        CREATE ACCOUNT
+      </a>
+
+      <a id="login-link" href="login.html">
+        LOG IN
+      </a>
+
       <a id="profile-link" href="profile.html" style="display:none">
         MY PROFILE
       </a>
-      <button id="logout-button" type="button">LOG OUT</button>
+
+      <a id="feed-link" href="feed.html" style="display:none">
+        COMMUNITY
+      </a>
+
+      <button id="logout-button" type="button">
+        LOG OUT
+      </button>
     </div>
 
     <p id="account-status" aria-live="polite"></p>
@@ -88,6 +101,7 @@
       const signupLink = document.getElementById("signup-link");
       const loginLink = document.getElementById("login-link");
       const profileLink = document.getElementById("profile-link");
+      const feedLink = document.getElementById("feed-link");
       const logoutButton = document.getElementById("logout-button");
       const status = document.getElementById("account-status");
 
@@ -98,7 +112,9 @@
           signupLink.style.display = "none";
           loginLink.style.display = "none";
           profileLink.style.display = "inline-block";
+          feedLink.style.display = "inline-block";
           logoutButton.style.display = "inline-block";
+
           status.textContent = "You are logged in.";
         }
       } catch (error) {
