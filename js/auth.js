@@ -29,13 +29,14 @@ function showLoginScreen() {
 }
 
 function isOwner(user) {
-  return user?.email?.toLowerCase() === OWNER_EMAIL;
+  return user?.email?.toLowerCase() === OWNER_EMAIL.toLowerCase();
 }
 
 function showDashboard(user) {
   if (!isOwner(user)) return;
 
   recoveryMode = false;
+
   loginScreen.classList.add("hidden");
   appShell.classList.remove("hidden");
 
@@ -47,7 +48,7 @@ function showRecoveryScreen() {
   recoveryMode = true;
   showLoginScreen();
   showForm("resetForm");
-  message("Recovery verified. Enter your new password below.");
+  message("Recovery link detected. Enter your new password below.");
 }
 
 async function rejectNonOwner() {
@@ -57,7 +58,7 @@ async function rejectNonOwner() {
   message("This account is not authorized.");
 }
 
-// Register the listener before restoring the session.
+// AUTH SESSION LISTENER
 supabase.auth.onAuthStateChange((event, session) => {
   if (event === "PASSWORD_RECOVERY") {
     showRecoveryScreen();
@@ -86,7 +87,7 @@ $("loginForm").addEventListener("submit", async event => {
   const email = $("loginEmail").value.trim().toLowerCase();
   const password = $("loginPassword").value;
 
-  if (email !== OWNER_EMAIL) {
+  if (email !== OWNER_EMAIL.toLowerCase()) {
     message("That email is not authorized.");
     return;
   }
@@ -121,8 +122,13 @@ $("signupForm").addEventListener("submit", async event => {
   const email = $("signupEmail").value.trim().toLowerCase();
   const password = $("signupPassword").value;
 
-  if (email !== OWNER_EMAIL) {
+  if (email !== OWNER_EMAIL.toLowerCase()) {
     message("Only the owner email can register.");
+    return;
+  }
+
+  if (password.length < 8) {
+    message("Password must contain at least 8 characters.");
     return;
   }
 
@@ -158,7 +164,7 @@ $("forgotForm").addEventListener("submit", async event => {
 
   const email = $("forgotEmail").value.trim().toLowerCase();
 
-  if (email !== OWNER_EMAIL) {
+  if (email !== OWNER_EMAIL.toLowerCase()) {
     message("That email is not authorized.");
     return;
   }
@@ -263,8 +269,9 @@ async function initializeAuth() {
   const hash = new URLSearchParams(url.hash.replace(/^#/, ""));
 
   const recoveryInHash = hash.get("type") === "recovery";
+  const recoveryInPkce = url.searchParams.has("code");
 
-  if (recoveryInHash) {
+  if (recoveryInHash || recoveryInPkce) {
     showRecoveryScreen();
   }
 
@@ -272,14 +279,25 @@ async function initializeAuth() {
 
   if (error) {
     showLoginScreen();
-    if (!recoveryMode) {
+
+    if (recoveryMode) {
+      showForm("resetForm");
+      message("The recovery link could not be verified. Request a fresh link.");
+    } else {
       showForm("loginForm");
       message("Session error: " + error.message);
     }
+
     return;
   }
 
-  if (recoveryMode) return;
+  if (recoveryMode) {
+    if (!data.session?.user) {
+      message("The recovery link did not create a valid session. Request a fresh recovery email.");
+    }
+
+    return;
+  }
 
   if (data.session?.user) {
     if (isOwner(data.session.user)) {
