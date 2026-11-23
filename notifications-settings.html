@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Notification Settings — Grove</title>
+  <link rel="stylesheet" href="css/notifications-settings.css">
+</head>
+<body>
+  <header class="topbar">
+    <a class="wordmark" href="index.html">GROVE.</a>
+    <nav>
+      <a href="feed.html">COMMUNITY</a>
+      <a href="follows.html">FOLLOWERS</a>
+      <a href="notifications.html">NOTIFICATIONS</a>
+      <a href="profile.html">MY PROFILE</a>
+      <button id="logout-button" type="button">LOG OUT</button>
+    </nav>
+  </header>
+
+  <main class="settings-shell">
+    <header class="page-heading">
+      <p class="eyebrow">GROVE CONTROL CENTER</p>
+      <h1>Notification Settings</h1>
+      <p>Choose which activity reaches your notification feed.</p>
+    </header>
+
+    <section class="settings-card">
+      <div class="setting-row master-row">
+        <div>
+          <h2>Notifications</h2>
+          <p>Turn all Grove notifications on or off.</p>
+        </div>
+        <input id="enabled" type="checkbox" checked>
+      </div>
+
+      <div class="setting-row">
+        <div>
+          <h2>New Followers</h2>
+          <p>When someone follows your profile.</p>
+        </div>
+        <input id="follow-enabled" type="checkbox" checked>
+      </div>
+
+      <div class="setting-row">
+        <div>
+          <h2>Follow Requests</h2>
+          <p>When someone requests to follow a private profile.</p>
+        </div>
+        <input id="follow-request-enabled" type="checkbox" checked>
+      </div>
+
+      <div class="setting-row">
+        <div>
+          <h2>Post Likes</h2>
+          <p>When someone likes one of your posts.</p>
+        </div>
+        <input id="like-enabled" type="checkbox" checked>
+      </div>
+
+      <div class="setting-row">
+        <div>
+          <h2>Post Comments</h2>
+          <p>When someone comments on one of your posts.</p>
+        </div>
+        <input id="comment-enabled" type="checkbox" checked>
+      </div>
+
+      <div class="setting-row sound-row">
+        <div>
+          <h2>Notification Sound</h2>
+          <p>Enable a short sound when a new notification arrives.</p>
+        </div>
+        <input id="sound-enabled" type="checkbox">
+      </div>
+
+      <div class="sound-test">
+        <button id="test-sound-button" type="button">TEST SOUND</button>
+        <p>Sound playback requires a browser interaction and may be blocked by browser settings.</p>
+      </div>
+
+      <div class="settings-actions">
+        <button id="save-button" type="button">SAVE SETTINGS</button>
+        <a href="notifications.html">BACK TO NOTIFICATIONS</a>
+      </div>
+
+      <p id="settings-status" role="status" aria-live="polite"></p>
+    </section>
+  </main>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="js/config.js"></script>
+  <script src="js/supabase.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/notifications-settings.js"></script>
+</body>
+</html>
