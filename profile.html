@@ -17,17 +17,50 @@
 
   <main class="profile-shell">
     <section class="profile-card">
-      <div class="avatar" id="avatar">G</div>
+      <div class="cover-frame">
+        <img id="cover-image" alt="Profile cover" hidden>
+        <span id="cover-placeholder">YOUR GROVE</span>
+      </div>
 
-      <div class="profile-heading">
-        <p class="eyebrow">GROVE MEMBER</p>
-        <h1 id="display-name">Loading profile...</h1>
-        <p id="username" class="username"></p>
+      <div class="profile-main">
+        <div class="avatar" id="avatar">G</div>
+
+        <div class="profile-heading">
+          <p class="eyebrow">GROVE MEMBER</p>
+          <h1 id="display-name">Loading profile...</h1>
+          <p id="username" class="username"></p>
+        </div>
       </div>
 
       <div class="profile-divider"></div>
 
+      <section class="media-controls">
+        <h2>PROFILE MEDIA</h2>
+
+        <label for="avatar-file">PROFILE PHOTO</label>
+        <input
+          id="avatar-file"
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+        >
+        <button id="avatar-upload" type="button">UPLOAD PROFILE PHOTO</button>
+
+        <label for="cover-file">COVER IMAGE</label>
+        <input
+          id="cover-file"
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+        >
+        <button id="cover-upload" type="button">UPLOAD COVER IMAGE</button>
+
+        <p id="media-status" role="status" aria-live="polite"></p>
+      </section>
+
+      <div class="profile-divider"></div>
+
       <form id="profile-form">
+        <h2>PROFILE DETAILS</h2>
+
         <label for="name-input">DISPLAY NAME</label>
         <input
           id="name-input"
