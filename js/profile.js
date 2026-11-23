@@ -1,4 +1,6 @@
-function () {
+(function () {
+  "use strict";
+
   const client = window.supabaseClient;
 
   const form = document.getElementById("profile-form");
@@ -25,6 +27,16 @@ function () {
   const coverPlaceholder = document.getElementById("cover-placeholder");
   const memberSince = document.getElementById("member-since");
 
+  const relationshipStatus = document.getElementById("relationship-status");
+  const relationshipSince = document.getElementById("relationship-since");
+  const relationshipDisplay = document.getElementById("relationship-display");
+
+  const partnerSearch = document.getElementById("partner-search");
+  const partnerSearchButton = document.getElementById("partner-search-button");
+  const partnerResults = document.getElementById("partner-results");
+  const selectedPartner = document.getElementById("selected-partner");
+  const clearPartnerButton = document.getElementById("clear-partner");
+
   const BUCKET = "profile-media";
   const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
@@ -35,8 +47,21 @@ function () {
     "image/gif": "gif"
   };
 
+  const STATUS_LABELS = {
+    single: "Single",
+    in_relationship: "In a relationship",
+    engaged: "Engaged",
+    married: "Married",
+    complicated: "It's complicated",
+    separated: "Separated",
+    divorced: "Divorced",
+    widowed: "Widowed"
+  };
+
   let currentUser = null;
   let profile = null;
+  let selectedPartnerId = null;
+  let selectedPartnerLabel = "";
 
   function showStatus(element, message, type) {
     element.textContent = message;
@@ -107,6 +132,71 @@ function () {
     bioDisplay.classList.remove("empty");
   }
 
+  function showSelectedPartner() {
+    if (!selectedPartnerId) {
+      selectedPartner.textContent = "No partner selected.";
+      return;
+    }
+
+    selectedPartner.textContent =
+      "Selected partner: " + selectedPartnerLabel;
+  }
+
+  function showRelationship() {
+    const value = relationshipStatus.value;
+    const label = STATUS_LABELS[value] || "Not set";
+
+    const parts = [label];
+
+    if (relationshipSince.value) {
+      const date = new Date(
+        relationshipSince.value + "T00:00:00"
+      );
+
+      parts.push(
+        "since " + date.toLocaleDateString(undefined, {
+          year: "numeric",
+          month: "long",
+          day: "numeric"
+        })
+      );
+    }
+
+    if (selectedPartnerId && selectedPartnerLabel) {
+      parts.push("with " + selectedPartnerLabel);
+    }
+
+    relationshipDisplay.textContent = parts.join(" ");
+    relationshipDisplay.classList.remove("empty");
+  }
+
+  async function loadPartnerLabel(partnerId) {
+    if (!partnerId) return;
+
+    const { data, error } = await client
+      .from("profiles")
+      .select("id, username, display_name")
+      .eq("id", partnerId)
+      .maybeSingle();
+
+    if (error) {
+      console.warn("Could not load partner profile:", error.message);
+      return;
+    }
+
+    if (!data) {
+      selectedPartnerLabel = "Profile unavailable";
+      showSelectedPartner();
+      return;
+    }
+
+    selectedPartnerLabel =
+      (data.display_name || data.username || "Grove member") +
+      (data.username ? " (@" + data.username + ")" : "");
+
+    showSelectedPartner();
+  }
+
   async function loadProfile() {
     try {
       const { data: userData, error: userError } =
@@ -124,7 +214,7 @@ function () {
       const { data, error } = await client
         .from("profiles")
         .select(
-          "id, username, display_name, bio, avatar_url, cover_url, created_at"
+          "id, username, display_name, bio, avatar_url, cover_url, created_at, relationship_status, relationship_since, relationship_partner_id"
         )
         .eq("id", currentUser.id)
         .single();
@@ -143,6 +233,14 @@ function () {
       nameInput.value = data.display_name || "";
       bioInput.value = data.bio || "";
 
+      relationshipStatus.value =
+        data.relationship_status || "single";
+
+      relationshipSince.value =
+        data.relationship_since || "";
+
+      selectedPartnerId = data.relationship_partner_id || null;
+
       showAvatar(data.avatar_url);
       showCover(data.cover_url);
       showBio(data.bio);
@@ -157,6 +255,10 @@ function () {
             month: "long"
           });
       }
+
+      await loadPartnerLabel(selectedPartnerId);
+      showSelectedPartner();
+      showRelationship();
 
       showStatus(status, "Profile loaded.", "success");
     } catch (error) {
@@ -271,15 +373,84 @@ function () {
     }
   }
 
-  avatarUpload.addEventListener("click", function () {
-    uploadImage(avatarFile.files[0], "avatar", avatarUpload);
-  });
+  async function searchPartners() {
+    const term = partnerSearch.value.trim().replace(/^@/, "");
 
-  coverUpload.addEventListener("click", function () {
-    uploadImage(coverFile.files[0], "cover", coverUpload);
-  });
+    partnerResults.replaceChildren();
 
-  form.addEventListener("submit", async function (event) {
+    if (term.length < 2) {
+      showStatus(
+        status,
+        "Enter at least two username characters.",
+        "error"
+      );
+      return;
+    }
+
+    setButtonBusy(partnerSearchButton, true, "SEARCH");
+
+    try {
+      const { data, error } = await client
+        .from("profiles")
+        .select("id, username, display_name")
+        .ilike("username", "%" + term + "%")
+        .neq("id", currentUser.id)
+        .limit(8);
+
+      if (error) throw error;
+
+      if (!data || data.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "field-note";
+        empty.textContent = "No visible matching profiles found.";
+        partnerResults.appendChild(empty);
+        return;
+      }
+
+      data.forEach(function (person) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "partner-result";
+
+        const name = document.createElement("strong");
+        name.textContent =
+          person.display_name || person.username || "Grove member";
+
+        const handle = document.createElement("span");
+        handle.textContent = person.username
+          ? "@" + person.username
+          : "";
+
+        button.append(name, handle);
+
+        button.addEventListener("click", function () {
+          selectedPartnerId = person.id;
+          selectedPartnerLabel =
+            (person.display_name || person.username || "Grove member") +
+            (person.username ? " (@" + person.username + ")" : "");
+
+          showSelectedPartner();
+          showRelationship();
+          partnerResults.replaceChildren();
+          showStatus(status, "Partner selected. Save your profile.", "info");
+        });
+
+        partnerResults.appendChild(button);
+      });
+    } catch (error) {
+      console.error("Grove partner search error:", error);
+
+      showStatus(
+        status,
+        error.message || "Partner search failed.",
+        "error"
+      );
+    } finally {
+      setButtonBusy(partnerSearchButton, false, "SEARCH");
+    }
+  }
+
+  async function saveProfile(event) {
     event.preventDefault();
 
     if (!currentUser) {
@@ -293,29 +464,66 @@ function () {
 
     const cleanName = nameInput.value.trim();
     const cleanBio = bioInput.value.trim();
+    const relationshipValue = relationshipStatus.value;
+    const relationshipDate = relationshipSince.value || null;
 
     if (cleanName.length > 40 || cleanBio.length > 300) {
       showStatus(status, "Your profile text is too long.", "error");
       return;
     }
 
+    if (relationshipDate) {
+      const selectedDate = new Date(
+        relationshipDate + "T00:00:00"
+      );
+
+      const today = new Date();
+      today.setHours(23, 59, 59, 999);
+
+      if (selectedDate > today) {
+        showStatus(
+          status,
+          "The relationship date cannot be in the future.",
+          "error"
+        );
+        return;
+      }
+    }
+
+    const isSingle = relationshipValue === "single";
+
+    const updateValues = {
+      display_name: cleanName,
+      bio: cleanBio,
+      relationship_status: relationshipValue,
+      relationship_since: isSingle ? null : relationshipDate,
+      relationship_partner_id: isSingle ? null : selectedPartnerId,
+      updated_at: new Date().toISOString()
+    };
+
     setButtonBusy(saveButton, true, "SAVE PROFILE");
-    showStatus(status, "", "info");
+    showStatus(status, "Saving profile...", "info");
 
     try {
-      const { error } = await client
+      const { data, error } = await client
         .from("profiles")
-        .update({
-          display_name: cleanName,
-          bio: cleanBio,
-          updated_at: new Date().toISOString()
-        })
-        .eq("id", currentUser.id);
+        .update(updateValues)
+        .eq("id", currentUser.id)
+        .select("id")
+        .single();
 
       if (error) throw error;
 
+      if (!data) {
+        throw new Error("No profile row was updated.");
+      }
+
       profile.display_name = cleanName;
       profile.bio = cleanBio;
+      profile.relationship_status = updateValues.relationship_status;
+      profile.relationship_since = updateValues.relationship_since;
+      profile.relationship_partner_id =
+        updateValues.relationship_partner_id;
 
       displayName.textContent =
         cleanName || profile.username || "Grove Member";
@@ -325,6 +533,8 @@ function () {
       if (!profile.avatar_url) {
         showAvatar(null);
       }
+
+      showRelationship();
 
       showStatus(status, "Profile saved successfully.", "success");
     } catch (error) {
@@ -338,7 +548,37 @@ function () {
     } finally {
       setButtonBusy(saveButton, false, "SAVE PROFILE");
     }
+  }
+
+  avatarUpload.addEventListener("click", function () {
+    uploadImage(avatarFile.files[0], "avatar", avatarUpload);
   });
+
+  coverUpload.addEventListener("click", function () {
+    uploadImage(coverFile.files[0], "cover", coverUpload);
+  });
+
+  partnerSearchButton.addEventListener("click", searchPartners);
+
+  partnerSearch.addEventListener("keydown", function (event) {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      searchPartners();
+    }
+  });
+
+  clearPartnerButton.addEventListener("click", function () {
+    selectedPartnerId = null;
+    selectedPartnerLabel = "";
+    showSelectedPartner();
+    showRelationship();
+    showStatus(status, "Partner selection cleared. Save your profile.", "info");
+  });
+
+  relationshipStatus.addEventListener("change", showRelationship);
+  relationshipSince.addEventListener("change", showRelationship);
+
+  form.addEventListener("submit", saveProfile);
 
   logoutButton.addEventListener("click", async function () {
     logoutButton.disabled = true;
@@ -351,6 +591,11 @@ function () {
       logoutButton.disabled = false;
     }
   });
+
+  if (!client) {
+    showStatus(status, "Supabase is not connected.", "error");
+    return;
+  }
 
   loadProfile();
 })();
