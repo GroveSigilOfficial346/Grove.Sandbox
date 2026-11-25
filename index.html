@@ -3,9 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#000000">
   <title>GROVE</title>
+
   <style>
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
+
     body {
       margin: 0;
       min-height: 100vh;
@@ -16,8 +21,9 @@
       justify-content: center;
       font-family: Arial, sans-serif;
     }
+
     .corner {
-      position: absolute;
+      position: fixed;
       top: 20px;
       right: 24px;
       display: flex;
@@ -26,12 +32,20 @@
       font-size: 11px;
       letter-spacing: 2px;
     }
-    .environment { color: #777; }
-    .corner a {
+
+    .environment {
+      color: #777;
+    }
+
+    .admin {
       color: #fff;
       text-decoration: none;
     }
-    .corner a:hover { color: #aaa; }
+
+    .admin:hover {
+      color: #999;
+    }
+
     h1 {
       margin: 0;
       font-size: 42px;
@@ -40,11 +54,13 @@
     }
   </style>
 </head>
+
 <body>
-  <div class="corner">
+  <nav class="corner">
     <span class="environment">SANDBOX</span>
-    <a href="/admin/">ADMIN</a>
-  </div>
+    <a class="admin" href="/admin/">ADMIN</a>
+  </nav>
+
   <h1>GROVE</h1>
 </body>
 </html>
