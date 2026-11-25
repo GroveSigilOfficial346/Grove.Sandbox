@@ -10,6 +10,9 @@ import {
 
 const $ = (id) => document.getElementById(id);
 
+let loading = false;
+let refreshQueued = false;
+
 function showMessage(message) {
   const status = $("overview-status");
   if (status) status.textContent = message;
@@ -21,16 +24,29 @@ function showCount(id, value) {
 }
 
 async function loadOverview() {
-  showMessage("Loading Grove workspace...");
-
-  const { data, error } = await supabase.auth.getUser();
-
-  if (error || !data.user || data.user.id !== GROVE_OWNER_ID) {
-    showMessage("Owner authentication could not be verified.");
+  if (loading) {
+    refreshQueued = true;
     return;
   }
 
+  loading = true;
+
+  const refreshButton = $("overview-refresh");
+
+  if (refreshButton) {
+    refreshButton.disabled = true;
+  }
+
+  showMessage("Loading Grove workspace...");
+
   try {
+    const { data, error } = await supabase.auth.getUser();
+
+    if (error || !data.user || data.user.id !== GROVE_OWNER_ID) {
+      showMessage("Owner authentication could not be verified.");
+      return;
+    }
+
     const [projects, tasks, notes, plans] = await Promise.all([
       listProjects(),
       listTasks(),
@@ -69,10 +85,20 @@ async function loadOverview() {
     showMessage("Workspace data loaded.");
   } catch (error) {
     console.error("Grove Overview:", error);
-
     showMessage(
       `Workspace data could not be loaded: ${error.message}`
     );
+  } finally {
+    loading = false;
+
+    if (refreshButton) {
+      refreshButton.disabled = false;
+    }
+
+    if (refreshQueued) {
+      refreshQueued = false;
+      loadOverview();
+    }
   }
 }
 
@@ -82,4 +108,23 @@ if (refreshButton) {
   refreshButton.addEventListener("click", loadOverview);
 }
 
-await loadOverview();
+// Refresh the counters whenever the user returns to Overview.
+const overviewSection = document.querySelector(
+  '[data-view="overview"]'
+);
+
+if (overviewSection) {
+  const observer = new MutationObserver(() => {
+    if (!overviewSection.hidden) {
+      loadOverview();
+    }
+  });
+
+  observer.observe(overviewSection, {
+    attributes: true,
+    attributeFilter: ["hidden"]
+  });
+}
+
+// Initial load.
+loadOverview();
