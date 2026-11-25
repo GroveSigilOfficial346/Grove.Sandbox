@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#000000">
+  <title>GROVE — HEADQUARTERS</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #000;
+      color: #eee;
+      font-family: Arial, sans-serif;
+    }
+
+    button {
+      font: inherit;
+    }
+
+    .topbar {
+      height: 66px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 28px;
+      border-bottom: 1px solid #202020;
+    }
+
+    .brand {
+      color: #fff;
+      font-size: 17px;
+      letter-spacing: 5px;
+    }
+
+    .environment {
+      color: #777;
+      font-size: 10px;
+      letter-spacing: 2px;
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 210px 1fr;
+      min-height: calc(100vh - 66px);
+    }
+
+    aside {
+      padding: 28px 16px;
+      border-right: 1px solid #202020;
+    }
+
+    .nav-label {
+      margin: 0 12px 18px;
+      color: #666;
+      font-size: 9px;
+      letter-spacing: 2px;
+    }
+
+    .nav-button {
+      width: 100%;
+      padding: 13px 12px;
+      border: 0;
+      background: transparent;
+      color: #888;
+      text-align: left;
+      font-size: 12px;
+      cursor: pointer;
+    }
+
+    .nav-button:hover,
+    .nav-button.active {
+      background: #111;
+      color: #fff;
+    }
+
+    .signout {
+      margin-top: 32px;
+      border-top: 1px solid #202020;
+      padding-top: 24px;
+    }
+
+    main {
+      width: 100%;
+      max-width: 1100px;
+      padding: 48px;
+    }
+
+    .eyebrow {
+      color: #777;
+      font-size: 10px;
+      letter-spacing: 3px;
+      text-transform: uppercase;
+    }
+
+    h1 {
+      margin: 12px 0;
+      font-size: 30px;
+      font-weight: 400;
+      letter-spacing: 2px;
+    }
+
+    .description {
+      color: #777;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-top: 36px;
+    }
+
+    .card {
+      min-height: 130px;
+      padding: 22px;
+      border: 1px solid #242424;
+      background: #080808;
+    }
+
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 12px;
+      font-weight: 400;
+      letter-spacing: 2px;
+    }
+
+    .card p {
+      margin: 0;
+      color: #777;
+      font-size: 12px;
+      line-height: 1.6;
+    }
+
+    .coming {
+      margin-top: 40px;
+      color: #555;
+      font-size: 10px;
+      letter-spacing: 2px;
+    }
+
+    [hidden] {
+      display: none !important;
+    }
+
+    @media (max-width: 700px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+
+      aside {
+        display: flex;
+        gap: 4px;
+        overflow-x: auto;
+        padding: 12px;
+        border-right: 0;
+        border-bottom: 1px solid #202020;
+      }
+
+      .nav-label,
+      .signout {
+        display: none;
+      }
+
+      .nav-button {
+        width: auto;
+        flex: 0 0 auto;
+        white-space: nowrap;
+      }
+
+      main {
+        padding: 30px 20px;
+      }
+
+      .grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header class="topbar">
+    <div class="brand">GROVE</div>
+    <div class="environment" id="environment">GROVE</div>
+  </header>
+
+  <div class="layout">
+    <aside>
+      <div>
+        <p class="nav-label">HEADQUARTERS</p>
+
+        <button class="nav-button active" data-section="overview">
+          Overview
+        </button>
+
+        <button class="nav-button" data-section="projects">
+          Projects
+        </button>
+
+        <button class="nav-button" data-section="tasks">
+          Tasks
+        </button>
+
+        <button class="nav-button" data-section="notes">
+          Notes & Archive
+        </button>
+
+        <button class="nav-button" data-section="planning">
+          Planning
+        </button>
+
+        <button class="nav-button" data-section="settings">
+          Settings
+        </button>
+
+        <div class="signout">
+          <button class="nav-button" id="signout-button">
+            Sign Out
+          </button>
+        </div>
+      </div>
+    </aside>
+
+    <main>
+      <section data-view="overview">
+        <p class="eyebrow">Private workspace</p>
+        <h1>Overview</h1>
+        <p class="description">
+          Welcome to Grove Headquarters.
+          Your private workspace is being established.
+        </p>
+
+        <div class="grid">
+          <article class="card">
+            <h2>PROJECTS</h2>
+            <p>Your projects and active work will appear here.</p>
+          </article>
+
+          <article class="card">
+            <h2>TASKS</h2>
+            <p>Your priorities and tasks will appear here.</p>
+          </article>
+
+          <article class="card">
+            <h2>NOTES & ARCHIVE</h2>
+            <p>Your private notes and saved records will appear here.</p>
+          </article>
+
+          <article class="card">
+            <h2>PLANNING</h2>
+            <p>Your schedules and long-term plans will appear here.</p>
+          </article>
+        </div>
+      </section>
+
+      <section data-view="projects" hidden>
+        <p class="eyebrow">Workspace</p>
+        <h1>Projects</h1>
+        <p class="description">
+          Project organization and progress tracking.
+        </p>
+        <p class="coming">PROJECT MODULE PREPARATION</p>
+      </section>
+
+      <section data-view="tasks" hidden>
+        <p class="eyebrow">Execution</p>
+        <h1>Tasks</h1>
+        <p class="description">
+          Priorities, tasks, and completion tracking.
+        </p>
+        <p class="coming">TASK MODULE PREPARATION</p>
+      </section>
+
+      <section data-view="notes" hidden>
+        <p class="eyebrow">Records</p>
+        <h1>Notes & Archive</h1>
+        <p class="description">
+          Private notes, reference material, and archived records.
+        </p>
+        <p class="coming">ARCHIVE MODULE PREPARATION</p>
+      </section>
+
+      <section data-view="planning" hidden>
+        <p class="eyebrow">Direction</p>
+        <h1>Planning</h1>
+        <p class="description">
+          Schedules, objectives, and long-term planning.
+        </p>
+        <p class="coming">PLANNING MODULE PREPARATION</p>
+      </section>
+
+      <section data-view="settings" hidden>
+        <p class="eyebrow">System</p>
+        <h1>Settings</h1>
+        <p class="description">
+          Grove environment and account controls.
+        </p>
+        <p class="coming">SETTINGS MODULE PREPARATION</p>
+      </section>
+    </main>
+  </div>
+
+  <script type="module" src="../js/dashboard.js"></script>
+</body>
+</html>
