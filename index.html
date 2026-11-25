@@ -3,18 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#000000">
-  <title>Grove — Sandbox</title>
-
+  <title>GROVE</title>
   <style>
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
       min-height: 100vh;
-      padding: 24px;
       background: #000;
       color: #fff;
       display: flex;
@@ -24,161 +19,24 @@
     }
 
     .environment {
-      position: fixed;
-      top: 22px;
+      position: absolute;
+      top: 20px;
       right: 24px;
       color: #777;
-      font-size: 10px;
-      letter-spacing: 3px;
-    }
-
-    .panel {
-      width: 100%;
-      max-width: 340px;
-      text-align: center;
+      font-size: 11px;
+      letter-spacing: 2px;
     }
 
     h1 {
-      margin: 0 0 38px;
-      font-size: 36px;
-      font-weight: 500;
-      letter-spacing: 10px;
-    }
-
-    h2 {
-      margin: 0 0 24px;
-      font-size: 14px;
+      margin: 0;
+      font-size: 42px;
       font-weight: 400;
-      letter-spacing: 3px;
-    }
-
-    input {
-      width: 100%;
-      margin-bottom: 12px;
-      padding: 14px;
-      border: 1px solid #292929;
-      border-radius: 3px;
-      outline: none;
-      background: #090909;
-      color: #fff;
-      font-size: 14px;
-    }
-
-    input:focus {
-      border-color: #777;
-    }
-
-    button {
-      width: 100%;
-      padding: 14px;
-      border: 1px solid #fff;
-      border-radius: 3px;
-      background: #fff;
-      color: #000;
-      font-size: 12px;
-      letter-spacing: 2px;
-      cursor: pointer;
-    }
-
-    button:disabled {
-      opacity: 0.5;
-      cursor: wait;
-    }
-
-    .link {
-      display: inline-block;
-      margin-top: 22px;
-      border: 0;
-      background: none;
-      color: #888;
-      font-size: 12px;
-      cursor: pointer;
-    }
-
-    .message {
-      min-height: 20px;
-      margin-top: 18px;
-      color: #aaa;
-      font-size: 12px;
-      line-height: 1.5;
-    }
-
-    [hidden] {
-      display: none !important;
+      letter-spacing: 8px;
     }
   </style>
 </head>
-
 <body>
   <div class="environment">SANDBOX</div>
-
-  <main class="panel">
-    <h1>GROVE</h1>
-
-    <section id="login-panel">
-      <h2>OWNER ACCESS</h2>
-
-      <form id="login-form">
-        <input
-          id="login-email"
-          type="email"
-          placeholder="Email address"
-          autocomplete="username"
-          required
-        >
-
-        <input
-          id="login-password"
-          type="password"
-          placeholder="Password"
-          autocomplete="current-password"
-          required
-        >
-
-        <button type="submit">SIGN IN</button>
-      </form>
-
-      <button class="link" id="forgot-button" type="button">
-        Forgot password?
-      </button>
-    </section>
-
-    <section id="recovery-panel" hidden>
-      <h2>RESET PASSWORD</h2>
-
-      <form id="recovery-form">
-        <input
-          id="new-password"
-          type="password"
-          placeholder="New password"
-          autocomplete="new-password"
-          minlength="8"
-          required
-        >
-
-        <input
-          id="confirm-password"
-          type="password"
-          placeholder="Confirm new password"
-          autocomplete="new-password"
-          minlength="8"
-          required
-        >
-
-        <button type="submit">UPDATE PASSWORD</button>
-      </form>
-    </section>
-
-    <section id="session-panel" hidden>
-      <h2>SESSION ACTIVE</h2>
-      <button id="signout-button" type="button">SIGN OUT</button>
-    </section>
-
-    <p id="auth-message" class="message" role="status" aria-live="polite"></p>
-  </main>
-
-  <script src="js/config.js"></script>
-  <script type="module" src="js/supabase.js"></script>
-  <script type="module" src="js/auth.js"></script>
+  <h1>GROVE</h1>
 </body>
 </html>
