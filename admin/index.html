@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#000000">
+  <title>GROVE — ADMIN</title>
+  <style>
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: #000;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: Arial, sans-serif;
+    }
+
+    .corner {
+      position: fixed;
+      top: 20px;
+      right: 24px;
+      display: flex;
+      align-items: center;
+      gap: 18px;
+      font-size: 11px;
+      letter-spacing: 2px;
+    }
+
+    .environment { color: #777; }
+    .home { color: #fff; text-decoration: none; }
+    .home:hover { color: #999; }
+
+    main {
+      width: min(100% - 40px, 340px);
+      text-align: center;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 42px;
+      font-weight: 400;
+      letter-spacing: 8px;
+    }
+
+    .subtitle {
+      margin: 18px 0 34px;
+      color: #777;
+      font-size: 10px;
+      letter-spacing: 3px;
+    }
+
+    form {
+      display: grid;
+      gap: 12px;
+      text-align: left;
+    }
+
+    label {
+      color: #888;
+      font-size: 10px;
+      letter-spacing: 2px;
+    }
+
+    input {
+      width: 100%;
+      margin-top: 8px;
+      padding: 13px 12px;
+      border: 1px solid #292929;
+      border-radius: 0;
+      outline: none;
+      background: #080808;
+      color: #fff;
+      font: inherit;
+    }
+
+    input:focus { border-color: #777; }
+
+    button {
+      margin-top: 10px;
+      padding: 13px;
+      border: 1px solid #333;
+      border-radius: 0;
+      background: #111;
+      color: #777;
+      font-size: 10px;
+      letter-spacing: 2px;
+      cursor: not-allowed;
+    }
+
+    .notice {
+      margin-top: 20px;
+      color: #666;
+      font-size: 10px;
+      line-height: 1.6;
+      letter-spacing: 1px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <nav class="corner" aria-label="Site navigation">
+    <span class="environment">SANDBOX</span>
+    <a class="home" href="/">GROVE</a>
+  </nav>
+
+  <main>
+    <h1>GROVE</h1>
+    <p class="subtitle">OWNER ACCESS</p>
+
+    <form>
+      <label>
+        EMAIL
+        <input type="email" name="email"
+          autocomplete="username"
+          placeholder="Owner email" required>
+      </label>
+
+      <label>
+        PASSWORD
+        <input type="password" name="password"
+          autocomplete="current-password"
+          placeholder="Password" required>
+      </label>
+
+      <button type="button" disabled>SIGN IN</button>
+    </form>
+
+    <p class="notice">
+      PRIVATE ADMINISTRATION<br>
+      LOGIN CONNECTION NOT YET CONFIGURED
+    </p>
+  </main>
+</body>
+</html>
