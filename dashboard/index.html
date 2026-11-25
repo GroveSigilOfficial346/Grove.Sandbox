@@ -119,24 +119,59 @@
     }
 
     .card {
-      min-height: 130px;
+      min-height: 150px;
       padding: 22px;
       border: 1px solid #242424;
       background: #080808;
     }
 
     .card h2 {
-      margin: 0 0 12px;
+      margin: 0 0 20px;
       font-size: 12px;
       font-weight: 400;
       letter-spacing: 2px;
     }
 
-    .card p {
+    .metric {
       margin: 0;
+      color: #fff;
+      font-size: 34px;
+      font-weight: 300;
+    }
+
+    .metric-detail {
+      margin-top: 10px;
       color: #777;
-      font-size: 12px;
+      font-size: 11px;
+      line-height: 1.7;
+    }
+
+    .overview-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      margin-top: 30px;
+    }
+
+    .overview-status {
+      color: #777;
+      font-size: 11px;
       line-height: 1.6;
+    }
+
+    .overview-refresh {
+      padding: 10px 14px;
+      border: 1px solid #333;
+      background: #080808;
+      color: #ddd;
+      font-size: 10px;
+      letter-spacing: 1px;
+      cursor: pointer;
+    }
+
+    .overview-refresh:hover {
+      background: #181818;
     }
 
     .coming {
@@ -233,31 +268,59 @@
       <section data-view="overview">
         <p class="eyebrow">Private workspace</p>
         <h1>Overview</h1>
+
         <p class="description">
           Welcome to Grove Headquarters.
-          Your private workspace is being established.
+          Your private workspace at a glance.
         </p>
 
         <div class="grid">
           <article class="card">
             <h2>PROJECTS</h2>
-            <p>Your projects and active work will appear here.</p>
+            <p class="metric" id="overview-project-total">—</p>
+            <p class="metric-detail">
+              <span id="overview-project-active">—</span> active projects
+            </p>
           </article>
 
           <article class="card">
             <h2>TASKS</h2>
-            <p>Your priorities and tasks will appear here.</p>
+            <p class="metric" id="overview-task-total">—</p>
+            <p class="metric-detail">
+              <span id="overview-task-progress">—</span> in progress ·
+              <span id="overview-task-done">—</span> completed
+            </p>
           </article>
 
           <article class="card">
             <h2>NOTES & ARCHIVE</h2>
-            <p>Your private notes and saved records will appear here.</p>
+            <p class="metric" id="overview-note-total">—</p>
+            <p class="metric-detail">
+              <span id="overview-note-archived">—</span> archived notes
+            </p>
           </article>
 
           <article class="card">
             <h2>PLANNING</h2>
-            <p>Your schedules and long-term plans will appear here.</p>
+            <p class="metric" id="overview-plan-total">—</p>
+            <p class="metric-detail">
+              <span id="overview-plan-active">—</span> active plans
+            </p>
           </article>
+        </div>
+
+        <div class="overview-toolbar">
+          <p class="overview-status" id="overview-status">
+            Waiting for workspace data...
+          </p>
+
+          <button
+            class="overview-refresh"
+            id="overview-refresh"
+            type="button"
+          >
+            REFRESH
+          </button>
         </div>
       </section>
 
@@ -267,7 +330,7 @@
         <p class="description">
           Project organization and progress tracking.
         </p>
-        <p class="coming">PROJECT MODULE PREPARATION</p>
+        <p class="coming">PROJECT MODULE</p>
       </section>
 
       <section data-view="tasks" hidden>
@@ -276,7 +339,7 @@
         <p class="description">
           Priorities, tasks, and completion tracking.
         </p>
-        <p class="coming">TASK MODULE PREPARATION</p>
+        <p class="coming">TASK MODULE</p>
       </section>
 
       <section data-view="notes" hidden>
@@ -285,7 +348,7 @@
         <p class="description">
           Private notes, reference material, and archived records.
         </p>
-        <p class="coming">ARCHIVE MODULE PREPARATION</p>
+        <p class="coming">ARCHIVE MODULE</p>
       </section>
 
       <section data-view="planning" hidden>
@@ -294,7 +357,7 @@
         <p class="description">
           Schedules, objectives, and long-term planning.
         </p>
-        <p class="coming">PLANNING MODULE PREPARATION</p>
+        <p class="coming">PLANNING MODULE</p>
       </section>
 
       <section data-view="settings" hidden>
@@ -303,12 +366,12 @@
         <p class="description">
           Grove environment and account controls.
         </p>
-        <p class="coming">SETTINGS MODULE PREPARATION</p>
+        <p class="coming">SETTINGS MODULE</p>
       </section>
     </main>
   </div>
 
   <script type="module" src="../js/dashboard.js"></script>
+  <script type="module" src="../js/overview.js"></script>
 </body>
 </html>
-```
