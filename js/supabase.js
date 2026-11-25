@@ -1,18 +1,13 @@
 /* GROVE SANDBOX — Supabase connection */
 (() => {
   const CONFIG = {
-    url: "https://fpkrvgcpbnrusbfmhinj.supabase.co",
-    key: "PASTE_SANDBOX_PUBLIC_ANON_KEY_HERE"
+    url: "https://sbeiqnmtwbhesmocqmuk.supabase.co",
+    key: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNiZWlxbm10d2JoZXNtb2NxbXVrIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTUyMDI0NzEsImV4cCI6MjExMDc3ODQ3MX0.iC8bLQjqadb_dgowrPBZ6Ow_m0QzSgFdyA-13yN6uZM"
   };
 
   window.groveSupabase = null;
 
   window.groveSupabaseReady = new Promise((resolve, reject) => {
-    if (!CONFIG.key || CONFIG.key.includes("PASTE_")) {
-      reject(new Error("Add the Sandbox public key in js/supabase.js."));
-      return;
-    }
-
     const start = () => {
       if (!window.supabase?.createClient) {
         reject(new Error("Supabase SDK failed to load."));
