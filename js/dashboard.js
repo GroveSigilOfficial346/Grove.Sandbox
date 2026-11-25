@@ -328,7 +328,13 @@ function createField(definition, value, projects) {
       control.appendChild(item);
     }
 
-    control.value = value ?? definition.options[0];
+    const firstOption = definition.options[0];
+    const defaultValue =
+      typeof firstOption === "string"
+        ? firstOption
+        : firstOption.value;
+
+    control.value = value ?? defaultValue;
   } else if (definition.type === "project") {
     control = document.createElement("select");
 
@@ -412,9 +418,11 @@ function readForm(form, definitions) {
     payload[definition.name] = value;
   }
 
-  if ("status" in payload && definitions.some((field) => field.name === "completed_at")) {
+  if (definitions.some((field) => field.name === "due_date")) {
     payload.completed_at =
-      payload.status === "done" ? new Date().toISOString() : null;
+      payload.status === "done"
+        ? new Date().toISOString()
+        : null;
   }
 
   return payload;
@@ -514,7 +522,11 @@ async function setupWorkspace(section) {
 
       if (!records.length) {
         list.appendChild(
-          element("div", "workspace-empty", "No records yet. Create your first one above.")
+          element(
+            "div",
+            "workspace-empty",
+            "No records yet. Create your first one above."
+          )
         );
         return;
       }
@@ -547,7 +559,7 @@ async function setupWorkspace(section) {
               const control = form.elements.namedItem(definition.name);
               if (!control) continue;
 
-              let value = record[definition.name];
+              const value = record[definition.name];
 
               if (definition.type === "checkbox") {
                 control.checked = Boolean(value);
@@ -610,6 +622,10 @@ async function setupWorkspace(section) {
         message.textContent = "Record created.";
       }
 
+      const selectedProjectId = section === "tasks"
+        ? form.elements.namedItem("project_id")?.value ?? ""
+        : "";
+
       editingId = null;
       form.reset();
       formHeading.textContent = "Create new record";
@@ -621,10 +637,9 @@ async function setupWorkspace(section) {
         const projectField = form.elements.namedItem("project_id");
 
         if (projectField) {
-          const selected = projectField.value;
           const replacement = createField(
             config.fields.find((field) => field.name === "project_id"),
-            selected,
+            selectedProjectId,
             projects
           );
 
