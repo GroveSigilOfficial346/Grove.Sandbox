@@ -7,7 +7,6 @@
   <title>GROVE — ADMIN</title>
   <style>
     * { box-sizing: border-box; }
-
     body {
       margin: 0;
       min-height: 100vh;
@@ -18,92 +17,66 @@
       justify-content: center;
       font-family: Arial, sans-serif;
     }
-
     .corner {
       position: fixed;
       top: 20px;
       right: 24px;
       display: flex;
-      align-items: center;
       gap: 18px;
       font-size: 11px;
       letter-spacing: 2px;
     }
-
     .environment { color: #777; }
     .home { color: #fff; text-decoration: none; }
-    .home:hover { color: #999; }
-
-    main {
-      width: min(100% - 40px, 340px);
-      text-align: center;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: 42px;
-      font-weight: 400;
-      letter-spacing: 8px;
-    }
-
-    .subtitle {
-      margin: 18px 0 34px;
-      color: #777;
-      font-size: 10px;
-      letter-spacing: 3px;
-    }
-
-    form {
-      display: grid;
-      gap: 12px;
-      text-align: left;
-    }
-
-    label {
-      color: #888;
-      font-size: 10px;
-      letter-spacing: 2px;
-    }
-
+    main { width: min(100% - 40px, 340px); text-align: center; }
+    h1 { font-size: 42px; font-weight: 400; letter-spacing: 8px; }
+    .subtitle { margin: 18px 0 34px; color: #777; font-size: 10px; letter-spacing: 3px; }
+    form { display: grid; gap: 12px; text-align: left; }
+    label { color: #888; font-size: 10px; letter-spacing: 2px; }
     input {
       width: 100%;
       margin-top: 8px;
       padding: 13px 12px;
       border: 1px solid #292929;
-      border-radius: 0;
-      outline: none;
       background: #080808;
       color: #fff;
       font: inherit;
     }
-
-    input:focus { border-color: #777; }
-
     button {
       margin-top: 10px;
       padding: 13px;
-      border: 1px solid #333;
-      border-radius: 0;
+      border: 1px solid #444;
       background: #111;
-      color: #777;
+      color: #fff;
       font-size: 10px;
       letter-spacing: 2px;
-      cursor: not-allowed;
+      cursor: pointer;
     }
-
+    button:disabled { opacity: .5; cursor: wait; }
+    .link-button {
+      display: block;
+      margin: 18px auto 0;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: #888;
+      cursor: pointer;
+    }
     .notice {
+      min-height: 32px;
       margin-top: 20px;
-      color: #666;
+      color: #777;
       font-size: 10px;
       line-height: 1.6;
       letter-spacing: 1px;
-      text-align: center;
+      overflow-wrap: anywhere;
     }
+    [hidden] { display: none !important; }
   </style>
 </head>
 <body>
-  <nav class="corner" aria-label="Site navigation">
-    <span class="environment">SANDBOX</span>
+  <nav class="corner">
+    <span class="environment" id="environment">GROVE</span>
     <a class="home" href="/">GROVE</a>
   </nav>
 
@@ -111,28 +84,51 @@
     <h1>GROVE</h1>
     <p class="subtitle">OWNER ACCESS</p>
 
-    <form>
-      <label>
-        EMAIL
-        <input type="email" name="email"
-          autocomplete="username"
-          placeholder="Owner email" required>
-      </label>
+    <section id="login-panel">
+      <form id="login-form">
+        <label>EMAIL
+          <input id="email" type="email" autocomplete="username"
+            placeholder="Owner email" required>
+        </label>
+        <label>PASSWORD
+          <input id="password" type="password"
+            autocomplete="current-password"
+            placeholder="Password" required>
+        </label>
+        <button type="submit">SIGN IN</button>
+      </form>
+      <button class="link-button" id="forgot-button" type="button">
+        RESET PASSWORD
+      </button>
+    </section>
 
-      <label>
-        PASSWORD
-        <input type="password" name="password"
-          autocomplete="current-password"
-          placeholder="Password" required>
-      </label>
+    <section id="recovery-panel" hidden>
+      <form id="recovery-form">
+        <label>NEW PASSWORD
+          <input id="new-password" type="password"
+            autocomplete="new-password" minlength="8" required>
+        </label>
+        <label>CONFIRM PASSWORD
+          <input id="confirm-password" type="password"
+            autocomplete="new-password" minlength="8" required>
+        </label>
+        <button type="submit">SAVE NEW PASSWORD</button>
+      </form>
+    </section>
 
-      <button type="button" disabled>SIGN IN</button>
-    </form>
+    <section id="session-panel" hidden>
+      <p class="subtitle">OWNER SESSION ACTIVE</p>
+      <p class="notice">AUTHENTICATION CONNECTED</p>
+      <button class="link-button" id="signout-button" type="button">
+        SIGN OUT
+      </button>
+    </section>
 
-    <p class="notice">
-      PRIVATE ADMINISTRATION<br>
-      LOGIN CONNECTION NOT YET CONFIGURED
+    <p class="notice" id="notice" role="status" aria-live="polite">
+      PRIVATE ADMINISTRATION
     </p>
   </main>
+
+  <script type="module" src="../js/admin.js"></script>
 </body>
 </html>
