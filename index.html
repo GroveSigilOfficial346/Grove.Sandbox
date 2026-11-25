@@ -6,7 +6,6 @@
   <title>GROVE</title>
   <style>
     * { box-sizing: border-box; }
-
     body {
       margin: 0;
       min-height: 100vh;
@@ -17,16 +16,22 @@
       justify-content: center;
       font-family: Arial, sans-serif;
     }
-
-    .environment {
+    .corner {
       position: absolute;
       top: 20px;
       right: 24px;
-      color: #777;
+      display: flex;
+      align-items: center;
+      gap: 18px;
       font-size: 11px;
       letter-spacing: 2px;
     }
-
+    .environment { color: #777; }
+    .corner a {
+      color: #fff;
+      text-decoration: none;
+    }
+    .corner a:hover { color: #aaa; }
     h1 {
       margin: 0;
       font-size: 42px;
@@ -36,7 +41,10 @@
   </style>
 </head>
 <body>
-  <div class="environment">SANDBOX</div>
+  <div class="corner">
+    <span class="environment">SANDBOX</span>
+    <a href="/admin/">ADMIN</a>
+  </div>
   <h1>GROVE</h1>
 </body>
 </html>
