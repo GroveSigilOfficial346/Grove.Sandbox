@@ -1,5 +1,8 @@
 import { supabase } from "./supabase.js";
-import { GROVE_ENVIRONMENT } from "./config.js";
+import {
+  GROVE_ENVIRONMENT,
+  GROVE_OWNER_ID
+} from "./config.js";
 import { installInactivityLock } from "./session-lock.js";
 
 const $ = (id) => document.getElementById(id);
@@ -21,6 +24,19 @@ function showPanel(panel) {
 
 function message(text) {
   notice.textContent = text;
+}
+
+async function enterDashboard() {
+  const { data, error } = await supabase.auth.getUser();
+
+  if (error || !data.user || data.user.id !== GROVE_OWNER_ID) {
+    await supabase.auth.signOut({ scope: "local" });
+    showPanel(loginPanel);
+    message("OWNER ACCESS COULD NOT BE VERIFIED.");
+    return;
+  }
+
+  window.location.replace("/dashboard/");
 }
 
 installInactivityLock(supabase, {
@@ -58,11 +74,7 @@ $("login-form").addEventListener("submit", async (event) => {
     return;
   }
 
-  showPanel(sessionPanel);
-
-  message(
-    "OWNER SESSION ACTIVE. LOCKS AFTER 15 MINUTES OF INACTIVITY."
-  );
+  await enterDashboard();
 });
 
 $("forgot-button").addEventListener("click", async () => {
@@ -124,9 +136,7 @@ $("recovery-form").addEventListener("submit", async (event) => {
   }
 
   recoveryMode = false;
-  showPanel(sessionPanel);
-
-  message("PASSWORD UPDATED. OWNER SESSION ACTIVE.");
+  await enterDashboard();
 });
 
 $("signout-button").addEventListener("click", async () => {
@@ -162,9 +172,5 @@ const { data, error } = await supabase.auth.getSession();
 if (error) {
   message(error.message);
 } else if (data.session && !recoveryMode) {
-  showPanel(sessionPanel);
-
-  message(
-    "OWNER SESSION ACTIVE. LOCKS AFTER 15 MINUTES OF INACTIVITY."
-  );
+  await enterDashboard();
 }
