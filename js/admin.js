@@ -1,5 +1,6 @@
 import { supabase } from "./supabase.js";
 import { GROVE_ENVIRONMENT } from "./config.js";
+import { installInactivityLock } from "./session-lock.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -21,6 +22,19 @@ function showPanel(panel) {
 function message(text) {
   notice.textContent = text;
 }
+
+installInactivityLock(supabase, {
+  timeoutMs: 15 * 60 * 1000,
+
+  onLock: () => {
+    recoveryMode = false;
+    showPanel(loginPanel);
+
+    message(
+      "SESSION LOCKED AFTER 15 MINUTES OF INACTIVITY. SIGN IN AGAIN."
+    );
+  }
+});
 
 $("login-form").addEventListener("submit", async (event) => {
   event.preventDefault();
@@ -45,7 +59,10 @@ $("login-form").addEventListener("submit", async (event) => {
   }
 
   showPanel(sessionPanel);
-  message("AUTHENTICATED OWNER SESSION");
+
+  message(
+    "OWNER SESSION ACTIVE. LOCKS AFTER 15 MINUTES OF INACTIVITY."
+  );
 });
 
 $("forgot-button").addEventListener("click", async () => {
@@ -91,6 +108,7 @@ $("recovery-form").addEventListener("submit", async (event) => {
   }
 
   const button = $("recovery-form").querySelector("button");
+
   button.disabled = true;
   message("UPDATING PASSWORD...");
 
@@ -107,11 +125,14 @@ $("recovery-form").addEventListener("submit", async (event) => {
 
   recoveryMode = false;
   showPanel(sessionPanel);
+
   message("PASSWORD UPDATED. OWNER SESSION ACTIVE.");
 });
 
 $("signout-button").addEventListener("click", async () => {
-  const { error } = await supabase.auth.signOut();
+  const { error } = await supabase.auth.signOut({
+    scope: "local"
+  });
 
   if (error) {
     message(error.message);
@@ -119,7 +140,7 @@ $("signout-button").addEventListener("click", async () => {
   }
 
   showPanel(loginPanel);
-  message("SIGNED OUT.");
+  message("SIGNED OUT OF THIS DEVICE.");
 });
 
 supabase.auth.onAuthStateChange((event) => {
@@ -142,5 +163,8 @@ if (error) {
   message(error.message);
 } else if (data.session && !recoveryMode) {
   showPanel(sessionPanel);
-  message("AUTHENTICATED OWNER SESSION");
+
+  message(
+    "OWNER SESSION ACTIVE. LOCKS AFTER 15 MINUTES OF INACTIVITY."
+  );
 }
