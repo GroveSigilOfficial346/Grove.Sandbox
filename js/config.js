@@ -1,6 +1,9 @@
 // Grove SANDBOX connection settings.
 export const GROVE_ENVIRONMENT = "SANDBOX";
 
+export const GROVE_OWNER_ID =
+  "45bbacc1-8003-4201-bd0a-1cccc364edf2";
+
 export const SUPABASE_URL =
   "https://sbeiqnmtwbhesmocqmuk.supabase.co";
 
